@@ -270,7 +270,7 @@
           <button class="db-btn db-btn-conflict" type="button"
             [class.db-btn-active-conflict]="activeDb() === 'conflict'"
             (click)="activeDb.set('conflict')">
-            ⚠️ ขัดแย้ง
+            <i class="ti ti-alert-triangle"></i> ขัดแย้ง
           </button>
         }
       </div>
@@ -295,7 +295,7 @@
                 </div>
               </div>
             </div>
-            <span class="conflict-check-badge">⚠️ ต้องตรวจสอบเพิ่ม</span>
+            <span class="conflict-check-badge"><i class="ti ti-alert-triangle"></i> ต้องตรวจสอบเพิ่ม</span>
           </div>
 
           <div class="conflict-body">
@@ -303,7 +303,7 @@
             <!-- Why Conflict -->
             <div class="conflict-section">
               <div class="conflict-section-head">
-                <span class="conflict-section-title">⚠️ เหตุใดจึงเกิดความขัดแย้งของข้อมูล?</span>
+                <span class="conflict-section-title"><i class="ti ti-alert-triangle"></i> เหตุใดจึงเกิดความขัดแย้งของข้อมูล?</span>
               </div>
               <div class="conflict-reason-grid">
                 <div class="conflict-reason-col">
@@ -330,7 +330,7 @@
             <div class="conflict-section">
               <div class="conflict-section-head">
                 <span class="conflict-section-title">ตารางเปรียบเทียบข้อมูลสองฐาน</span>
-                <span class="conflict-warn-badge">⚠️ ข้อมูลขัดแย้ง</span>
+                <span class="conflict-warn-badge"><i class="ti ti-alert-triangle"></i> ข้อมูลขัดแย้ง</span>
               </div>
               <div class="conflict-table-wrap">
                 <table class="conflict-table">
@@ -345,9 +345,9 @@
                   <tbody>
                     <tr>
                       <td>สถานะ</td>
-                      <td class="td-bad">⛔ {{ r.status }}</td>
+                      <td class="td-bad"><i class="ti ti-ban"></i> {{ r.status }}</td>
                       <td class="td-ok">● {{ t.inactive ? 'Inactive' : 'Active' }}</td>
-                      <td class="td-conflict">⚠️ ขัดแย้ง!</td>
+                      <td class="td-conflict"><i class="ti ti-alert-triangle"></i> ขัดแย้ง!</td>
                     </tr>
                     <tr>
                       <td>Quartile / Tier</td>
@@ -359,13 +359,13 @@
                       <td>ปีที่อัปเดตล่าสุด</td>
                       <td class="td-bad">{{ r.coverageEnd || '—' }} (Discontinued)</td>
                       <td class="td-ok">Active ณ ปัจจุบัน</td>
-                      <td class="td-warn">⚠️ รอบต่างกัน</td>
+                      <td class="td-warn"><i class="ti ti-alert-triangle"></i> รอบต่างกัน</td>
                     </tr>
                     <tr>
                       <td>SJR / CiteScore</td>
                       <td class="td-muted">ไม่มีข้อมูล (Discontinued)</td>
                       <td class="td-muted">— (TCI ไม่มี)</td>
-                      <td class="td-muted">ไม่สามารถเปรียบ</td>
+                      <td class="td-muted">ไม่สามารถเปรียบเทียบ</td>
                     </tr>
                     <tr>
                       <td>Beall's List</td>
@@ -427,7 +427,7 @@
 
             <!-- Summary -->
             <div class="conflict-summary-box">
-              <div class="conflict-summary-title">⚠️ สรุปผล — ไม่สามารถสรุปได้อัตโนมัติ (Indeterminate)</div>
+              <div class="conflict-summary-title"><i class="ti ti-alert-triangle"></i> สรุปผล — ไม่สามารถสรุปได้อัตโนมัติ (Indeterminate)</div>
               <div class="conflict-summary-row">
                 <span>Scopus Status</span>
                 <span class="bad">{{ r.status }} ✗</span>
@@ -444,7 +444,7 @@
               </div>
               <div class="conflict-summary-row">
                 <span>ผลการตัดสิน</span>
-                <span class="warn">⚠️ ต้องยืนยันจากบัณฑิตวิทยาลัย</span>
+                <span class="warn"><i class="ti ti-alert-triangle"></i> ต้องยืนยันจากบัณฑิตวิทยาลัย</span>
               </div>
             </div>
 
@@ -471,13 +471,13 @@
         <!-- Warning Banner -->
         <div class="pred-banner">
           <div class="pred-banner-inner">
-            <span class="pred-icon">⛔</span>
+            <span class="pred-icon"><i class="ti ti-ban"></i></span>
             <div class="pred-banner-text">
-              <div class="pred-banner-title">⛔ {{ r.caseLabel }}</div>
+              <div class="pred-banner-title"><i class="ti ti-ban"></i> {{ r.caseLabel }}</div>
               <div class="pred-banner-sub">{{ r.bannerDesc }}</div>
             </div>
           </div>
-          <span class="pred-fail-badge">⛔ ไม่ผ่านเกณฑ์</span>
+          <span class="pred-fail-badge"><i class="ti ti-ban"></i> ไม่ผ่านเกณฑ์</span>
         </div>
 
         <!-- Journal Name -->
@@ -521,7 +521,7 @@
 
         <!-- Summary -->
         <div class="pred-summary-box">
-          <div class="pred-summary-title">⛔ สรุปผล — วารสารนี้ไม่ผ่านเกณฑ์</div>
+          <div class="pred-summary-title"><i class="ti ti-ban"></i> สรุปผล — วารสารนี้ไม่ผ่านเกณฑ์</div>
           <div class="pred-summary-row"><span>สถานะ Scopus</span><span class="bad">ไม่พบ ✗</span></div>
           <div class="pred-summary-row"><span>สถานะ TCI</span><span class="bad">ไม่พบ ✗</span></div>
           <div class="pred-summary-row"><span>สถานะ นานาชาติไม่รองรับ</span><span class="bad">พบ ✗</span></div>
@@ -558,7 +558,7 @@
 
         @if (hasConflict) {
           <div class="conflict-warning-bar">
-            <span>⚠️ ข้อมูลนี้ขัดแย้งกับ TCI — Scopus แสดงสถานะ {{ r.status }} ขณะที่ TCI ยังคง Active อยู่</span>
+            <span><i class="ti ti-alert-triangle"></i> ข้อมูลนี้ขัดแย้งกับ TCI — Scopus แสดงสถานะ {{ r.status }} ขณะที่ TCI ยังคง Active อยู่</span>
             <button type="button" (click)="activeDb.set('conflict')">ดูรายละเอียดความขัดแย้ง ▶</button>
           </div>
         }
@@ -779,7 +779,7 @@
 
           @if (hasConflict) {
             <div class="conflict-warning-bar">
-              <span>⚠️ ข้อมูลนี้ขัดแย้งกับ Scopus — TCI แสดงสถานะ Active ขณะที่ Scopus มีสถานะ {{ result()?.status }}</span>
+              <span><i class="ti ti-alert-triangle"></i> ข้อมูลนี้ขัดแย้งกับ Scopus — TCI แสดงสถานะ Active ขณะที่ Scopus มีสถานะ {{ result()?.status }}</span>
               <button type="button" (click)="activeDb.set('conflict')">ดูรายละเอียดความขัดแย้ง ▶</button>
             </div>
           }
@@ -932,7 +932,7 @@
     }
     @if (!tciResult() && tciError()) {
       <div class="error-card">
-        <span class="error-icon">⚠️</span>
+        <span class="error-icon"><i class="ti ti-alert-triangle"></i></span>
         <div class="error-text">{{ tciError() }}</div>
       </div>
     }
@@ -941,7 +941,7 @@
   <!-- ERROR SCOPUS -->
   @if (hasSearched() && activeDb() === 'scopus' && !result() && errorMessage()) {
     <div class="error-card">
-      <span class="error-icon">⚠️</span>
+      <span class="error-icon"><i class="ti ti-alert-triangle"></i></span>
       <div class="error-text">{{ errorMessage() }}</div>
       <button class="btn-secondary" (click)="hasSearched.set(false); errorMessage.set('')">ลองใหม่</button>
     </div>

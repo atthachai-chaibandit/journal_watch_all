@@ -85,9 +85,9 @@
         <div class="card-bottom-row">
           <div class="current-status">
             @if (card.overallStatus === 'Approved') {
-              <span class="cs-chip cs-approved">✅ อนุมัติสำเร็จ</span>
+              <span class="cs-chip cs-approved"> อนุมัติสำเร็จ</span>
             } @else if (card.advisorStatus === 'Rejected' || card.facultyStatus === 'Rejected') {
-              <span class="cs-chip cs-rejected">❌ ไม่ผ่านการอนุมัติ</span>
+              <span class="cs-chip cs-rejected"> ไม่ผ่านการอนุมัติ</span>
             } @else if (card.advisorStatus === 'Pending') {
               <span class="cs-chip cs-pending">รออาจารย์ที่ปรึกษาอนุมัติ</span>
             } @else if (card.advisorStatus === 'Approved' && card.facultyStatus === 'Pending') {

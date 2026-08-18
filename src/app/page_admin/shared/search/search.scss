@@ -1255,7 +1255,7 @@ $blue:   #1A5FAB;
   flex: 1;
 }
 
-.pred-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.pred-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; color: rgba(0,0,0,0.8); }
 
 .pred-banner-text {
   display: flex;
@@ -1899,7 +1899,7 @@ $blue:   #1A5FAB;
   flex-wrap: wrap;
 }
 
-.error-icon { font-size: 20px; }
+.error-icon { font-size: 20px; color: #C0392B; }
 
 .error-text {
   flex: 1;

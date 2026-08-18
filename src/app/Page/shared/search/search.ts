@@ -312,13 +312,13 @@ export class Search implements OnInit {
   ];
 
   legends = [
-    // ✅ กลุ่มผ่านเกณฑ์
+    //  กลุ่มผ่านเกณฑ์
     { color: '#1A5FAB', label: 'ผ่านเกณฑ์สากล (Scopus)' },
     { color: '#1A7A42', label: 'ผ่านเกณฑ์มาตรฐาน (TCI กลุ่ม 1–2)' },
-    // 🟡 กลุ่มเฝ้าระวัง
+    //  กลุ่มเฝ้าระวัง
     { color: '#D35400', label: 'ข้อมูลขัดแย้งระหว่างระบบ (Scopus / TCI)' },
     { color: '#C07800', label: 'แจ้งเตือน: MSU Unwanted แต่ Scopus Active' },
-    // 🔴 กลุ่มปฏิเสธ
+    //  กลุ่มปฏิเสธ
     { color: '#962D2D', label: 'ปฏิเสธ: MSU Unwanted (ไม่อนุมัติการจบ)' },
     { color: '#7B1C1C', label: 'ปฏิเสธ: อยู่ในรายการเฝ้าระวัง (Watchlist)' },
   ];
@@ -359,7 +359,9 @@ export class Search implements OnInit {
     forkJoin({
       scopus:   this.http.get<ScrapeScopusRes>(scopusUrl, { headers }).pipe(catchError(() => of(null))),
       tci:      this.http.get<ScrapeTCIRes>(tciUrl, { headers }).pipe(catchError(() => of(null))),
-      unwanted: this.http.get<CheckMsuUnwantedRes>(`${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`, { headers }).pipe(catchError(() => of(null))),
+      unwanted: this.http.get<CheckMsuUnwantedRes>
+      (`${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`, 
+        { headers }).pipe(catchError(() => of(null))),
     }).subscribe(({ scopus, tci, unwanted }) => {
       console.log('[Scopus res]', scopus);
       console.log('[TCI res]', tci);
@@ -415,7 +417,7 @@ export class Search implements OnInit {
       caseNum   = 3;
       caseColor = '#7B1C1C';
       caseLabel = 'ปฏิเสธ: อยู่ในรายการเฝ้าระวัง (Watchlist)';
-      bannerIcon = '⛔';
+      bannerIcon = 'ti ti-ban';
       bannerDesc = 'วารสารนี้ถูกระบุว่าเป็น Predatory Journal ห้ามนำไปใช้ยื่นเอกสาร Pre-T3 / T3 โดยเด็ดขาด และอาจส่งผลต่อการพิจารณาการสำเร็จการศึกษา';
       if (blacklistReasons.length === 0) {
         blacklistReasons = [
@@ -430,18 +432,18 @@ export class Search implements OnInit {
       caseNum   = 5;
       caseColor = '#C07800';
       caseLabel = 'MSU Unwanted (Scopus Active)';
-      bannerIcon = '⚠️';
+      bannerIcon = 'ti ti-alert-triangle';
       bannerDesc = `วารสารนี้ได้รับการจัดอยู่ใน Scopus Quartile ${quartile} มีสถานะ Active แต่ปรากฏในรายการ MSU Unwanted Journals ไม่สามารถนำไปยื่น Pre-T3 / T3 ได้`;
     } else if (isUnwanted) {
       caseNum   = 4;
       caseColor = '#962D2D';
       caseLabel = 'ปฏิเสธ: MSU Unwanted (ไม่อนุมัติการจบ)';
-      bannerIcon = '⚠️';
+      bannerIcon = 'ti ti-alert-triangle';
       bannerDesc = 'วารสารนี้ปรากฏในรายการ MSU Unwanted Journals ไม่สามารถนำไปยื่น Pre-T3 / T3 ได้';
     } else if (!isActive) {
       caseColor = '#888888';
       caseLabel = 'วารสาร Scopus หยุดตีพิมพ์แล้ว (Discontinued)';
-      bannerIcon = '⚠️';
+      bannerIcon = 'ti ti-alert-triangle';
       bannerDesc = `วารสารนี้ได้รับการจัดอยู่ใน Scopus Quartile ${quartile} แต่มีสถานะ Discontinued ณ ปีปัจจุบัน ไม่สามารถนำไปยื่น Pre-T3 / T3 ได้`;
     } else if (passForDoctoral) {
       

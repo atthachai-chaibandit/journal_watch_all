@@ -23,19 +23,19 @@ declare const google: any;
   styleUrls: ['./login.scss'],
 })
 export class Login implements OnInit {
-  private readonly http = inject(HttpClient);
-  private readonly constants = inject(Constants);
-  private readonly authService = inject(AuthService);
+  private readonly http = inject(HttpClient); 
+  private readonly constants = inject(Constants); // เก็บ URL ของ backend API ไว้ที่จุดเดียว ให้ทุกไฟล์เรียกใช้ร่วมกัน
+  private readonly authService = inject(AuthService); //  service ที่เขียนเองในโปรเจกต์นี้ ทำหน้าที่เป็น "ศูนย์กลางจัดการสถานะการล็อกอิน" ของทั้งแอป — เก็บว่าใครล็อกอินอยู่ ข้อมูลผู้ใช้คนนั้นคือใคร และ token สำหรับยืนยันตัวตนตอนเรียก API
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
-  private readonly ngZone = inject(NgZone);
+  private readonly ngZone = inject(NgZone); //service หลักของ Angular ที่ทำหน้าที่ "เฝ้าดู" ว่าเมื่อไหร่ควรสั่งอัปเดตหน้าจอใหม่ (เรียกกระบวนการนี้ว่า Change Detection) — เป็นกลไกเบื้องหลังที่ทำให้ Angular รู้ได้เองว่า "มีอะไรเปลี่ยนแปลง ต้อง render ใหม่แล้วนะ" โดยที่นักพัฒนาไม่ต้องสั่ง refresh หน้าจอเอง
 
   loading = signal(false);
 
   readonly CLIENT_ID = GOOGLE_CLIENT_ID;
 
   ngOnInit() {
-    this.loadGoogleScript().then(() => {
+    this.loadGoogleScript().then(() => { //โค้ดทั้งก้อนนี้คือ "ไปรับ Chef Google มา → คุยตกลงกฎกัน → จ้างล่ามไว้แปลตอน Chef ตะโกนบอกผล" แค่นั้นเองครับ ฟังดูซับซ้อนแต่จริงๆ แค่จัดการเรื่อง "รอของมาก่อนค่อยใช้" กับ "แปลภาษาให้ Angular เข้าใจ" 
       google.accounts.id.initialize({
         client_id: this.CLIENT_ID,
         callback: (response: any) =>
@@ -57,16 +57,16 @@ export class Login implements OnInit {
     });
   }
 
-  private decodeJwt(token: string): any {
+  private decodeJwt(token: string): any { // ฟังก์ชันนี้คือการ แกะ JWT Token ของ Google ออกมาอ่านข้อมูลข้างใน โดยไม่ต้องพึ่งไลบรารีภายนอกเลย 
     try {
       const payload = token.split('.')[1];
       const base64  = payload.replace(/-/g, '+').replace(/_/g, '/');
-      const padded  = base64 + '='.repeat((4 - base64.length % 4) % 4);
+      const padded  = base64 + '='.repeat((4 - base64.length % 4) % 4); //แปลงข้อความนั้น (ที่จริงๆ เป็น JSON string) ให้กลายเป็น JavaScript object ที่เอาไปใช้งานต่อได้ 
       return JSON.parse(atob(padded));
     } catch { return {}; }
   }
 
-  private handleGoogleCallback(response: any) {
+  private handleGoogleCallback(response: any) { // ฟังก์ชันนี้ทำให้ระบบ รับผลการยืนยันตัวตนจาก Google แล้วพานิสิตเข้าสู่ระบบได้ครบวงจร 
     this.loading.set(true);
     console.log(' idToken:', response.credential);
     const claims = this.decodeJwt(response.credential);
@@ -99,10 +99,10 @@ export class Login implements OnInit {
     gsiBtn?.click();
   }
 
-  private loadGoogleScript(): Promise<void> {
+  private loadGoogleScript(): Promise<void> { // คือฟังก์ชันที่ทำหน้าที่ โหลดสคริปต์ของ Google Identity Services เข้ามาในหน้าเว็บแบบ dynamic (ไม่ได้ใส่ <script> ไว้ตายตัวใน index.html ตั้งแต่แรก) พร้อมป้องกันการโหลดซ้ำซ้อน 
     return new Promise((resolve) => {
       if (document.getElementById('google-gsi-script')) {
-        resolve();
+        resolve(); //ถ้าผู้ใช้ย้อนกลับมาหน้า Login ซ้ำ) ถ้ามีอยู่แล้ว ไม่ต้องโหลดซ้ำ เรียก resolve() ทันทีถือว่าเสร็จเลย 
         return;
       }
       const script = document.createElement('script');

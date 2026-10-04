@@ -93,37 +93,38 @@ $c-rejected: #EF4444;
 // ── Tab bar ──────────────────────────────────────────
 .tab-bar {
   display: flex;
-  border-bottom: 2px solid $border;
+  gap: 4px;
+  background: $bg;
+  border: 1.5px solid $border;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(28,39,68,0.06);
   margin-bottom: 20px;
 }
 
 .tab-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 20px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: $text-sec;
   font-size: 14px;
   font-weight: 600;
-  color: $text-sec;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.2s;
+  background: $white;
+  box-shadow: 0 1px 3px rgba(28,39,68,0.08);
+  transition: all 0.2s ease;
+  white-space: nowrap;
   font-family: 'Sarabun', sans-serif;
 
-  &:hover { color: $navy; }
+  &:hover { background: rgba(232,168,0,0.08); color: $navy; }
 
   &.tab-active {
-    color: $navy;
-    border-bottom-color: $yellow;
-    font-weight: 700;
-
-    /* ลบ pseudo-element เก่าที่ไม่ใช้แล้ว */
-    &::after {
-      display: none;
-    }
+    background: $navy;
+    color: $yellow;
+    box-shadow: 0 3px 10px rgba(28,39,68,0.2);
   }
-
 }
 .tab-icon { font-size: 16px; }
 
@@ -301,7 +302,6 @@ $c-rejected: #EF4444;
   color: #374151;
   font-weight: 500;
   line-height: 1.45;
-  padding-left: 52px;
 }
 
 .journal-row {
@@ -309,7 +309,6 @@ $c-rejected: #EF4444;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  padding-left: 52px;
 }
 
 .journal-name {
@@ -396,7 +395,6 @@ $c-rejected: #EF4444;
 .card-status-row {
   display: flex;
   align-items: center;
-  padding-left: 52px;
   margin-top: 2px;
 }
 
@@ -474,6 +472,7 @@ $c-rejected: #EF4444;
   border-radius: 12px;
   width: 100%;
   max-width: 900px;
+  min-width: 0;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
@@ -897,6 +896,10 @@ $c-rejected: #EF4444;
   align-items: center;
   justify-content: center;
   z-index: 1100;
+  /* ไม่เคยมี padding มาก่อน — .meeting-modal เป็น width:100% จะไปชนขอบจอพอดีบน
+     มือถือ ไม่มีช่องหายใจเลย */
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 .meeting-modal {
@@ -1105,6 +1108,10 @@ $c-rejected: #EF4444;
   align-items: center;
   justify-content: center;
   z-index: 1200;
+  /* ไม่เคยมี padding มาก่อน — .action-modal เป็น width:100% จะไปชนขอบจอพอดีบน
+     มือถือ ไม่มีช่องหายใจเลย */
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 .action-modal {
@@ -1389,4 +1396,87 @@ $c-rejected: #EF4444;
     box-shadow: 0 3px 10px rgba(185,28,28,0.2);
     &:hover:not(:disabled) { background: #991b1b; }
   }
+}
+
+// ══════════════════════════════════════════════════════
+// RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อนทั้งไฟล์
+// ══════════════════════════════════════════════════════
+@media (max-width: 768px) {
+  .page { padding: 20px 16px 60px; }
+
+  /* 3 แท็บรวมกันกว้างเกินจอมือถือ ไม่เคยมีการจัดการมาก่อนเลย */
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+  /* padding ฝั่งขวาของ container ที่ overflow-x:auto จะไม่ถูกนับรวมใน scrollable area
+     ในหลายเบราว์เซอร์ (บั๊กที่รู้จักกันดีของ CSS: trailing padding หายไปเมื่อเนื้อหา
+     ล้นออก) ทำให้แท็บตัวสุดท้ายชิดขอบขวาสุดพอดีไม่มีช่องว่างเหมือนฝั่งซ้าย ต้องใช้
+     margin บนตัวสุดท้ายแทน เพราะ margin ของ flex item ถูกนับรวมใน scrollWidth เสมอ */
+  .tab-item:last-child { margin-right: 6px; }
+
+  /* .field-grid / .meeting-info-grid เป็น grid 2 คอลัมน์ตายตัว ไม่มี override เลย
+     บนจอแคบแต่ละช่องเหลือพื้นที่ไม่พอสำหรับ label+value หรือ badge ทำให้เบียดกัน */
+  .field-grid,
+  .meeting-info-grid { grid-template-columns: minmax(0, 1fr); }
+  .field-item--wide { grid-column: span 1; }
+
+  .mh { padding: 16px 18px; }
+  .modal-body { padding: 16px 18px; }
+  .ms-card { padding: 16px; }
+
+  /* .mh-icon-title/.mh-row1-right ไม่มี min-width:0/flex-shrink กำกับไว้เลย
+     รวมกับหัวข้อ modal อาจดันให้แถวนี้ล้นได้บนจอแคบ ให้หัวข้อตัดจบด้วย ... แทน */
+  .mh-icon-title { min-width: 0; flex: 1 1 auto; }
+  .mh-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mh-row1-right { flex-shrink: 0; }
+
+  .modal-footer,
+  .action-modal-footer,
+  .meeting-footer { flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  /* .card-left (flex:1; min-width:0) หดได้ไม่จำกัด ขณะที่ .card-right (flex-shrink:0;
+     min-width:200px) ไม่ยอมหดต่ำกว่า 200px เลย — บั๊กแพทเทิร์นเดียวกับที่เจอซ้ำๆทั้งแอป
+     บนจอมือถือจริง (เช่น 375px) ฝั่งซ้าย (ชื่อ/วารสาร/badge) จะเหลือพื้นที่แคบมาก
+     ต้องบังคับ column ให้ตกคนละแถวแน่นอนแทน */
+  .req-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 40px 16px 16px;
+  }
+  .card-left { min-width: 0; }
+
+  /* .card-right เดิมชิดขวา (ไว้คู่กับฝั่งซ้ายในแถวเดียวกัน) พอตกมาเต็มความกว้างแถวใหม่
+     จะดูลอยไม่สมดุล เปลี่ยนเป็นแถวแนวนอน wrap ชิดซ้ายแทนให้ดูเป็น meta row เดียวกัน */
+  .card-right {
+    min-width: 0;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding-top: 10px;
+    margin-top: 2px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+  .date-row { justify-content: flex-start; }
+
+  /* .card-arrow เดิมเป็น flex child ปกติ (ไม่ absolute) พอการ์ดเป็น column จะตกไป
+     เป็นแถวที่ 3 แยกลอยอยู่ด้านล่างสุดแทนที่จะอยู่มุมขวา ต้องยึดตำแหน่งไว้แทน */
+  .req-card { position: relative; }
+  .card-arrow {
+    position: absolute;
+    right: 8px;
+    top: 16px;
+  }
+
+  .student-row { gap: 10px; }
+
+  .field-grid,
+  .meeting-info-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .review-choices,
+  .decision-buttons { flex-direction: column; }
+
+  .ic-card { width: calc(100% - 32px); }
 }

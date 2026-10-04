@@ -89,6 +89,7 @@
   text-align: center;
   line-height: 1.7;
   margin: 0;
+  overflow-wrap: anywhere;
 
   strong {
     color: #1C2744;
@@ -104,8 +105,15 @@
 }
 
 .otp-box {
-  width: 56px;
+  /* เดิม width:56px แบบ content-box (ไม่มี box-sizing:border-box) บวก border
+     1.5px ทั้งสองฝั่ง = กว้างจริง 59px/กล่อง — 6 กล่อง + gap 10px รวมกว้าง 404px
+     ขณะที่ .otp-content กว้างสูงสุดแค่ 376px (card 480px ลบ padding 52px*2) ล้น
+     กล่องสุดท้ายออกไป 28px แล้วโดน .otp-card ที่ overflow:hidden ตัดทิ้งเลย เกิดบน
+     จอทุกขนาดที่ยังไม่ชน breakpoint มือถือ ไม่ใช่แค่จอแคบ ลดความกว้างลงเล็กน้อย
+     พร้อมเปลี่ยนเป็น border-box ให้คำนวณพอดีจริง */
+  width: 54px;
   height: 64px;
+  box-sizing: border-box;
   border: 1.5px solid #E0DDD8;
   border-radius: 12px;
   font-size: 24px;

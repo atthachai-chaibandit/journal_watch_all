@@ -13,6 +13,15 @@ $muted: #6B7280;
   position: sticky;
   top: 90px;
   max-height: calc(100vh - 90px);
+
+  /* .sidebar ลูกข้างในเปลี่ยนเป็น position:fixed; z-index:100 ตอนจอแคบ แต่ :host
+     เองยังเป็น position:sticky; z-index:auto อยู่ — ถ้า :host ไม่ได้ยก z-index ขึ้นมา
+     ด้วย ในบางเบราว์เซอร์/บาง stacking context ตัว .sidebar-backdrop (position:fixed;
+     z-index:99 ใน app.scss) จะไปแทรกคั่นอยู่เหนือกว่า ทำให้คลิกเมนูโดน backdrop ปิด
+     sidebar แทนที่จะ navigate จริง (บั๊กเดียวกับที่ sidebar ตัวอื่นในระบบเคยเจอ) */
+  @media (max-width: 1024px) {
+    z-index: 100;
+  }
 }
 
 /* ══ SIDEBAR SHELL ══ */
@@ -42,10 +51,19 @@ $muted: #6B7280;
 
   &.collapsed { width: 0; }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     position: fixed;
     top: 0; left: 0;
     height: 100vh;
+    /* max-height เดิม calc(100vh - 90px) มาจาก rule พื้นฐานด้านบน (สำหรับโหมด sticky
+       บนเดสก์ท็อป) ถ้าไม่ override จะไปจำกัดความสูงจริงของ overlay นี้ให้เตี้ยกว่า
+       100vh อยู่ 90px เหลือพื้นที่ว่างโล่งๆ ที่ขอบล่างจอ */
+    max-height: 100vh;
+    /* header_admin เป็น position:sticky; top:0; z-index:1000 สูงกว่า sidebar นี้
+       (z-index:100) เสมอ — ถ้าไม่เว้น padding-top ส่วนบนของ sidebar (โลโก้/การ์ด
+       ผู้ใช้) จะโดนเฮดเดอร์บังตอนเลื่อนหน้าจอ */
+    padding-top: 112px;
+    box-sizing: border-box;
     z-index: 100;
     width: 280px !important;
     transform: translateX(0);
@@ -55,6 +73,10 @@ $muted: #6B7280;
       transform: translateX(-100%);
       width: 280px !important;
     }
+  }
+
+  @media (max-width: 480px) {
+    padding-top: 92px;
   }
 }
 

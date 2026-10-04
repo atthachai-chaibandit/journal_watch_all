@@ -56,15 +56,13 @@
   width: 64px;
   height: 64px;
   flex-shrink: 0;
-  border-radius: 50%;
-  overflow: hidden;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
 }
 
 .msu-logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .msu-divider {
@@ -106,6 +104,11 @@
 }
 
 .jw-title {
+  /* ต้องเป็น block/inline-block ไม่งั้น text-overflow:ellipsis จะไม่มีผลเลย
+     เพราะ <span> ปกติเป็น display:inline ซึ่งสเปก CSS ไม่รองรับ ellipsis กับ inline
+     ทำให้ข้อความล้นออกนอกกรอบขวาแทนที่จะถูกตัดจบด้วย ... */
+  display: block;
+  width: 100%;
   font-size: 20px;
   font-weight: 800;
   color: #E8A800;
@@ -118,6 +121,8 @@
 }
 
 .jw-sub {
+  display: block;
+  width: 100%;
   font-size: 12px;
   color: rgba(255,255,255,.5);
   letter-spacing: .02em;
@@ -216,7 +221,10 @@
 }
 
 /* ══ RESPONSIVE ══ */
-@media (max-width: 768px) {
+/* ขยายจาก 768 เป็น 860 ให้ครอบคลุม iPad portrait ด้วย (810-834px กว้างกว่า 768
+   เล็กน้อย ถ้ายังใช้ขนาด desktop เต็มๆ ข้อความหัวข้อ jw-title จะเหลือพื้นที่ไม่พอ
+   จนต้องตัดจบด้วย ... เร็วเกินไป ดูเหมือนพื้นที่ไม่พอ/เบียดกัน) */
+@media (max-width: 860px) {
   .msu-brand {
     clip-path: none;
     padding: 8px 16px;
@@ -247,4 +255,15 @@
   .jw-title { font-size: 13px; }
 
   .top-bar { min-height: 60px; }
+
+  .yellow-bar { justify-content: flex-start; }
+
+  .yellow-label {
+    /* ข้อความยาว ("GRADUATE SCHOOL, MAHASARAKHAM UNIVERSITY") ที่บังคับบรรทัดเดียว
+       (white-space: nowrap จาก base) อาจกว้างเกินจอมือถือเล็กสุด (~320-360px)
+       จนล้นออกนอกกรอบทำให้เกิด horizontal scroll ทั้งหน้า — อนุญาตให้ตัดขึ้นบรรทัดใหม่แทน */
+    white-space: normal;
+    line-height: 1.4;
+    font-size: 9.5px;
+  }
 }

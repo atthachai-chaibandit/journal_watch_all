@@ -34,7 +34,10 @@
 }
 
 .login-card {
-  position: relative;
+  /* sticky แทน relative — ตอนเลื่อนหน้าจอลง card จะไหลตามลงมาด้วย
+     แล้วหยุดเองอัตโนมัติตอนชนขอบล่างของ .login-page (พอดีกับจุดที่ footer เริ่มต้น) */
+  position: sticky;
+  top: 24px;
   z-index: 1; /* card ลอยเหนือ overlay */
 }
 
@@ -385,9 +388,21 @@
 }
 
 /* ══ RESPONSIVE ══ */
-@media (max-width: 820px) {
+
+/* iPad (portrait ~768-834px) — ครอบคลุมกว้างขึ้นจาก 820 เป็น 860
+   เพื่อกัน iPad Air/Mini portrait หลุด breakpoint */
+@media (max-width: 860px) {
+  .login-page {
+    /* background-attachment: fixed มีปัญหาเรอนเดอร์/กระตุกบน iOS Safari
+       ปิดให้เป็น scroll ปกติบนจอสัมผัส/แท็บเล็ตแทน */
+    background-attachment: scroll;
+  }
+
   .card-body {
     padding: 40px 36px;
+    /* divider หายไปแล้วเคยเป็นตัวเว้นระยะซ้าย-ขวาอันเดียว (margin 0 48px)
+       ถ้าไม่เติม gap ตรงนี้ ซ้าย-ขวาจะเบียดชิดกันสนิท (gap: 0 จาก base) */
+    gap: 32px;
   }
 
   .card-divider {
@@ -403,8 +418,13 @@
     gap: 28px;
   }
 
+  .card-left,
   .card-right {
+    /* ป้องกัน overflow แนวนอนบนมือถือจอแคบ (< 320px) ที่ min-width เดิม (220/280px)
+       อาจกว้างกว่าพื้นที่จริงที่เหลือหลังหัก padding */
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .logo-ring {
@@ -439,5 +459,32 @@
 
   .login-page {
     padding: 20px 10px;
+  }
+}
+
+/* มือถือแนวนอน (landscape) — จอสูงจำกัดมาก (เช่น iPhone/Android วางนอน ~375-430px สูง)
+   ลดขนาดโลโก้/ระยะห่างลง กันเนื้อหาชนกันหรือล้นจอด้านบน-ล่าง */
+@media (max-height: 480px) and (orientation: landscape) {
+  .login-page {
+    padding: 16px;
+    min-height: 100vh;
+  }
+
+  .card-left {
+    gap: 10px;
+  }
+
+  .logo-wrap,
+  .jw-logo-img {
+    width: 72px;
+    height: 72px;
+  }
+
+  .jw-sub {
+    display: none; /* ข้อความรองไม่จำเป็นตอนพื้นที่แนวตั้งจำกัดมาก */
+  }
+
+  .card-divider {
+    height: 140px;
   }
 }

@@ -63,6 +63,7 @@ interface PreT3Detail {
   advisor:            string;
   submittedDate:      string;
   overallStatus:      string;
+  advisorStatus:      ApprovalStatus;
   cardStatus:         'approved' | 'rejected' | 'pending';
   statusPillText:     string;
   currentStatusTitle: string;
@@ -101,6 +102,13 @@ export class PreT3Status implements OnInit {
   ngOnInit(): void {
     window.scrollTo(0, 0);
     this.loadData();
+    // tab-bar เลื่อนแนวนอนได้บนจอแคบ (overflow-x:auto) แต่ scrollLeft เริ่มที่ 0 เสมอ
+    // ถ้าแท็บที่ active อยู่ไม่ใช่ตัวแรกจะโดนซ่อนพ้นขอบจอ ต้องเลื่อนให้เข้ามาอยู่ใน
+    // มุมมองเองตั้งแต่โหลดหน้า โดยไม่ใช้ animation
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
   }
 
   refresh(): void {
@@ -237,6 +245,7 @@ export class PreT3Status implements OnInit {
       advisor:            info.advisorName,
       submittedDate:      this.formatDateShort(d.created_at),
       overallStatus,
+      advisorStatus,
       cardStatus,
       statusPillText,
       currentStatusTitle:  title,
@@ -293,7 +302,6 @@ export class PreT3Status implements OnInit {
     const adv  = d.advisor_approval.status;
     const fac  = d.faculty_com_approval.status;
     const over = d.overall_status;
-    const meet = d.faculty_com_approval.meeting_no !== null;
 
     const createdDate  = this.formatDateShort(d.created_at);
     const advisorDate  = d.advisor_approval.approved_at
@@ -306,13 +314,13 @@ export class PreT3Status implements OnInit {
     let s2: Step;
     if (adv === 'Approved')       s2 = { icon: '✓',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: advisorDate, status: 'done'   };
     else if (adv === 'Rejected')  s2 = { icon: '✗',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '✗ ไม่อนุมัติ',      date: '-',         status: 'active' };
-    else                          s2 = { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '⚙ กำลังดำเนินการ', date: createdDate,  status: 'active' };
+    else                          s2 = { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '⚙ กำลังดำเนินการ', date: '-',          status: 'active' };
 
     // Step 3 — meeting
     let s4: Step;
     if (fac === 'Approved')
       s4 = { icon: '✓',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: '-', status: 'done'   };
-    else if (meet)
+    else if (adv === 'Approved')
       s4 = { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '⚙ กำลังดำเนินการ', date: '-', status: 'active' };
     else
       s4 = { icon: '🏛', label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };

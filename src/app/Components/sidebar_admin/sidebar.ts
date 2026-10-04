@@ -96,7 +96,6 @@ export class Sidebar implements OnInit {
         group: 'ระบบ',
         items: [
           { label: 'Backup & Restore',  icon: 'ti ti-device-floppy',   route: `${prefix}/backup-restore` },
-          { label: 'บันทึกระบบ',      icon: 'ti ti-clipboard-text', route: `${prefix}/system-log` },
           { label: 'Bug Reports',       icon: 'ti ti-bug',             route: `${prefix}/bug-reports` },
         ],
       },

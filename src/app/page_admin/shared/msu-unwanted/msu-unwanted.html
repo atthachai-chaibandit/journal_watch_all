@@ -33,7 +33,7 @@
   <!-- ── TOOLBAR ── -->
   <div class="toolbar-card">
     <div class="search-wrap">
-      <span class="search-icon-s">🔍</span>
+      <span class="search-icon-s"><i class="ti ti-search"></i></span>
       <input
         class="search-field"
         type="text"
@@ -52,7 +52,7 @@
           <span>+</span> เพิ่มวารสาร
         </button>
         <button class="btn-import-csv" (click)="openCsvModal()">
-          📤 นำเข้า CSV
+          <i class="ti ti-upload"></i> นำเข้า CSV
         </button>
       }
     </div>
@@ -69,7 +69,7 @@
   <!-- ── ERROR ── -->
   @if (!isLoading() && errorMessage()) {
     <div class="error-card">
-      <span class="error-icon">⚠️</span>
+      <span class="error-icon"><i class="ti ti-alert-triangle"></i></span>
       <div class="error-text">{{ errorMessage() }}</div>
       <button class="btn-retry" (click)="loadData()">ลองใหม่</button>
     </div>
@@ -78,6 +78,12 @@
   <!-- ── TABLE ── -->
   @if (!isLoading() && !errorMessage()) {
     <div class="table-card">
+      <!-- บอกผู้ใช้บนมือถือ/iPad ว่าตารางเลื่อนซ้าย-ขวาดูต่อได้ (ซ่อนบนจอกว้าง) -->
+      <div class="table-scroll-hint">
+        <i class="ti ti-arrows-horizontal"></i>
+        เลื่อนซ้าย-ขวาเพื่อดูข้อมูลเพิ่มเติมและปุ่ม "รายละเอียด"
+      </div>
+      <div class="table-scroll">
       <table class="uw-table">
         <thead>
           <tr>
@@ -99,7 +105,7 @@
                 <div class="journal-pub">{{ j.publisher }}</div>
               </td>
               <td class="col-status">
-                <span class="badge-unwanted">🚫 Unwanted</span>
+                <span class="badge-unwanted"><i class="ti ti-ban"></i> Unwanted</span>
                 <span class="badge-banned">ห้ามยื่น</span>
               </td>
               <td class="col-issn">
@@ -116,8 +122,8 @@
                 <div class="row-actions">
                   <button class="btn-detail" (click)="openDetail(j)">รายละเอียด</button>
                   @if (canManage) {
-                    <button class="btn-edit-row" (click)="openEditModal(j, $event)">✏️ แก้ไข</button>
-                    <button class="btn-del-row"  (click)="openDeleteModal(j, $event)">🗑️ ลบ</button>
+                    <button class="btn-edit-row" (click)="openEditModal(j, $event)"><i class="ti ti-pencil"></i> แก้ไข</button>
+                    <button class="btn-del-row"  (click)="openDeleteModal(j, $event)"><i class="ti ti-trash"></i> ลบ</button>
                   }
                 </div>
               </td>
@@ -130,6 +136,7 @@
           }
         </tbody>
       </table>
+      </div>
 
       <!-- PAGINATION -->
       <div class="pagination-row">
@@ -159,7 +166,7 @@
       </div>
       <div class="modal-body">
         <div class="modal-alert">
-          <span class="modal-alert-icon">🚫</span>
+          <span class="modal-alert-icon"><i class="ti ti-ban"></i></span>
           <span>{{ j.note || 'วารสารนี้อยู่ในรายการ MSU Unwanted Journals' }}</span>
         </div>
         <table class="detail-table">
@@ -169,7 +176,7 @@
           <tr><td class="dt-label">หมายเหตุ</td><td class="dt-value">{{ j.note || '—' }}</td></tr>
           <tr><td class="dt-label">วันที่บันทึก</td><td class="dt-value">{{ formatDate(j.recorded_date) }}</td></tr>
           <tr><td class="dt-label">บันทึกโดย</td><td class="dt-value">{{ addedBy(j) }}</td></tr>
-          <tr><td class="dt-label">ผลสรุป</td><td class="dt-value dt-red">🚫 ห้ามนำไปยื่น Pre-T3 / T3 ทุกกรณี</td></tr>
+          <tr><td class="dt-label">ผลสรุป</td><td class="dt-value dt-red"><i class="ti ti-ban"></i> ห้ามนำไปยื่น Pre-T3 / T3 ทุกกรณี</td></tr>
         </table>
       </div>
       <div class="modal-footer">
@@ -189,7 +196,7 @@
 
       <div class="fmodal-header">
         <div class="fmodal-title">
-          <span class="fmodal-icon">➕</span>
+          <span class="fmodal-icon"><i class="ti ti-plus"></i></span>
           เพิ่มวารสารใหม่
         </div>
         <button class="fmodal-close" (click)="closeAddModal()">✕</button>
@@ -228,9 +235,9 @@
               <input class="file-input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onAddFileChange($event)" #addFileInput />
               <div class="file-drop-content" (click)="addFileInput.click()">
                 @if (addFile) {
-                  <span class="file-chosen">📎 {{ addFile.name }}</span>
+                  <span class="file-chosen"><i class="ti ti-paperclip"></i> {{ addFile.name }}</span>
                 } @else {
-                  <span class="file-placeholder">📁 คลิกเพื่อเลือกไฟล์</span>
+                  <span class="file-placeholder"><i class="ti ti-folder"></i> คลิกเพื่อเลือกไฟล์</span>
                 }
               </div>
             </div>
@@ -239,7 +246,7 @@
 
         @if (addResult(); as r) {
           <div [class]="r.ok ? 'result-banner result-banner--ok' : 'result-banner result-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
       </div>
@@ -249,7 +256,7 @@
         <button class="btn-fsubmit btn-fsubmit--green" (click)="submitAdd()"
                 [disabled]="isAdding() || !addForm.journal_name.trim()">
           @if (isAdding()) { <span class="btn-spinner"></span> กำลังบันทึก... }
-          @else             { ✅ บันทึกวารสาร }
+          @else             { <i class="ti ti-circle-check"></i> บันทึกวารสาร }
         </button>
       </div>
 
@@ -266,7 +273,7 @@
 
       <div class="fmodal-header">
         <div class="fmodal-title">
-          <span class="fmodal-icon">📤</span>
+          <span class="fmodal-icon"><i class="ti ti-upload"></i></span>
           นำเข้าวารสาร (CSV)
         </div>
         <button class="fmodal-close" (click)="closeCsvModal()">✕</button>
@@ -285,9 +292,9 @@
             <input class="file-input" type="file" accept=".csv" (change)="onCsvFileChange($event)" #csvFileInput />
             <div class="file-drop-content" (click)="csvFileInput.click()">
               @if (csvFile) {
-                <span class="file-chosen">📎 {{ csvFile.name }}</span>
+                <span class="file-chosen"><i class="ti ti-paperclip"></i> {{ csvFile.name }}</span>
               } @else {
-                <span class="file-placeholder">📁 คลิกเพื่อเลือกไฟล์ .csv</span>
+                <span class="file-placeholder"><i class="ti ti-folder"></i> คลิกเพื่อเลือกไฟล์ .csv</span>
               }
             </div>
           </div>
@@ -295,7 +302,7 @@
 
         @if (importResult(); as r) {
           <div [class]="r.ok ? 'result-banner result-banner--ok' : 'result-banner result-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
       </div>
@@ -305,7 +312,7 @@
         <button class="btn-fsubmit btn-fsubmit--navy" (click)="submitCsv()"
                 [disabled]="isImporting() || !csvFile">
           @if (isImporting()) { <span class="btn-spinner"></span> กำลังนำเข้า... }
-          @else               { 📤 นำเข้าข้อมูล }
+          @else               { <i class="ti ti-upload"></i> นำเข้าข้อมูล }
         </button>
       </div>
 
@@ -322,7 +329,7 @@
 
       <div class="fmodal-header fmodal-header--yellow">
         <div class="fmodal-title">
-          <span class="fmodal-icon">✏️</span>
+          <span class="fmodal-icon"><i class="ti ti-pencil"></i></span>
           แก้ไขวารสาร
         </div>
         <button class="fmodal-close" (click)="closeEditModal()">✕</button>
@@ -361,9 +368,9 @@
               <input class="file-input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onEditFileChange($event)" #editFileInput />
               <div class="file-drop-content" (click)="editFileInput.click()">
                 @if (editFile) {
-                  <span class="file-chosen">📎 {{ editFile.name }}</span>
+                  <span class="file-chosen"><i class="ti ti-paperclip"></i> {{ editFile.name }}</span>
                 } @else {
-                  <span class="file-placeholder">📁 คลิกเพื่อเลือกไฟล์ใหม่</span>
+                  <span class="file-placeholder"><i class="ti ti-folder"></i> คลิกเพื่อเลือกไฟล์ใหม่</span>
                 }
               </div>
             </div>
@@ -376,7 +383,7 @@
 
         @if (editResult(); as r) {
           <div [class]="r.ok ? 'result-banner result-banner--ok' : 'result-banner result-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
       </div>
@@ -386,7 +393,7 @@
         <button class="btn-fsubmit btn-fsubmit--yellow" (click)="submitEdit()"
                 [disabled]="isEditing() || !editForm.journal_name.trim()">
           @if (isEditing()) { <span class="btn-spinner"></span> กำลังบันทึก... }
-          @else             { ✏️ บันทึกการแก้ไข }
+          @else             { <i class="ti ti-pencil"></i> บันทึกการแก้ไข }
         </button>
       </div>
 
@@ -400,7 +407,7 @@
 @if (deleteModal(); as j) {
   <div class="modal-overlay" (click)="closeDeleteModal()">
     <div class="delete-modal" (click)="$event.stopPropagation()">
-      <div class="delete-modal__icon">🗑️</div>
+      <div class="delete-modal__icon"><i class="ti ti-trash"></i></div>
       <div class="delete-modal__title">ยืนยันการลบวารสาร</div>
       <div class="delete-modal__body">
         คุณต้องการลบ <strong>{{ j.journal_name }}</strong> (ISSN: {{ j.issn || '—' }})
@@ -411,7 +418,7 @@
         <button class="btn-fcancel" (click)="closeDeleteModal()" [disabled]="isDeleting()">ยกเลิก</button>
         <button class="btn-fsubmit btn-fsubmit--red" (click)="submitDelete()" [disabled]="isDeleting()">
           @if (isDeleting()) { <span class="btn-spinner"></span> กำลังลบ... }
-          @else              { 🗑️ ยืนยันลบ }
+          @else              { <i class="ti ti-trash"></i> ยืนยันลบ }
         </button>
       </div>
     </div>

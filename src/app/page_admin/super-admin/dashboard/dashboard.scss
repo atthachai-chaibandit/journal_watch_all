@@ -553,3 +553,26 @@ $muted:       #6B7280;
   .db-meta-card { flex: 1; min-width: 0; }
   .db-content   { padding: 20px 16px; }
 }
+
+@media (max-width: 480px) {
+  /* 4 การ์ด flex:1 บนจอแคบมากจะถูกบีบแคบลงเรื่อยๆ จนป้ายชื่อ (เช่น "คำร้องทั้งหมด")
+     อ่านลำบาก แทนที่จะตกบรรทัดใหม่ (เพราะ min-width:0 เอาเพดานล่างออกไปแล้ว) —
+     บังคับเป็น grid 2x2 แทนให้แต่ละการ์ดมีพื้นที่พออ่านง่าย */
+  .db-hero__cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .db-meta-card { min-width: 0; }
+
+  /* คอลัมน์ label/number ของแถบ progress กว้างตายตัว (90px/36px หรือ 12px/90px/40px)
+     บนจอแคบมากจะเหลือพื้นที่ให้แถบ progress จริงน้อยมาก ลดคอลัมน์ label ลงอีกหน่อย */
+  .req-bar-row { grid-template-columns: 72px 1fr 30px; gap: 6px; }
+  .cache-row   { grid-template-columns: 10px 72px 1fr 34px; gap: 6px; }
+
+  /* white-space:nowrap เดิมกับคอลัมน์ label ที่เพิ่งลดความกว้างลงด้านบน จะทำให้
+     ป้ายยาวๆ เช่น "รอดำเนินการ" หรือ "Via Scraping" ล้นทับแถบ progress แทนที่จะ
+     ตัดบรรทัด */
+  .req-bar-label,
+  .cache-label { white-space: normal; line-height: 1.2; }
+}

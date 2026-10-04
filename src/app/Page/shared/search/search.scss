@@ -326,17 +326,12 @@ $blue:   #1A5FAB;
   flex-direction: column;
   gap: 0;
   position: relative;
-  overflow: hidden;
+  /* เดิมเป็น overflow:hidden เพื่อตัดมุมแถบไล่สีด้านบนให้โค้งมนตามการ์ด
+     แต่ผลข้างเคียงคือไปตัด .cs-dropdown (ลูกของการ์ดนี้) ที่กางออกมาเกินขอบล่าง
+     ด้วย ทำให้ตัวเลือกที่ 2 ขึ้นไปของ dropdown เลือกไม่ได้ — ย้ายไปบังคับมุมโค้ง
+     ที่ตัวแถบไล่สีเอง (::before) แทน แล้วเปลี่ยนตรงนี้เป็น visible */
+  overflow: visible;
   border: 1px solid #D4D8E2;
-
-  /* Navy → Gold gradient topbar */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, #262D40 0%, #E0A100 100%);
-  }
 }
 
 
@@ -974,6 +969,16 @@ $blue:   #1A5FAB;
   font-weight: 600;
   color: $navy;
   margin-bottom: 6px;
+
+  &--retry {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: $amber;
+
+    i { font-size: 18px; animation: spin 1.2s linear infinite; }
+  }
 }
 
 .loading-sub {
@@ -1600,26 +1605,6 @@ $blue:   #1A5FAB;
   font-family: 'Sarabun', sans-serif;
 }
 
-.badge-cache {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid;
-
-  &--hit {
-    background: rgba(232,168,0,0.1);
-    color: $amber;
-    border-color: rgba(232,168,0,0.35);
-  }
-
-  &--live {
-    background: #E6F5EE;
-    color: $green;
-    border-color: #A8D9BC;
-  }
-}
-
 .badge-unwanted {
   font-size: 12px;
   font-weight: 600;
@@ -1913,7 +1898,7 @@ $blue:   #1A5FAB;
   display: flex;
   gap: 10px;
   align-items: center;
-
+  flex-wrap: wrap;
 }
 
 .db-toggle-label {
@@ -1925,6 +1910,7 @@ $blue:   #1A5FAB;
 .db-toggle {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -2490,24 +2476,51 @@ $blue:   #1A5FAB;
 @media (max-width: 768px) {
   .search-page { padding: 16px 14px 40px; }
 
-  .comparison-grid { grid-template-columns: 1fr; }
+  /* grid track แบบ 1fr เฉยๆ มีพื้นขั้นต่ำอัตโนมัติ = min-content ของเนื้อหาข้างใน
+     (เหมือน flex-basis:auto ของ flexbox) ถ้าเนื้อหาข้างในมีจุดที่หดไม่ได้ (badge/
+     ตัวเลข/tag แบบ nowrap) ตัว track จะไม่ยอมแคบกว่านั้น ดัน grid ทั้งก้อนล้นออกนอก
+     จอได้ (พิสูจน์แล้วจริงด้วย DevTools ในหน้า staff dashboard) ใช้ minmax(0, 1fr)
+     แทน 1fr เปล่าๆ ทุกจุดที่เป็น mobile override กันไว้ก่อน */
+  .comparison-grid { grid-template-columns: minmax(0, 1fr); }
 
-  .db-pills { grid-template-columns: 1fr 1fr; }
+  /* การ์ด Scopus/TCI ตอนยังไม่ค้นหา — เดิมเป็น grid 2 คอลัมน์ตายตัว ไม่มี override เลย
+     บนมือถือแต่ละการ์ดเหลือพื้นที่ไม่พอสำหรับไอคอน+ชื่อ+badge+tag 4 อัน ทำให้เบียดกันมาก */
+  .intro-db-cards { grid-template-columns: minmax(0, 1fr); }
+
+  .db-pills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .search-header-badge { display: none; }
 
-  .legend-grid { grid-template-columns: 1fr 1fr; }
+  .legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .search-input-row { flex-direction: column; }
 
-  .degree-select,
+  /* .search-input-row มี align-items:center (ไม่ใช่ default stretch) ตอน desktop
+     ใช้จัดกึ่งกลางแนวตั้งในแถว แต่พอเปลี่ยนเป็น column ค่าเดิมนี้กลายเป็นจัดกึ่งกลาง
+     แนวนอนแทน ทำให้ .input-wrap ไม่ถูกยืดเต็มความกว้างเหมือน .custom-select
+     ต้องบังคับ width:100% ให้เอง ให้ยาวเท่ากัน */
+  .input-wrap {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  /* ชื่อ class เดิม ".degree-select" ไม่มีอยู่จริงใน HTML (element จริงคือ .custom-select)
+     กฎนี้จึงไม่เคยทำงาน — เปลี่ยนเป็น .custom-select ให้ถูกต้อง พร้อม flex:0 0 auto
+     ทับ flex:0 0 170px จาก base (ซึ่งพอ .search-input-row เป็น column แล้ว 170px
+     จะกลายเป็นความสูงแทนความกว้าง ทำให้กล่องสูงเกินจริงและ .cs-dropdown ที่อิง
+     top:100% ของกล่องนี้ไปโผล่ห่างจากปุ่มมาก) */
+  .custom-select {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
   .search-btn {
     width: 100%;
     justify-content: center;
   }
 
   .metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .metric-item {
@@ -2518,7 +2531,7 @@ $blue:   #1A5FAB;
   }
 
   .base-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .base-field {
@@ -2530,8 +2543,40 @@ $blue:   #1A5FAB;
 
   .btn-print { margin-left: 0; }
 
+  .db-btn { padding: 8px 14px; font-size: 13px; }
+
+  /* .banner-left (แถบสถานะสีบนการ์ดผลลัพธ์ Scopus/TCI) ยังไม่มี responsive
+     rule เลย — ลดขนาดตัวอักษร/ไอคอนให้เข้ากับจอมือถือ/iPad มากขึ้น
+     พร้อมบังคับ column layout กัน badge (flex-shrink:0) ไปแย่งพื้นที่บีบข้อความ
+     แคบลงเรื่อยๆ (เพราะฝั่งข้อความมี min-width:0 หดได้ไม่จำกัด จึงไม่เคย wrap เอง) */
+  .result-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  .banner-left   { gap: 10px; }
+  .banner-db-icon { font-size: 22px; }
+  .banner-title  { font-size: 14.5px; }
+  .banner-desc   { font-size: 12.5px; }
+  .banner-badge  { align-self: flex-start; font-size: 13px; padding: 6px 14px; }
+
+  /* .conflict-banner (แถบเตือนข้อมูลขัดแย้งบนสุดของ conflict-card) โครงสร้าง
+     เดียวกับ .banner-left ข้างบน มีปัญหา badge บีบข้อความแบบเดียวกัน */
+  .conflict-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  .conflict-banner-left { gap: 10px; }
+  .conflict-banner-icon { font-size: 22px; }
+  .conflict-banner-title { font-size: 14.5px; }
+  .conflict-banner-desc  { font-size: 12.5px; }
+  .conflict-check-badge  { align-self: flex-start; font-size: 13px; padding: 6px 14px; }
+
   .conflict-reason-grid,
-  .conflict-update-grid { grid-template-columns: 1fr; }
+  .conflict-update-grid { grid-template-columns: minmax(0, 1fr); }
 
   .conflict-reason-col:first-child,
   .conflict-update-col:first-child {
@@ -2543,16 +2588,39 @@ $blue:   #1A5FAB;
 }
 
 @media (max-width: 480px) {
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  .base-grid { grid-template-columns: 1fr; }
+  .base-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .banner-title  { font-size: 13.5px; }
+  .banner-desc   { font-size: 12px; }
+  .banner-db-icon { font-size: 20px; }
+  .banner-badge  { font-size: 12px; padding: 5px 12px; }
+
+  .conflict-banner-title { font-size: 13.5px; }
+  .conflict-banner-desc  { font-size: 12px; }
+  .conflict-banner-icon  { font-size: 20px; }
+  .conflict-check-badge  { font-size: 12px; padding: 5px 12px; }
+
+  /* แถบ "วิธีใช้งาน" 4 ขั้นตอน — เดิมเป็นแถวแนวนอนที่แค่ wrap เมื่อไม่พอที่
+     (ไม่ overflow แต่ลูกศรคั่นระหว่างขั้นจะลอยแปลกๆ ตอนตกบรรทัดใหม่) เปลี่ยนเป็น
+     จัดเรียงแนวตั้งแทนบนจอแคบมากๆ ให้ดูเป็นระเบียบกว่า พร้อมหมุนลูกศรให้ชี้ลง */
+  .intro-steps {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .intro-step-arrow {
+    transform: rotate(90deg);
+    align-self: center;
+  }
 
   .base-field {
     &:nth-child(2n) { border-right: none; }
     border-right: none !important;
   }
 
-  .legend-grid { grid-template-columns: 1fr; }
+  .legend-grid { grid-template-columns: minmax(0, 1fr); }
 
   .result-actions { flex-direction: column; align-items: stretch; }
 
@@ -2622,7 +2690,7 @@ $blue:   #1A5FAB;
   }
   .badge-field, .badge-db, .badge-q,
   .badge-status, .badge-unwanted,
-  .badge-date, .badge-cache {
+  .badge-date {
     font-size: 9px !important;
     padding: 2px 7px !important;
   }

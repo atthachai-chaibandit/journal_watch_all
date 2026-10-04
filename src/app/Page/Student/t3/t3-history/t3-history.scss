@@ -41,9 +41,25 @@ $muted:  #6B7280;
 
 /* ── PAGE TITLE ── */
 .page-title-row { display: flex; align-items: center; gap: 14px; }
+.page-title-group { flex: 1; min-width: 0; }
 .page-title { font-size: 26px; font-weight: 800; color: $navy; margin: 0 0 8px; }
 .page-title-highlight { color: $yellow; }
 .page-sub { font-size: 13px; color: $muted; margin: 0; }
+
+.btn-refresh {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  padding: 8px 16px; border-radius: 10px;
+  border: 1.5px solid $border; background: $white;
+  color: $navy; font-size: 13px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+  &:hover:not(:disabled) { border-color: $navy; background: $bg; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+.refresh-icon {
+  font-size: 16px; display: inline-block; transition: transform 0.3s;
+  &.spinning { animation: spin 0.8s linear infinite; }
+}
 
 /* ── FILTER BAR ── */
 .filter-bar {
@@ -79,7 +95,7 @@ $muted:  #6B7280;
 /* ── REQUEST CARD ── */
 .req-card {
   display: flex; align-items: center; gap: 16px;
-  background: $white; border-radius: 14px; padding: 18px 20px;
+  background: $white; border-radius: 14px; padding: 18px 44px 18px 20px;
   border: 1.5px solid $border; border-left-width: 4px; cursor: pointer; position: relative;
   box-shadow: 0 2px 10px rgba(28,39,68,0.06);
   transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
@@ -89,42 +105,50 @@ $muted:  #6B7280;
     transform: translateY(-2px); border-color: rgba(28,39,68,0.2);
   }
 
+  &:hover .card-chevron { color: $navy; transform: translateY(-50%) translateX(3px); }
+
   &--approved  { border-left-color: $green; }
   &--rejected  { border-left-color: $red;   }
   &--cancelled { border-left-color: $muted; opacity: 0.75; }
 }
 
-/* CARD BODY */
-.card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.card-id   { font-size: 12px; font-weight: 700; color: $muted; font-family: 'IBM Plex Mono', monospace; }
-.meta-sep  { font-size: 12px; color: $border; }
-.card-submitted { font-size: 12px; color: $muted; }
-
-.card-title {
-  font-size: 14px; font-weight: 700; color: $navy;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 560px;
+/* ลูกศรบอก user ว่า card นี้กดเพื่อดูรายละเอียดได้ — ใช้ position:absolute ยึดมุมขวา
+   เพื่อไม่กระทบ layout เดิม (ทำงานเหมือนกันทั้ง desktop แถวเดียว และ mobile ที่ card
+   ถูกบังคับเป็น column) */
+.card-chevron {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  color: #C4CAD6; font-size: 17px; line-height: 1;
+  transition: transform 0.18s, color 0.18s;
 }
 
-.card-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.tag-db {
-  font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 99px;
-  background: $blue-l; color: $blue; border: 1px solid #b8cfef;
-}
-.tag-type {
-  font-size: 11px; color: $muted; padding: 2px 8px; border-radius: 99px;
-  border: 1px solid $border; background: $bg;
-}
-.tag-issn {
-  font-size: 11px; color: $muted; padding: 2px 8px; border-radius: 99px;
-  border: 1px solid $border; background: $bg; font-family: 'IBM Plex Mono', monospace;
-}
+/* CARD CONTENT */
+.req-card-content { display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; }
 
-/* CARD RIGHT */
-.card-right {
-  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
-  flex-shrink: 0; min-width: 130px;
-}
+/* TOP ROW */
+.req-card-top       { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.req-card-top-left  { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.req-card-top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.req-journal        { font-size: 15px; font-weight: 700; color: $navy; }
+.req-journal-label  { font-size: 11.5px; font-weight: 600; color: $muted; margin-right: 2px; }
+.req-badges         { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.req-id-chip        { font-size: 11px; color: $navy; font-family: 'IBM Plex Mono', monospace; background: $bg; padding: 4px 10px; border-radius: 6px; border: 1px solid $border; font-weight: 700; }
+
+/* BADGES */
+.badge-db   { font-size: 11.5px; padding: 3px 10px; border-radius: 99px; background: $blue-l;  color: $blue;  border: 1px solid #b8cfef; font-weight: 700; }
+.badge-q    { font-size: 11.5px; padding: 3px 10px; border-radius: 99px; background: rgba(232,168,0,0.12); color: #b87d00; border: 1px solid rgba(232,168,0,0.4); font-weight: 700; }
+.badge-issn { font-size: 11.5px; color: $muted; font-family: 'IBM Plex Mono', monospace; }
+
+/* TIMESTAMPS */
+.req-timestamps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; justify-content: flex-end; }
+.ts-item { font-size: 11px; color: $muted; white-space: nowrap; }
+.ts-dot  { font-size: 11px; color: $border; }
+
+/* DIVIDER */
+.req-card-divider { height: 1px; background: $border; }
+
+/* BOTTOM ROW */
+.card-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.current-status  { display: flex; }
 .action-date { font-size: 11px; color: $muted; }
 
 .cs-chip {
@@ -185,8 +209,7 @@ $muted:  #6B7280;
 .mh-title      { font-size: 17px; font-weight: 800; color: $navy; }
 .mh-row1-right { display: flex; align-items: center; gap: 10px; }
 .mh-id-chip    { font-size: 11.5px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; background: $bg; color: $navy; border: 1px solid $border; padding: 4px 12px; border-radius: 8px; }
-.mh-meta       { font-size: 12px; color: $muted; strong { color: $navy; font-weight: 700; } }
-.mh-sep        { margin: 0 6px; }
+.mh-meta       { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: $muted; strong { color: $navy; font-weight: 700; } }
 .mh-content    { display: flex; gap: 16px; align-items: flex-start; }
 .mh-left       { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .mh-right      { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
@@ -271,6 +294,64 @@ $muted:  #6B7280;
   &.tb-advisor { background: $green-l; color: $green; border: 1px solid #a8d9bc; }
   &.tb-waiting { background: #F3F4F6;  color: $muted; border: 1px solid $border; }
 }
-.tl-time    { font-size: 11.5px; color: $muted; margin-left: auto; white-space: nowrap; }
+.tl-time    { font-size: 11.5px; color: $muted; white-space: nowrap; }
 .tl-message { font-size: 13px; font-weight: 600; color: $navy; margin-bottom: 3px; }
 .tl-detail  { font-size: 12px; color: $muted; line-height: 1.7; margin-top: 8px; padding-top: 8px; border-top: 1px dashed $border; white-space: pre-line; }
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน (บั๊กแพทเทิร์นเดียวกับ status-t3/pre-t3-history) ══ */
+@media (max-width: 900px) {
+  .t3-history-page { padding: 20px 16px 50px; }
+
+  /* .req-card-top-left (flex:1 min-width:0) หดได้ไม่จำกัด ส่วน .req-card-top-right
+     (flex-shrink:0) ไม่ยอมหด — ต่อให้เพิ่ม flex-wrap ก็ไม่ขึ้นแถวใหม่เพราะ flexbox
+     ยังคำนวณว่าพอดีได้โดยบีบฝั่งซ้าย ต้องบังคับ column ให้ตกคนละแถวแน่นอน
+     (แพทเทิร์นเดียวกับที่ใช้ใน status-t3.scss) */
+  .req-card-top {
+    flex-direction: column;
+  }
+  .req-card-top-left { width: 100%; }
+  .req-journal { overflow-wrap: break-word; word-break: break-word; }
+
+  /* .req-card-top-right เดิมเป็นคอลัมน์ชิดขวา พอตกมาเต็มความกว้างแถวใหม่จะดูลอย
+     ไม่สมดุลกับหัวข้อที่ชิดซ้าย เปลี่ยนเป็นแถวแนวนอน wrap ชิดซ้ายแทน พร้อมเส้นแบ่ง */
+  .req-card-top-right {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+  .req-timestamps { justify-content: flex-start; }
+
+  .card-bottom-row { flex-wrap: wrap; }
+
+  /* .mh-left/.mh-right pattern เดียวกัน ใน modal รายละเอียด */
+  .mh-content { flex-direction: column; }
+  .mh-left, .mh-right { width: 100%; }
+  .mh-right { align-items: flex-start; }
+  .mh-journal { overflow-wrap: break-word; word-break: break-word; }
+
+  .mh-grid { grid-template-columns: 1fr 1fr; }
+  .mh, .modal-body { padding: 16px 16px; }
+
+  .modal-footer { flex-wrap: wrap; }
+  .btn-mf { flex: 1 1 auto; justify-content: center; text-align: center; }
+  .btn-mf-close { margin-left: 0; }
+}
+
+@media (max-width: 600px) {
+  /* 3 แท็บรวมกันกว้างเกินจอมือถือ ไม่เคยมีการจัดการมาก่อนเลย */
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; flex-shrink: 0; }
+
+  .mh-grid { grid-template-columns: 1fr; }
+
+  /* stepper แนวนอนหลายขั้น ไม่เคยมี breakpoint เลย ยิ่งแคบยิ่งอัดกันจนอ่านไม่ออก */
+  .step-circle { width: 38px; height: 38px; font-size: 14px; margin-bottom: 8px; }
+  .step-item:not(:last-child)::before { top: 19px; }
+  .step-label { font-size: 10.5px; padding: 0 2px; }
+  .step-sub   { font-size: 9.5px; padding: 0 2px; }
+  .step-date  { font-size: 9px; padding: 0 2px; }
+}

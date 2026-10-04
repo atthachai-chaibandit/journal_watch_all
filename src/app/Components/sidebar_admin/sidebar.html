@@ -4,17 +4,6 @@
   <div class="user-card">
     <div class="uc-topbar"></div>
     <div class="uc-body">
-      <div class="user-avatar">
-        <div class="avatar-ring">
-          @if (userPicture) {
-            <img class="avatar-img" [src]="userPicture" alt="avatar"
-                 referrerpolicy="no-referrer"
-                 (error)="userPicture = ''" />
-          } @else {
-            <div class="avatar-fallback">{{ userInitials }}</div>
-          }
-        </div>
-      </div>
       @if (isOpen) {
         <div class="user-info">
           <div class="user-name">{{ userName }}</div>

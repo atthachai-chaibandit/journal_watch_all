@@ -120,33 +120,6 @@
       </button>
     </div>
 
-    <div class="search-divider"></div>
-
-    <!-- Section: Method Selector -->
-    <div class="search-section-label">
-      วิธีการดึงข้อมูล
-      <span class="section-chip section-chip--secondary">ขั้นสูง</span>
-    </div>
-    <div class="method-options">
-      @for (m of methods; track m.id) {
-        <label class="method-option" [class.selected]="method === m.id">
-          <input type="radio" [value]="m.id" [(ngModel)]="method" hidden>
-          <div class="method-radio">
-            <div class="radio-dot" [class.active]="method === m.id"></div>
-          </div>
-          <div class="method-opt-text">
-            <span class="method-opt-label">{{ m.label }}</span>
-            <span class="method-opt-sub">{{ m.sublabel }}</span>
-          </div>
-          <span class="method-opt-badge"
-            [class.badge-amber]="m.badgeColor === 'amber'"
-            [class.badge-red]="m.badgeColor === 'red'">
-            {{ m.badge }}
-          </span>
-        </label>
-      }
-    </div>
-
   </div><!-- /search-card -->
 
 
@@ -240,14 +213,21 @@
   @if (isLoading()) {
     <div class="loading-card">
       <div class="loading-spinner"></div>
-      <div class="loading-text">กำลังค้นหาข้อมูลวารสาร...</div>
-      <div class="loading-sub">
-        @if (method === 'scraping') {
-          Web Scraping ใช้เวลา 3–8 วินาที กรุณารอ
-        } @else {
-          กำลังเรียก Scopus API...
-        }
-      </div>
+      @if (isRetrying()) {
+        <div class="loading-text loading-text--retry">
+          <i class="ti ti-refresh"></i> API ติด Rate Limit กำลังสลับไปใช้ Web Scraping แทน
+        </div>
+        <div class="loading-sub">ระบบตรวจพบว่า Scopus API ถูกจำกัดการใช้งานชั่วคราว กำลังลองค้นหาใหม่อัตโนมัติ กรุณารอ 3–8 วินาที</div>
+      } @else {
+        <div class="loading-text">กำลังค้นหาข้อมูลวารสาร...</div>
+        <div class="loading-sub">
+          @if (method === 'scraping') {
+            Web Scraping ใช้เวลา 3–8 วินาที กรุณารอ
+          } @else {
+            กำลังเรียก Scopus API...
+          }
+        </div>
+      }
     </div>
   }
 
@@ -587,9 +567,6 @@
             {{ r.isUnwanted ? '🚫 ติด MSU Unwanted' : '✓ ไม่ติด MSU Unwanted' }}
           </span>
           <span class="badge-date">📅 ตรวจสอบ: {{ r.checkDate }}</span>
-          <span class="badge-cache" [class.badge-cache--hit]="r.fromCache" [class.badge-cache--live]="!r.fromCache">
-            @if (r.fromCache) { ⚡ จาก Cache } @else { <i class="ti ti-refresh"></i> ข้อมูลสด }
-          </span>
         </div>
 
         <!-- Scopus Core Metrics -->
@@ -817,9 +794,6 @@
               {{ t.isUnwanted ? '🚫 ติด MSU Unwanted' : '✓ ไม่ติด MSU Unwanted' }}
             </span>
             <span class="badge-date">📅 ตรวจสอบ: {{ t.checkDate }}</span>
-            <span class="badge-cache" [class.badge-cache--hit]="t.fromCache" [class.badge-cache--live]="!t.fromCache">
-              @if (t.fromCache) { ⚡ จาก Cache } @else { <i class="ti ti-refresh"></i> ข้อมูลสด }
-            </span>
           </div>
 
           <!-- TCI Core Information -->

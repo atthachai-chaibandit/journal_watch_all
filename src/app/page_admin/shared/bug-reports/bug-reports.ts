@@ -28,6 +28,14 @@ export class BugReports implements OnInit {
 
   searchText   = signal('');
   statusFilter = signal('all');
+  statusDropdownOpen = signal(false);
+
+  readonly statusFilterOptions = [
+    { value: 'all',         label: 'ทุกสถานะ' },
+    { value: 'pending',     label: 'รอดำเนินการ' },
+    { value: 'in_progress', label: 'กำลังดำเนินการ' },
+    { value: 'resolved',    label: 'แก้ไขแล้ว' },
+  ];
 
   detailLoading = signal(false);
   detailData    = signal<DetailData | null>(null);
@@ -148,6 +156,15 @@ export class BugReports implements OnInit {
         this.isSaving.set(false);
       },
     });
+  }
+
+  statusFilterLabel(): string {
+    return this.statusFilterOptions.find(o => o.value === this.statusFilter())?.label ?? 'ทุกสถานะ';
+  }
+
+  selectStatusFilter(value: string) {
+    this.statusFilter.set(value);
+    this.statusDropdownOpen.set(false);
   }
 
   statusLabel(s: string): string {

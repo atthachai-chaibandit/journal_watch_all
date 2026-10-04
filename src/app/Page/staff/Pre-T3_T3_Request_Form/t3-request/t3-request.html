@@ -3,7 +3,7 @@
   <!-- HEADER -->
   <div class="page-header">
     <div class="page-title-row">
-      <span class="page-title-icon">📊</span>
+      <span class="page-title-icon"><i class="ti ti-chart-bar"></i></span>
       <h1 class="page-title">T3 คำร้อง</h1>
       <button class="btn-refresh" (click)="loadCards()" [disabled]="isLoading()">
         <span class="refresh-icon" [class.spinning]="isLoading()">↻</span>
@@ -46,7 +46,6 @@
         <!-- ═══ LEFT ═══ -->
         <div class="card-left">
           <div class="student-row">
-            <div class="avatar" [style.background]="req.avatarColor">{{ req.initials }}</div>
             <div class="student-meta">
               <div class="name-row">
                 <span class="student-name">{{ req.studentName }}</span>
@@ -64,7 +63,7 @@
             <span class="badge-pub-status"
               [class.pub-accepted]="req.pubStatus === 'accepted'"
               [class.pub-published]="req.pubStatus === 'published'">
-              {{ req.pubStatus === 'published' ? '📰 ตีพิมพ์แล้ว' : '📩 ตอบรับแล้ว' }}
+              @if (req.pubStatus === 'published') { <i class="ti ti-news"></i> ตีพิมพ์แล้ว } @else { <i class="ti ti-mail-opened"></i> ตอบรับแล้ว }
             </span>
           </div>
 
@@ -72,9 +71,9 @@
             @if (req.status === 'pending') {
               <span class="status-chip chip-pending">รอดำเนินการ</span>
             } @else if (req.status === 'approved') {
-              <span class="status-chip chip-approved">✅ อนุมัติแล้ว</span>
+              <span class="status-chip chip-approved"><i class="ti ti-circle-check"></i> อนุมัติแล้ว</span>
             } @else {
-              <span class="status-chip chip-rejected">❌ ไม่อนุมัติ</span>
+              <span class="status-chip chip-rejected"><i class="ti ti-circle-x"></i> ไม่อนุมัติ</span>
             }
           </div>
         </div>
@@ -84,7 +83,7 @@
           <div class="date-row">
             <span class="date-label">{{ req.dateLabel }}</span>
             @if (req.status === 'pending') {
-              <span class="advisor-time">🕐 {{ req.submittedTime }}</span>
+              <span class="advisor-time"><i class="ti ti-clock"></i> {{ req.submittedTime }}</span>
             }
             @if (req.status === 'pending' && req.daysAgo) {
               <span class="days-ago">{{ req.daysAgo }} วันแล้ว</span>
@@ -116,9 +115,9 @@
               [class.badge-pending]="req.status === 'pending'"
               [class.badge-approved]="req.status === 'approved'"
               [class.badge-rejected]="req.status === 'rejected'">
-              @if (req.status === 'pending')  { 🔔 รอดำเนินการ }
-              @if (req.status === 'approved') { ✅ อนุมัติแล้ว }
-              @if (req.status === 'rejected') { ❌ ไม่อนุมัติ }
+              @if (req.status === 'pending')  { <i class="ti ti-bell"></i> รอดำเนินการ }
+              @if (req.status === 'approved') { <i class="ti ti-circle-check"></i> อนุมัติแล้ว }
+              @if (req.status === 'rejected') { <i class="ti ti-circle-x"></i> ไม่อนุมัติ }
             </span>
           </div>
         </div>
@@ -158,7 +157,7 @@
             <span class="section-title">ข้อมูลวารสาร</span>
           </div>
           <div class="pre-t3-evidence-note">
-            <span class="pre-t3-evidence-icon">✅</span>
+            <span class="pre-t3-evidence-icon"><i class="ti ti-circle-check"></i></span>
             <span>ข้อมูลวารสารนี้มาจาก <strong>Pre-T3 ที่ได้รับการอนุมัติแล้ว</strong> — เป็นหลักฐานยืนยันว่านิสิตได้ผ่านขั้นตอนการตรวจสอบวารสารก่อนยื่น T3</span>
           </div>
           <div class="detail-grid">
@@ -207,7 +206,7 @@
                 <span class="badge-pub-status"
                   [class.pub-accepted]="req.pubStatus === 'accepted'"
                   [class.pub-published]="req.pubStatus === 'published'">
-                  {{ req.pubStatus === 'published' ? '📰 ตีพิมพ์แล้ว (Published)' : '📩 ได้รับการตอบรับ (Accepted)' }}
+                  @if (req.pubStatus === 'published') { <i class="ti ti-news"></i> ตีพิมพ์แล้ว (Published) } @else { <i class="ti ti-mail-opened"></i> ได้รับการตอบรับ (Accepted) }
                 </span>
               </div>
             </div>
@@ -226,7 +225,7 @@
           <div class="evidence-grid">
             @for (f of evidenceFiles; track f.key) {
               <div class="evidence-card">
-                <div class="evidence-icon">{{ f.icon }}</div>
+                <div class="evidence-icon"><i [class]="f.icon"></i></div>
                 <div class="evidence-info">
                   <div class="evidence-name">{{ f.label }}</div>
                   <div class="evidence-key">{{ f.key }}</div>
@@ -235,12 +234,12 @@
                   <button class="btn-evidence-view"
                           [disabled]="fileViewing[f.key]"
                           (click)="viewFile(req.t3Id, f.key); $event.stopPropagation()">
-                    @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { 👁 ดูไฟล์ }
+                    @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
                   </button>
                   <button class="btn-evidence-download"
                           [disabled]="fileLoading[f.key]"
                           (click)="downloadFile(req.t3Id, f.key); $event.stopPropagation()">
-                    @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { ⬇ ดาวน์โหลด }
+                    @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
                   </button>
                 </div>
               </div>
@@ -252,7 +251,7 @@
         @if (req.status === 'pending') {
           <div class="decision-section">
             <div class="decision-section-head">
-              <span>💬</span>
+              <span><i class="ti ti-message-circle"></i></span>
               <span class="decision-section-title">การพิจารณาของเจ้าหน้าที่</span>
             </div>
 
@@ -261,7 +260,7 @@
                 <input type="radio" name="staffdecision" value="approved"
                   [checked]="decision() === 'approved'" (change)="decision.set('approved')">
                 <span class="dc-radio" [class.dc-radio--approved]="decision() === 'approved'"></span>
-                <span class="dc-check">✅</span>
+                <span class="dc-check"><i class="ti ti-circle-check"></i></span>
                 <span class="dc-label">อนุมัติ T3</span>
               </label>
               <label class="decision-card" [class.decision-card--rejected]="decision() === 'rejected'">
@@ -277,7 +276,7 @@
             @if (decision() === 'approved') {
               <div class="meeting-fields">
                 <div class="meeting-fields-head">
-                  <span class="meeting-icon">🏛</span>
+                  <span class="meeting-icon"><i class="ti ti-building-bank"></i></span>
                   <span class="meeting-title">ข้อมูลที่ประชุม <span class="required-mark">* จำเป็น</span></span>
                 </div>
                 <div class="meeting-grid">
@@ -306,7 +305,7 @@
                   placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติ..."
                   rows="3"></textarea>
                 @if (!remark.trim()) {
-                  <div class="remark-error-msg">⚠ กรุณาระบุเหตุผลการไม่อนุมัติ</div>
+                  <div class="remark-error-msg"><i class="ti ti-alert-triangle"></i> กรุณาระบุเหตุผลการไม่อนุมัติ</div>
                 }
               </div>
             }
@@ -322,12 +321,12 @@
               <button class="btn-reject"
                       [disabled]="isSubmitting() || decision() !== 'rejected' || !remark.trim()"
                       (click)="submitDecision()">
-                ✗ ไม่อนุมัติ
+                <i class="ti ti-circle-x"></i> ไม่อนุมัติ
               </button>
               <button class="btn-approve"
                       [disabled]="isSubmitting() || !canSubmit"
                       (click)="submitDecision()">
-                @if (isSubmitting()) { <i class="ti ti-hourglass"></i> กำลังส่ง... } @else { ✅ ลงนามอนุมัติ T3 }
+                @if (isSubmitting()) { <i class="ti ti-hourglass"></i> กำลังส่ง... } @else { <i class="ti ti-circle-check"></i> ลงนามอนุมัติ T3 }
               </button>
             </div>
           </div>
@@ -335,7 +334,9 @@
           <div class="result-section"
                [class.result-approved]="req.status === 'approved'"
                [class.result-rejected]="req.status === 'rejected'">
-            <div class="result-icon">{{ req.status === 'approved' ? '✅' : '❌' }}</div>
+            <div class="result-icon">
+              @if (req.status === 'approved') { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-circle-x"></i> }
+            </div>
             <div class="result-body">
               <div class="result-title">{{ req.status === 'approved' ? 'อนุมัติแล้ว' : 'ไม่ผ่านการอนุมัติ' }}</div>
               @if (req.approvedDate) { <div class="result-date">วันที่: {{ req.approvedDate }}</div> }

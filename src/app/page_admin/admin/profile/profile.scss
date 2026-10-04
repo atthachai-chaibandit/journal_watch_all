@@ -256,6 +256,7 @@ $green:  #15803d;
   font-weight: 700;
   color: $navy;
   text-align: right;
+  overflow-wrap: anywhere;
 
   &--mono  { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; }
   &--active { color: $green; }
@@ -454,5 +455,27 @@ $green:  #15803d;
     border-top-color: $navy;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+  }
+}
+
+/* ══ RESPONSIVE ══ */
+@media (max-width: 720px) {
+  .profile-page { padding: 16px 14px 40px; }
+
+  /* .pf-summary__right เดิมชิดขวา (align-items:flex-end) พอ __body ห่อบรรทัดใหม่
+     บนจอแคบ จะเหลือ badge+ปุ่มลอยชิดขวาเดี่ยวๆ ไม่สมดุลกับฝั่งซ้ายที่ชิดซ้าย */
+  .pf-summary__right { align-items: flex-start; }
+  .pf-summary__right-top { justify-content: flex-start; }
+}
+
+@media (max-width: 560px) {
+  /* .pf-usage-col--sep ใช้ border-left คั่นคอลัมน์ พอกริดยุบเหลือคอลัมน์เดียว
+     (breakpoint เดียวกับที่ pf-usage-grid เปลี่ยนเป็น 1fr ด้านบน) เส้นขอบซ้ายจะเหลือ
+     ลอยอยู่กลางแถวเต็มความกว้างแทน ต้องเปลี่ยนเป็นคั่นด้วย border-top แทน */
+  .pf-usage-col--sep {
+    padding-left: 0;
+    padding-top: 16px;
+    border-left: none;
+    border-top: 1px solid $border;
   }
 }

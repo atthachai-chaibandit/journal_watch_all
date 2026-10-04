@@ -83,9 +83,9 @@
           <div class="card-bottom-row">
             <div class="current-status">
               @if (card.overallStatus === 'Approved') {
-                <span class="cs-chip cs-approved">✅ อนุมัติสำเร็จ</span>
+                <span class="cs-chip cs-approved"><i class="ti ti-circle-check"></i> อนุมัติสำเร็จ</span>
               } @else if (card.advisorStatus === 'Rejected' || card.facultyStatus === 'Rejected' || card.gradStatus === 'Rejected') {
-                <span class="cs-chip cs-rejected">❌ ไม่ผ่านการอนุมัติ</span>
+                <span class="cs-chip cs-rejected"><i class="ti ti-circle-x"></i> ไม่ผ่านการอนุมัติ</span>
               } @else if (card.advisorStatus === 'Pending') {
                 <span class="cs-chip cs-pending">รออาจารย์ที่ปรึกษา</span>
               } @else if (card.facultyStatus === 'Pending') {
@@ -96,7 +96,14 @@
                 <span class="cs-chip cs-pending">กำลังดำเนินการ</span>
               }
             </div>
-            <button class="btn-cancel-card" (click)="cancelRequest(card.id, card.t3Id, $event)">✕ ยกเลิกคำร้องขอ</button>
+            <button class="btn-cancel-card" [disabled]="card.advisorStatus === 'Approved'"
+                    (click)="cancelRequest(card.id, card.t3Id, $event)">
+              @if (card.advisorStatus === 'Approved') {
+                <i class="ti ti-lock"></i> ไม่สามารถยกเลิกได้
+              } @else {
+                ✕ ยกเลิกคำร้องขอ
+              }
+            </button>
           </div>
 
         </div><!-- /req-card-content -->
@@ -121,7 +128,7 @@
         <div class="mh">
           <div class="mh-row1">
             <div class="mh-icon-title">
-              <span class="mh-file-icon">📋</span>
+              <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
               <span class="mh-title">รายละเอียดคำร้อง T3</span>
             </div>
             <div class="mh-row1-right">
@@ -131,11 +138,9 @@
           </div>
 
           <div class="mh-meta">
-            เลขที่คำร้อง: <strong>{{ d.id }}</strong>
-            <span class="mh-sep">·</span>
-            ผู้แต่งหลัก: <strong>{{ d.firstAuthor }}</strong>
-            <span class="mh-sep">·</span>
-            ระดับ: <strong>{{ d.degree }}</strong>
+            <div class="mh-meta-row">เลขที่คำร้อง: <strong>{{ d.id }}</strong></div>
+            <div class="mh-meta-row">ผู้แต่งหลัก: <strong>{{ d.firstAuthor }}</strong></div>
+            <div class="mh-meta-row">ระดับ: <strong>{{ d.degree }}</strong></div>
           </div>
 
           <div class="mh-content">
@@ -199,7 +204,7 @@
 
           <!-- Timeline -->
           <div class="ms-log-wrap">
-            <div class="ms-log-head"><span>📋</span><span>ประวัติการดำเนินการ</span></div>
+            <div class="ms-log-head"><span><i class="ti ti-clipboard-list"></i></span><span>ประวัติการดำเนินการ</span></div>
             <div class="ms-log-body">
               <div class="timeline">
                 @for (item of d.timeline; track item.actor; let last = $last) {

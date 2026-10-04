@@ -58,11 +58,6 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
   {
-    path: 'admin/system-log',
-    loadComponent: () => import('./page_admin/shared/system-log/system-log').then(m => m.SystemLog),
-    canActivate: [adminGuard],
-  },
-  {
     path: 'admin/bug-reports',
     loadComponent: () => import('./page_admin/shared/bug-reports/bug-reports').then(m => m.BugReports),
     canActivate: [adminGuard],
@@ -112,11 +107,6 @@ export const routes: Routes = [
   {
     path: 'super-admin/manage-users',
     loadComponent: () => import('./page_admin/shared/manage-users/manage-users').then(m => m.ManageUsers),
-    canActivate: [adminGuard],
-  },
-  {
-    path: 'super-admin/system-log',
-    loadComponent: () => import('./page_admin/shared/system-log/system-log').then(m => m.SystemLog),
     canActivate: [adminGuard],
   },
   {

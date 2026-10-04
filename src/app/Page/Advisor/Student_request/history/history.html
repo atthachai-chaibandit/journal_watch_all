@@ -18,7 +18,7 @@
 
   <!-- HEADER -->
   <div class="page-title-row">
-    <span class="page-icon">📋</span>
+    <span class="page-icon"><i class="ti ti-clipboard-text"></i></span>
     <div class="page-title-group">
       <h1 class="page-title">ประวัติทั้งหมด</h1>
       <p class="page-sub">คำร้อง Pre-T3 และ T3 ที่ดำเนินการเสร็จสิ้นแล้ว</p>
@@ -94,9 +94,9 @@
 
             <div class="card-tags">
               @if (card.isDiscontinued) {
-                <span class="tag-discontinued">🚫 {{ card.database }} Discontinued</span>
+                <span class="tag-discontinued"><i class="ti ti-ban"></i> {{ card.database }} Discontinued</span>
               } @else {
-                <span class="tag-db">📘 {{ card.database }}</span>
+                <span class="tag-db"><i class="ti ti-database"></i> {{ card.database }}</span>
               }
               @if (card.quartile) {
                 <span class="tag-quartile">{{ card.quartile }}</span>
@@ -105,7 +105,7 @@
                 <span class="tag-type">{{ card.pubType }}</span>
               }
               <span class="tag-issn">ISSN: {{ card.issn }}</span>
-              <span class="tag-student">👤 {{ card.studentName }}</span>
+              <span class="tag-student"><i class="ti ti-user"></i> {{ card.studentName }}</span>
             </div>
           </div>
 
@@ -147,8 +147,8 @@
               [class.badge-rejected]="card.advisorStatus === 'Rejected'"
               [class.badge-pending]="card.advisorStatus === 'Pending'">
               @if (card.advisorStatus === 'Approved') { <i class="ti ti-circle-check"></i> อนุมัติแล้ว }
-              @if (card.advisorStatus === 'Rejected') { ❌ ไม่อนุมัติ }
-              @if (card.advisorStatus === 'Pending')  { 🔔 รอดำเนินการ }
+              @if (card.advisorStatus === 'Rejected') { <i class="ti ti-circle-x"></i> ไม่อนุมัติ }
+              @if (card.advisorStatus === 'Pending')  { <i class="ti ti-bell"></i> รอดำเนินการ }
             </span>
           </div>
         </div>
@@ -277,7 +277,7 @@
             @if (card.isDiscontinued) {
               <div class="detail-field">
                 <div class="detail-label">สถานะวารสาร</div>
-                <div class="detail-value"><span class="badge-disc">🚫 Discontinued</span></div>
+                <div class="detail-value"><span class="badge-disc"><i class="ti ti-ban"></i> Discontinued</span></div>
               </div>
             }
           </div>
@@ -343,7 +343,7 @@
                   <span class="badge-pub-status"
                     [class.pub-accepted]="card.pubStatus === 'accepted'"
                     [class.pub-published]="card.pubStatus === 'published'">
-                    {{ card.pubStatus === 'published' ? '📰 ตีพิมพ์แล้ว (Published)' : '📩 ได้รับการตอบรับ (Accepted)' }}
+                    @if (card.pubStatus === 'published') { <i class="ti ti-news"></i> ตีพิมพ์แล้ว (Published) } @else { <i class="ti ti-mail"></i> ได้รับการตอบรับ (Accepted) }
                   </span>
                 </div>
               </div>
@@ -373,7 +373,7 @@
             <div class="evidence-grid">
               @for (f of evidenceFiles; track f.key) {
                 <div class="evidence-card">
-                  <div class="evidence-icon">{{ f.icon }}</div>
+                  <div class="evidence-icon"><i [class]="f.icon"></i></div>
                   <div class="evidence-info">
                     <div class="evidence-name">{{ f.label }}</div>
                     <div class="evidence-key mono">{{ f.key }}</div>
@@ -382,12 +382,12 @@
                     <button class="btn-evidence-view"
                             [disabled]="fileViewing[f.key]"
                             (click)="viewFile(card.rawId, f.key); $event.stopPropagation()">
-                      @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { 👁 ดูไฟล์ }
+                      @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
                     </button>
                     <button class="btn-evidence-download"
                             [disabled]="fileLoading[f.key]"
                             (click)="downloadFile(card.rawId, f.key); $event.stopPropagation()">
-                      @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { ⬇ ดาวน์โหลด }
+                      @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
                     </button>
                   </div>
                 </div>
@@ -425,7 +425,7 @@
           [class.result-pending]="card.advisorStatus === 'Pending'">
           <div class="result-icon">
             @if (card.advisorStatus === 'Approved') { <i class="ti ti-circle-check"></i> }
-            @else if (card.advisorStatus === 'Rejected') { ❌ }
+            @else if (card.advisorStatus === 'Rejected') { <i class="ti ti-circle-x"></i> }
             @else { <i class="ti ti-hourglass"></i> }
           </div>
           <div class="result-body">
@@ -449,7 +449,7 @@
 
       <!-- ══ MODAL FOOTER ══ -->
       <div class="modal-footer">
-        <button class="btn-mf btn-mf-print" (click)="printDetail()">🖨 พิมพ์ใบคำร้อง</button>
+        <button class="btn-mf btn-mf-print" (click)="printDetail()"><i class="ti ti-printer"></i> พิมพ์ใบคำร้อง</button>
       </div>
     </div><!-- /modal -->
   </div><!-- /modal-backdrop -->

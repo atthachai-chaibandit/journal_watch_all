@@ -386,6 +386,40 @@ $orange: #D4580A;
   }
 }
 
+/* คอลัมน์รวมกันกว้างเกิน 1,100px (.col-name min-width 260 + .col-reason min-width 220
+   + คอลัมน์อื่นๆ) — .table-card เดิมมี overflow:hidden (เพื่อตัดมุมแถบไล่สีด้านบน)
+   ซึ่งจะไปตัดตารางที่ล้นออกมาจนมองไม่เห็น/กดไม่ได้บนมือถือ-iPad ห่อด้วย wrapper
+   ที่เลื่อนแนวนอนได้เองแทน ไม่ต้องไปแตะ overflow ของ .table-card */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* คำแนะนำว่าตารางเลื่อนซ้าย-ขวาได้ — โชว์เฉพาะมือถือ/iPad (ซ่อนไว้บนจอกว้างที่
+   ไม่จำเป็นต้องเลื่อนอยู่แล้ว) ไอคอนลูกศรขยับซ้าย-ขวาเบาๆ ให้ดูเป็น "สัญญาณปัด" */
+.table-scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(232,168,0,0.08);
+  border-bottom: 1px solid $border;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $navy;
+
+  i {
+    font-size: 15px;
+    color: $yellow;
+    animation: scrollHintNudge 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes scrollHintNudge {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(3px); }
+}
+
 .uw-table {
   width: 100%;
   border-collapse: collapse;
@@ -1154,9 +1188,61 @@ $orange: #D4580A;
   .unwanted-page { padding: 16px 14px 40px; }
 }
 
+@media (max-width: 900px) {
+  /* ฟอร์ม modal เพิ่ม/แก้ไขวารสาร 2 คอลัมน์ตายตัว บีบแน่นบนจอแคบ ยุบเหลือ 1 คอลัมน์ */
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ตารางต้องการความกว้างขั้นต่ำกว่า 1,100px ถึงจะไม่ต้องเลื่อน — โชว์คำแนะนำนี้
+   ตั้งแต่ iPad portrait ลงไปจนถึงมือถือ ให้ครอบคลุมทุกจอที่ต้องเลื่อนจริง */
+@media (max-width: 1024px) {
+  .table-scroll-hint { display: flex; }
+}
+
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: 1fr; }
   .toolbar-card { flex-direction: column; }
-  .action-group { width: 100%; justify-content: stretch; }
+  .action-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  /* staff มีปุ่มถึง 4 ปุ่ม (ค้นหา/รีเฟรช/เพิ่มวารสาร/นำเข้า CSV) ต่อแถวเดียวไม่พอ
+     บนจอแคบ ให้ขึ้นบรรทัดใหม่ได้แทนที่จะล้น — ใช้ flex:0 1 auto (ขนาดตามเนื้อหาจริง)
+     แทนการบังคับ 50% ตายตัว ไม่งั้นปุ่มข้อความสั้นอย่าง "รีเฟรช" จะถูกยืดกว้างเกินจริง
+     (นิสิต/อาจารย์เห็นแค่ 2 ปุ่ม ไม่ใช่ 4 ปุ่มแบบ staff) */
+  .btn-filter, .btn-refresh, .btn-add-journal, .btn-import-csv {
+    flex: 0 1 auto;
+  }
+  .staff-divider { display: none; }
+
+  /* หน้าเพจจิเนชันอาจมีปุ่มเลขหน้าหลายปุ่ม + ข้อความสรุป ไม่พอในแถวเดียวบนมือถือ */
+  .pagination-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    text-align: center;
+  }
   .btn-filter, .btn-pdf { flex: 1; justify-content: center; }
+
+  /* .hero-left เดิมเป็น flex row เสมอ (โลโก้ 112px + ข้อความ) แม้ .hero-banner
+     จะสลับเป็น column ที่ ≤900px แล้วก็ตาม — บนมือถือจริง (≤600px) โลโก้ใหญ่ยัง
+     แย่งพื้นที่จนข้อความหัวเรื่องเหลือพื้นที่แคบมาก ต้องตัดขึ้นบรรทัดถี่ๆ ดูอัดแน่น
+     เปลี่ยนให้โลโก้มาอยู่บนสุด ข้อความเต็มความกว้างด้านล่างแทน */
+  .hero-logo { width: 68px; height: 68px; }
+
+  /* .hero-banner สืบ align-items:flex-start มาจาก breakpoint 900px ทำให้ .hero-left
+     (ทั้งก้อนโลโก้+ข้อความ) ชิดซ้ายเสมอ — ให้ .hero-left กางเต็มความกว้าง banner
+     แล้วจัดกึ่งกลางเนื้อหาข้างในแทน โลโก้จะได้อยู่กึ่งกลางจริงๆ ของ hero-banner
+     ไม่ใช่แค่กึ่งกลางของกล่องแคบๆ ที่ห่อตามความกว้างข้อความ */
+  .hero-left {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 14px;
+  }
+
+  .hero-title { font-size: 16px; margin-bottom: 6px; text-align: center; }
+  .hero-sub   { font-size: 12px; text-align: center; }
+
+  .hero-right { justify-content: flex-start; width: 100%; }
 }

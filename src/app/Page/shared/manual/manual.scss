@@ -368,6 +368,21 @@ $border:#E2E6F0;
   font-size: 14px;
   color: $text;
   line-height: 1.6;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  i {
+    font-size: 15px;
+    flex-shrink: 0;
+
+    &.ic-ok      { color: #1A7A42; }
+    &.ic-warn    { color: #C0392B; }
+    &.ic-neutral { color: $muted; }
+  }
 }
 
 /* ── RESULT CARDS ── */
@@ -424,13 +439,23 @@ $border:#E2E6F0;
     background: rgba(232,168,0,0.09);
     border: 1px solid rgba(232,168,0,0.35);
     color: #7A5A00;
+
+    .callout-icon { color: #E8A800; }
   }
 
   &--info {
     background: rgba(28,39,68,0.05);
     border: 1px solid rgba(28,39,68,0.15);
     color: $navy;
+
+    .callout-icon { color: $navy; }
   }
+}
+
+.callout-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 /* ── CRITERIA TABLE ── */

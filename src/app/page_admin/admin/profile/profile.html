@@ -9,7 +9,7 @@
   }
 
   @if (loadError(); as err) {
-    <div class="pf-error">⚠️ {{ err }}</div>
+    <div class="pf-error"><i class="ti ti-alert-triangle"></i> {{ err }}</div>
   }
 
   @if (!isLoading() && me(); as d) {
@@ -44,7 +44,7 @@
             <button class="pf-btn-edit-main"
                     [class.pf-btn-edit-main--cancel]="isEditing()"
                     (click)="toggleEdit()">
-              {{ isEditing() ? '✕ ยกเลิกแก้ไข' : '✏️ แก้ไขข้อมูลส่วนตัว' }}
+              @if (isEditing()) { <i class="ti ti-x"></i> ยกเลิกแก้ไข } @else { <i class="ti ti-pencil"></i> แก้ไขข้อมูลส่วนตัว }
             </button>
           </div>
           <p class="pf-summary__last-login">
@@ -62,7 +62,7 @@
       <div class="pf-card">
         <div class="pf-topbar"></div>
         <div class="pf-card__header">
-          <span class="pf-card__icon">🪪</span>
+          <span class="pf-card__icon"><i class="ti ti-id-badge-2"></i></span>
           <span class="pf-card__title">ข้อมูลบัญชี</span>
         </div>
         <div class="info-list">
@@ -93,7 +93,7 @@
       <div class="pf-card">
         <div class="pf-topbar"></div>
         <div class="pf-card__header">
-          <span class="pf-card__icon">📞</span>
+          <span class="pf-card__icon"><i class="ti ti-phone"></i></span>
           <span class="pf-card__title">ข้อมูลติดต่อ</span>
         </div>
         <div class="info-list">
@@ -118,7 +118,7 @@
     <div class="pf-card pf-card--full">
       <div class="pf-topbar"></div>
       <div class="pf-card__header">
-        <span class="pf-card__icon">🕐</span>
+        <span class="pf-card__icon"><i class="ti ti-clock"></i></span>
         <span class="pf-card__title">ข้อมูลการเข้าใช้งาน</span>
       </div>
       <div class="pf-usage-grid">
@@ -142,7 +142,7 @@
       <div class="pf-edit-card">
         <div class="pf-topbar"></div>
         <div class="pf-edit-card__header">
-          <span class="pf-card__icon">✏️</span>
+          <span class="pf-card__icon"><i class="ti ti-pencil"></i></span>
           <div>
             <div class="pf-card__title">แก้ไขข้อมูลส่วนตัว</div>
             <div class="pf-edit-card__note">แก้ไขได้เฉพาะข้อมูลด้านล่าง</div>
@@ -213,7 +213,7 @@
           @if (isSaving()) {
             <span class="btn-save__spinner"></span> กำลังบันทึก...
           } @else {
-            💾 บันทึกข้อมูล
+            <i class="ti ti-device-floppy"></i> บันทึกข้อมูล
           }
         </button>
       </div>

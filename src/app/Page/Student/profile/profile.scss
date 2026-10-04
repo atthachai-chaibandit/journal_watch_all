@@ -1,4 +1,4 @@
-﻿@use 'sass:color';
+@use 'sass:color';
 
 $navy:   #1C2744;
 $yellow: #E8A800;
@@ -23,7 +23,7 @@ $muted:  #6B7280;
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(28, 39, 68, 0.55);
+    background: rgba(28, 39, 68, 0.58);
     z-index: 0;
   }
 }
@@ -34,9 +34,6 @@ $muted:  #6B7280;
   max-width: 1100px;
   margin: 0 auto;
   padding: 32px 28px 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 /* ══ LOADING ══ */
@@ -60,62 +57,99 @@ $muted:  #6B7280;
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.loading-text { font-size: 14px; font-weight: 600; color: $muted; }
+.loading-text { font-size: 15px; font-weight: 600; color: $muted; }
 
-/* ══ HERO BANNER ══ */
-.hero-banner {
+/* ══ PCARD — การ์ดขาวใบเดียวที่รวมทุกหมวดไว้ข้างใน ══ */
+.pcard {
   background: $white;
   border-radius: 20px;
   border: 1px solid $border;
-  box-shadow: 0 6px 32px rgba(28,39,68,0.10), 0 2px 8px rgba(28,39,68,0.06);
+  box-shadow: 0 14px 40px rgba(28,39,68,0.16), 0 2px 8px rgba(28,39,68,0.06);
+  overflow: hidden;
+}
+
+.pcard-topbar {
+  height: 5px;
+  background: linear-gradient(90deg, #262D40 0%, #E0A100 100%);
+}
+
+/* หมวดย่อยแต่ละหมวดภายในการ์ดเดียวกัน */
+.pcard-section {
+  padding: 24px 32px;
+}
+
+/* เส้นแบ่งระหว่างหมวดย่อย — ใช้ adjacent-sibling selector ให้ขึ้นเฉพาะระหว่าง
+   section ที่ถูก render จริงเท่านั้น (ถ้าหมวดก่อนหน้าโดน @if ซ่อนไว้ จะไม่มีเส้นเกินมา) */
+.pcard-section + .pcard-section {
+  border-top: 1px solid $border;
+}
+
+.pcard-hd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.pcard-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(28,39,68,0.09), rgba(28,39,68,0.03));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i { font-size: 18px; color: $navy; }
+}
+
+.pcard-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: $navy;
+  flex: 1;
+  letter-spacing: .01em;
+}
+
+/* ══ ส่วนหัว: รูปโปรไฟล์ / ชื่อ / สถานะ ══ */
+.profile-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  position: relative;
-  overflow: hidden;
-  padding: 0 32px 28px;
-
-  &::before {
-    content: '';
-    display: block;
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, #262D40 0%, #E0A100 100%);
-  }
+  flex-wrap: wrap;
 }
 
 .hero-left {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 18px;
   flex: 1;
   min-width: 0;
-  padding-top: 28px;
 }
 
 .hero-avatar-wrap {
   position: relative;
   flex-shrink: 0;
-  width: 80px;
-  height: 80px;
+  width: 76px;
+  height: 76px;
 }
 
 .hero-avatar-img,
 .hero-avatar-init {
-  width: 80px;
-  height: 80px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
-  border: 2.5px solid rgba(232,168,0,0.6);
+  border: 3px solid rgba(232,168,0,0.5);
   object-fit: cover;
-  box-shadow: 0 0 0 3px rgba(232,168,0,0.15), 0 4px 16px rgba(28,39,68,0.15);
+  box-shadow: 0 0 0 3px rgba(232,168,0,0.12), 0 4px 14px rgba(28,39,68,0.15);
 }
 
 .hero-avatar-init {
   background: linear-gradient(135deg, $yellow, color.adjust($yellow, $lightness: -12%));
   color: $navy;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -124,13 +158,13 @@ $muted:  #6B7280;
 
 .hero-dot {
   position: absolute;
-  bottom: 3px;
-  right: 3px;
+  bottom: 2px;
+  right: 2px;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   background: $green;
-  border: 2px solid $white;
+  border: 2.5px solid $white;
 }
 
 .hero-meta {
@@ -141,24 +175,26 @@ $muted:  #6B7280;
 }
 
 .hero-role {
-  font-size: 12.5px;
+  font-size: 13px;
   color: $muted;
-  font-weight: 500;
-  letter-spacing: .02em;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
 
 .hero-name {
-  font-size: 26px;
+  font-size: 25px;
   font-weight: 800;
   color: $navy;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -.2px;
 }
 
 .hero-email {
-  font-size: 13px;
+  font-size: 14px;
   color: $muted;
   letter-spacing: .01em;
 }
@@ -169,67 +205,59 @@ $muted:  #6B7280;
   align-items: flex-end;
   gap: 8px;
   flex-shrink: 0;
-  padding-top: 28px;
 }
 
 .hero-status {
-  display: inline-block;
-  padding: 5px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 16px 6px 12px;
   border-radius: 99px;
   background: rgba(26,122,66,0.08);
   color: $green;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   border: 1.5px solid rgba(26,122,66,0.3);
   letter-spacing: .03em;
+
+  &::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $green;
+    box-shadow: 0 0 0 0 rgba(26,122,66,0.5);
+    animation: pulse-dot 2s infinite;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(26,122,66,0.45); }
+  70%  { box-shadow: 0 0 0 7px rgba(26,122,66,0); }
+  100% { box-shadow: 0 0 0 0 rgba(26,122,66,0); }
 }
 
 .hero-login-time {
-  font-size: 12px;
+  font-size: 13px;
   color: $muted;
 }
 
-/* ══ TWO-COLUMN GRID ══ */
-.profile-grid {
+/* ══ ข้อมูลบัญชี + ข้อมูลติดต่อ เป็น 2 คอลัมน์ภายในหมวดเดียวกัน ══ */
+.profile-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 32px;
 }
 
-/* ══ PCARD (shared card) ══ */
-.pcard {
-  background: $white;
-  border-radius: 16px;
-  border: 1px solid $border;
-  box-shadow: 0 2px 12px rgba(28,39,68,0.06);
-  overflow: hidden;
+.profile-col {
+  min-width: 0;
 
-  &.full-pcard { grid-column: 1 / -1; }
-}
-
-.pcard-topbar {
-  height: 5px;
-  background: linear-gradient(90deg, #262D40 0%, #E0A100 100%);
-}
-
-.pcard-body {
-  padding: 20px 24px 24px;
-}
-
-.pcard-hd {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
-.pcard-icon { font-size: 18px; }
-
-.pcard-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: $navy;
-  flex: 1;
+  /* เส้นแบ่งแนวตั้งบางๆ ระหว่าง 2 คอลัมน์ แทนเส้นขอบการ์ดแยกแบบเดิม */
+  &:first-child {
+    padding-right: 32px;
+    border-right: 1px dashed rgba(28,39,68,0.14);
+  }
 }
 
 /* ══ ROW LIST ══ */
@@ -245,13 +273,15 @@ $muted:  #6B7280;
 
     .row-item {
       border-bottom: none;
-      border-right: 1px solid $border;
+      border-right: 1px dashed rgba(28,39,68,0.14);
       flex-direction: column;
       align-items: flex-start;
       gap: 4px;
       padding: 14px 20px;
+      border-radius: 0;
 
       &:last-child { border-right: none; }
+      &:hover { background: rgba(28,39,68,0.025); }
     }
   }
 }
@@ -260,21 +290,24 @@ $muted:  #6B7280;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 0;
-  border-bottom: 1px solid $border;
+  padding: 13px 6px;
+  border-bottom: 1px dashed rgba(28,39,68,0.14);
+  border-radius: 8px;
+  transition: background .15s ease;
 
+  &:hover { background: rgba(28,39,68,0.025); }
   &:last-child { border-bottom: none; }
 }
 
 .row-label {
-  font-size: 13px;
+  font-size: 14px;
   color: $muted;
   font-weight: 500;
   flex-shrink: 0;
 }
 
 .row-val {
-  font-size: 13.5px;
+  font-size: 15px;
   color: $navy;
 
   &.bold { font-weight: 700; }
@@ -308,25 +341,30 @@ $muted:  #6B7280;
   border-radius: 99px;
   background: rgba(28,39,68,0.08);
   color: $navy;
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 700;
   border: 1px solid rgba(28,39,68,0.15);
 }
 
 /* ══ EDIT BUTTON ══ */
 .btn-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 16px;
   border-radius: 8px;
   border: 1.5px solid $border;
   background: $white;
   color: $navy;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   font-family: 'Sarabun', sans-serif;
   cursor: pointer;
   transition: all .2s;
 
-  &:hover { border-color: $yellow; background: rgba(232,168,0,0.06); }
+  i { font-size: 16px; }
+
+  &:hover { border-color: $yellow; background: rgba(232,168,0,0.08); transform: translateY(-1px); }
 
   &--cancel {
     border-color: rgba(192,57,43,0.4);
@@ -351,9 +389,14 @@ $muted:  #6B7280;
 }
 
 .edit-label {
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 600;
   color: rgba(28,39,68,0.6);
+
+  i { font-size: 16px; color: $yellow; }
 }
 
 .edit-input {
@@ -362,23 +405,34 @@ $muted:  #6B7280;
   border: 1.5px solid $border;
   border-radius: 10px;
   padding: 10px 14px;
-  font-size: 14px;
+  /* ต้อง >= 16px ไม่งั้น iOS Safari จะ auto-zoom หน้าจอทันทีที่แตะกรอกข้อมูล */
+  font-size: 16px;
   font-family: 'Sarabun', sans-serif;
   color: $navy;
   outline: none;
-  transition: border .2s;
+  transition: border .2s, box-shadow .2s, background .2s;
   background: #fafbfd;
 
-  &:focus { border-color: $yellow; background: $white; }
+  &:focus {
+    border-color: $yellow;
+    background: $white;
+    box-shadow: 0 0 0 3px rgba(232,168,0,0.14);
+  }
   &::placeholder { color: #C4C9D4; }
 }
 
 .save-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   padding: 10px 16px;
   border-radius: 10px;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   text-align: center;
+
+  i { font-size: 16px; }
 
   &.success { background: rgba(26,122,66,0.09); color: $green; border: 1px solid rgba(26,122,66,0.2); }
   &.error   { background: rgba(192,57,43,0.07); color: #C0392B; border: 1px solid rgba(192,57,43,0.18); }
@@ -391,7 +445,7 @@ $muted:  #6B7280;
   color: $yellow;
   border: none;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   font-family: 'Sarabun', sans-serif;
   cursor: pointer;
@@ -399,10 +453,12 @@ $muted:  #6B7280;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background .2s;
+  transition: background .2s, transform .2s;
 
-  &:hover:not(:disabled) { background: color.adjust($navy, $lightness: 8%); }
+  &:hover:not(:disabled) { background: color.adjust($navy, $lightness: 8%); transform: translateY(-1px); }
   &:disabled { opacity: .5; cursor: not-allowed; }
+
+  i { font-size: 17px; }
 }
 
 .save-spinner {
@@ -422,11 +478,11 @@ $muted:  #6B7280;
 
 .advisor-pill {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 3px 11px;
   border-radius: 99px;
   background: $navy;
   color: $yellow;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
 
@@ -437,21 +493,48 @@ $muted:  #6B7280;
 }
 
 .advisor-mail {
-  font-size: 12px;
+  font-size: 13px;
   color: $muted;
   margin-left: auto;
 }
 
 /* ══ RESPONSIVE ══ */
 @media (max-width: 900px) {
-  .profile-grid { grid-template-columns: 1fr; }
+  .profile-two-col { grid-template-columns: 1fr; gap: 0; }
+
+  .profile-col:first-child {
+    padding-right: 0;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-right: none;
+    border-bottom: 1px dashed rgba(28,39,68,0.14);
+  }
+
   .row-list--3col { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 600px) {
   .profile-page { padding: 16px 14px 40px; }
-  .hero-banner { flex-direction: column; align-items: flex-start; gap: 16px; }
+
+  .pcard-section { padding: 20px 18px; }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
   .hero-right { align-items: flex-start; }
-  .hero-name { font-size: 20px; }
+
+  .hero-avatar-wrap { width: 64px; height: 64px; }
+  .hero-avatar-img, .hero-avatar-init { width: 64px; height: 64px; }
+
+  .hero-name { font-size: 19px; }
   .row-list--3col { grid-template-columns: 1fr; }
+
+  /* กันปุ่ม "แก้ไข" เบียดกับหัวข้อการ์ดบนจอแคบมากๆ (< ~360px) — ถ้าไม่พอ ให้ตกไปบรรทัดใหม่
+     แทนที่จะบีบซ้อนกัน และขยาย tap target ของปุ่มให้กดง่ายขึ้นบนมือถือ */
+  .pcard-hd { flex-wrap: wrap; row-gap: 8px; }
+
+  .btn-edit { padding: 8px 16px; }
 }

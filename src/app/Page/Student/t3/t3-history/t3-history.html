@@ -15,10 +15,14 @@
 
   <!-- PAGE TITLE -->
   <div class="page-title-row">
-    <div>
+    <div class="page-title-group">
       <h1 class="page-title">ประวัติทั้งหมด <span class="page-title-highlight">T3</span></h1>
       <p class="page-sub">คำร้อง T3 ที่ดำเนินการเสร็จสิ้นแล้ว (อนุมัติ / ไม่อนุมัติ / ยกเลิก)</p>
     </div>
+    <button class="btn-refresh" (click)="refresh()" [disabled]="isRefreshing()">
+      <span class="refresh-icon" [class.spinning]="isRefreshing()">↻</span>
+      @if (isRefreshing()) { กำลังโหลด... } @else { รีเฟรช }
+    </button>
   </div>
 
   <!-- CARD LIST -->
@@ -32,43 +36,58 @@
     @for (card of cards; track card.id) {
       <div [class]="cardClass(card)" (click)="openDetail(card)">
 
-        <div class="card-body">
-          <div class="card-meta">
-            <span class="card-id">{{ card.id }}</span>
-            <span class="meta-sep">·</span>
-            <span class="card-submitted">ยื่น {{ card.submittedDateTime }}</span>
-            @if (card.advisorDateTime) {
-              <span class="meta-sep">·</span>
-              <span class="card-submitted">อาจารย์ {{ card.advisorDateTime }}</span>
-            }
-            @if (card.facultyDateTime) {
-              <span class="meta-sep">·</span>
-              <span class="card-submitted">เจ้าหน้าที่อนุมัติ {{ card.facultyDateTime }}</span>
-            }
+        <div class="req-card-content">
+          <div class="req-card-top">
+            <div class="req-card-top-left">
+              <div class="req-journal">
+                <span class="req-journal-label">ชื่อบทความ:</span> {{ card.titleThai || card.titleEn }}
+              </div>
+              <div class="req-badges">
+                <span class="badge-issn">{{ card.issn }}</span>
+                <span class="badge-db">{{ card.database }}</span>
+                @if (card.pubType) {
+                  <span class="badge-q">{{ card.pubType }}</span>
+                }
+              </div>
+            </div>
+            <div class="req-card-top-right">
+              <span class="req-id-chip">{{ card.id }}</span>
+              <div class="req-timestamps">
+                <span class="ts-item">ยื่น · {{ card.submittedDateTime }}</span>
+                @if (card.advisorDateTime) {
+                  <span class="ts-dot">·</span>
+                  <span class="ts-item">อาจารย์ · {{ card.advisorDateTime }}</span>
+                }
+                @if (card.facultyDateTime) {
+                  <span class="ts-dot">·</span>
+                  <span class="ts-item">ที่ประชุม · {{ card.facultyDateTime }}</span>
+                }
+                @if (card.gradDateTime) {
+                  <span class="ts-dot">·</span>
+                  <span class="ts-item">บัณฑิต · {{ card.gradDateTime }}</span>
+                }
+              </div>
+            </div>
           </div>
 
-          <div class="card-title">{{ card.titleThai || card.titleEn }}</div>
+          <div class="req-card-divider"></div>
 
-          <div class="card-tags">
-            <span class="tag-db">{{ card.database }}</span>
-            @if (card.pubType) {
-              <span class="tag-type">{{ card.pubType }}</span>
+          <div class="card-bottom-row">
+            <div class="current-status">
+              <span [class]="statusChipClass(card)">
+                @if (card.status === 'approved') { <i class="ti ti-circle-check"></i> }
+                @else if (card.status === 'cancelled') { <i class="ti ti-ban"></i> }
+                @else { <i class="ti ti-circle-x"></i> }
+                {{ statusLabel(card) }}
+              </span>
+            </div>
+            @if (actionDateLabel(card)) {
+              <span class="action-date">{{ actionDateLabel(card) }}</span>
             }
-            <span class="tag-issn">ISSN: {{ card.issn }}</span>
           </div>
         </div>
 
-        <div class="card-right">
-          <span [class]="statusChipClass(card)">
-            @if (card.status === 'approved') { <i class="ti ti-circle-check"></i> }
-            @else if (card.status === 'cancelled') { <i class="ti ti-ban"></i> }
-            @else { <i class="ti ti-circle-x"></i> }
-            {{ statusLabel(card) }}
-          </span>
-          @if (actionDateLabel(card)) {
-            <span class="action-date">{{ actionDateLabel(card) }}</span>
-          }
-        </div>
+        <div class="card-chevron"><i class="ti ti-chevron-right"></i></div>
       </div>
     }
   </div>
@@ -88,7 +107,7 @@
         <div class="mh">
           <div class="mh-row1">
             <div class="mh-icon-title">
-              <span class="mh-file-icon">📋</span>
+              <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
               <span class="mh-title">รายละเอียดคำร้อง T3</span>
             </div>
             <div class="mh-row1-right">
@@ -98,11 +117,9 @@
           </div>
 
           <div class="mh-meta">
-            เลขที่คำร้อง: <strong>{{ d.id }}</strong>
-            <span class="mh-sep">·</span>
-            ผู้แต่งหลัก: <strong>{{ d.firstAuthor }}</strong>
-            <span class="mh-sep">·</span>
-            ระดับ: <strong>{{ d.degree }}</strong>
+            <div class="mh-meta-row">เลขที่คำร้อง: <strong>{{ d.id }}</strong></div>
+            <div class="mh-meta-row">ผู้แต่งหลัก: <strong>{{ d.firstAuthor }}</strong></div>
+            <div class="mh-meta-row">ระดับ: <strong>{{ d.degree }}</strong></div>
           </div>
 
           <div class="mh-content">
@@ -169,7 +186,7 @@
 
           <!-- Timeline -->
           <div class="ms-log-wrap">
-            <div class="ms-log-head"><span>📋</span><span>ประวัติการดำเนินการ</span></div>
+            <div class="ms-log-head"><span><i class="ti ti-clipboard-list"></i></span><span>ประวัติการดำเนินการ</span></div>
             <div class="ms-log-body">
               <div class="timeline">
                 @for (item of d.timeline; track item.actor; let last = $last) {
@@ -197,7 +214,7 @@
 
         <!-- MODAL FOOTER -->
         <div class="modal-footer">
-          <button class="btn-mf btn-mf-print" (click)="printDetail()">🖨 พิมพ์ใบคำร้อง</button>
+          <button class="btn-mf btn-mf-print" (click)="printDetail()"><i class="ti ti-printer"></i> พิมพ์ใบคำร้อง</button>
           <button class="btn-mf btn-mf-close" (click)="closeDetail()">ปิด</button>
         </div>
 

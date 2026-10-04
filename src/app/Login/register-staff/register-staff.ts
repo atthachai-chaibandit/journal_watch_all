@@ -37,8 +37,14 @@ export class RegisterStaff implements OnInit {
           this.ngZone.run(() => this.handleGoogleCallback(response)),
       });
 
+      // width: 320 ตายตัวเดิม ล้นออกนอกจอบนมือถือจอแคบ (เช่น 360px/320px) ที่ตัว
+      // .card-body มี padding 24px สองฝั่งเหลือพื้นที่จริงน้อยกว่า 320px — วัดความกว้าง
+      // ของ container จริงแล้วใช้ค่านั้นแทน (เพดานสูงสุด 320 ตามเดิมสำหรับจอกว้าง)
+      const btnContainer = document.getElementById('google-btn-register');
+      const btnWidth = Math.min(320, btnContainer?.clientWidth || 320);
+
       google.accounts.id.renderButton(
-        document.getElementById('google-btn-register'),
+        btnContainer,
         {
           type: 'standard',
           shape: 'rectangular',
@@ -46,7 +52,7 @@ export class RegisterStaff implements OnInit {
           size: 'large',
           text: 'signin_with',
           locale: 'th',
-          width: 320,
+          width: btnWidth,
         }
       );
     });

@@ -810,21 +810,6 @@ $orange: #E07000;
   font-family: 'IBM Plex Mono', monospace;
 }
 
-.btn-cancel {
-  padding: 11px 20px;
-  background: transparent;
-  color: rgba(255,255,255,0.7);
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 10px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'Sarabun', sans-serif;
-  transition: all 0.2s;
-
-  &:hover { background: rgba(192,57,43,0.2); border-color: rgba(192,57,43,0.5); color: #FCA5A5; }
-}
-
 .btn-draft {
   padding: 11px 20px;
   background: rgba(255,255,255,0.1);
@@ -1111,11 +1096,76 @@ $green-l: #E6F5EE; $blue-l: #EAF1FB; $red-l: #FDECEA; $blue: #1A5FAB; $gray: #9C
 }
 
 /* ── RESPONSIVE ── */
-@media (max-width: 700px) {
-  .send-t3-page { padding: 16px 16px 100px; }
-  .field-row { flex-wrap: wrap; }
+@media (max-width: 900px) {
+  /* .field-group มี flex:1 + min-width:0 ทุกช่อง (ไม่มีตัวไหน flex-shrink:0)
+     ทำให้ flex-wrap ที่ตั้งไว้เดิมไม่เคยมีผลจริง — เบราว์เซอร์เลือก "หดทุกช่อง
+     เท่าๆ กัน" แทนตก wrap เสมอ (basis:0% ไม่มีเพดานขั้นต่ำให้ชนจนต้องขึ้นบรรทัดใหม่)
+     บังคับ column ให้แน่นอนแทน ไม่ง้อการคำนวณของ flex */
+  .field-row { flex-direction: column; }
+  .field-group,
+  .field-group--wide,
+  .field-group--full { width: 100%; }
+
+  /* .mh-left (flex:1 min-width:0) กับ .mh-right (flex-shrink:0) ใน modal
+     รายละเอียด Pre-T3 เป็น pattern เดียวกับที่ทำให้ชื่อวารสารล้นทับกับกล่องวันที่
+     ในหน้า pre-t3-history/pre-t3-status มาก่อน แก้ไว้ล่วงหน้าเลย */
+  .mh-content { flex-direction: column; }
+  .mh-left, .mh-right { width: 100%; }
+  .mh-right { align-items: flex-start; }
+  .mh-journal { overflow-wrap: break-word; word-break: break-word; }
+
+  /* .pre-t3-body (flex:1 min-width:0) อยู่ระหว่าง .pre-t3-radio กับ .pre-t3-status
+     ที่ flex-shrink:0 ทั้งคู่ — ชื่อเรื่องวารสารยาวๆ เสี่ยงถูกบีบแคบผิดปกติเหมือนกัน */
+  .pre-t3-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pre-t3-body { width: 100%; }
+  .pre-t3-status {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .pre-t3-title { overflow-wrap: break-word; word-break: break-word; }
+
+  .mh-grid { grid-template-columns: 1fr 1fr; }
   .selected-paper-grid { grid-template-columns: repeat(2, 1fr); }
   .pub-status-cards { grid-template-columns: 1fr; }
   .upload-grid { grid-template-columns: 1fr; }
   .score-cards { flex-direction: column; }
+
+  .mh, .modal-body, .ms-card, .ms-log-body { padding: 16px 16px; }
+
+  /* ปุ่มท้าย modal (พิมพ์ใบคำร้อง/ปิด) ไม่มี wrap มาก่อน เสี่ยงล้นบนจอแคบ */
+  .modal-footer { flex-wrap: wrap; }
+  .btn-mf { flex: 1 1 auto; justify-content: center; text-align: center; }
+
+  /* เดิม .action-bar-spacer (flex:1) ดันเนื้อหาชิดขวาไว้ (ตอนยังมีปุ่มยกเลิกอยู่ฝั่งซ้าย)
+     ตอนนี้เหลือแค่ข้อความ error/success + ปุ่มยืนยันอย่างเดียว ให้จัดกึ่งกลางแทนบนมือถือ */
+  .action-bar {
+    justify-content: center;
+    text-align: center;
+  }
+  .action-bar-spacer { flex: 0 0 0; display: none; }
+  .btn-confirm { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 700px) {
+  .send-t3-page { padding: 16px 16px 100px; }
+}
+
+@media (max-width: 600px) {
+  /* 3 แท็บรวมกันกว้างเกิน 375px แน่นอน ไม่เคยมีการจัดการมาก่อนเลย */
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; flex-shrink: 0; }
+
+  .mh-grid { grid-template-columns: 1fr; }
+
+  /* stepper แนวนอน 4-5 ขั้น ไม่เคยมี breakpoint เลย ยิ่งแคบยิ่งอัดกันจนอ่านไม่ออก */
+  .step-circle { width: 38px; height: 38px; font-size: 14px; margin-bottom: 8px; }
+  .step-item:not(:last-child)::before { top: 19px; }
+  .step-label { font-size: 10.5px; padding: 0 2px; }
+  .step-sub   { font-size: 9.5px; padding: 0 2px; }
+  .step-date  { font-size: 9px; padding: 0 2px; }
 }

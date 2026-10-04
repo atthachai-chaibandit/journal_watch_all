@@ -278,8 +278,33 @@ section{
   }
 
   .welcome-section{
+    /* margin ติดลบต้องตามค่า padding ของ .dashboard-page เสมอ (20px ไม่ใช่ 32px)
+       ไม่งั้น hero banner จะล้นขอบจอออกไปข้างละ 12px ทำให้เกิด horizontal scroll บนมือถือ/iPad */
+    margin: -20px -20px 0;
+    padding: 36px 24px 28px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 18px;
+  }
+
+  .welcome-icon{
+    width: 80px;
+    height: 80px;
+    font-size: 36px;
+  }
+
+  .welcome-content h1{
+    font-size: 26px;
+  }
+
+  .user-meta{
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  .meta-card{
+    min-width: 0;
+    flex: 1 1 160px;
   }
 
   .steps-grid{
@@ -290,16 +315,55 @@ section{
 
 @media (max-width: 480px){
 
+  .dashboard-page{
+    padding: 16px;
+  }
+
+  .welcome-section{
+    margin: -16px -16px 0;
+    padding: 28px 18px 22px;
+  }
+
   .steps-grid{
     grid-template-columns: 1fr;
   }
 
   .welcome-content h1{
-    font-size: 28px;
+    font-size: 24px;
+  }
+
+  /* ให้ระดับความสำคัญของตัวอักษรบน dashboard ทุก role เรียงสัดส่วนเดียวกันบนจอแคบ
+     (ตามแบบ dashboard ของ Advisor) — subtitle เดิมค้างขนาด 16px เท่าจอ desktop
+     ทั้งที่ h1 ถูกลดขนาดแล้ว ทำให้ subtitle ดูใหญ่เกินสัดส่วนของหัวข้อ */
+  .subtitle{
+    font-size: 14px;
+  }
+
+  /* เดิม flex-direction:column บังคับให้การ์ดตกคนละแถวเสมอ (1 ใบต่อแถว) แล้ว
+     align-items:stretch ของ flex-column จะยืดการ์ดนั้นให้เต็มความกว้าง container
+     ทันที ทำให้ดูกว้างเกินสัดส่วนเมื่อเทียบกับ Advisor dashboard ที่ไม่ได้สั่ง
+     column เลย ปล่อยให้เป็น row+wrap ตามเดิม การ์ด 2 ใบเลยเรียงข้างกันได้พอดี
+     บนจอมือถือทั่วไป (iPhone 375-414px) เหลือ wrap ไปคนละแถวเฉพาะจอแคบจริงๆ
+     (<300px เนื้อที่ใช้ได้) */
+  .user-meta{
+    gap: 10px;
+  }
+
+  .meta-card{
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+
+  .step-card{
+    padding: 18px 16px;
   }
 
   .quick-actions{
     flex-direction: column;
+  }
+
+  .action-btn{
+    text-align: center;
   }
 
 }

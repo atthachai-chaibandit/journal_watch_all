@@ -3,7 +3,7 @@
   <!-- HEADER -->
   <div class="page-header">
     <div class="page-title-row">
-      <span class="page-title-icon">📁</span>
+      <span class="page-title-icon"><i class="ti ti-folder"></i></span>
       <h1 class="page-title">ประวัติทั้งหมด</h1>
     </div>
     <p class="page-subtitle">ประวัติคำร้อง Pre-T3 และ T3 ที่ดำเนินการแล้ว</p>
@@ -41,11 +41,11 @@
   <!-- FILTER ROW -->
   <div class="filter-row">
     <button class="filter-btn" [class.active]="activeFilter() === 'all'"      (click)="setFilter('all')">ทั้งหมด</button>
-    <button class="filter-btn" [class.active]="activeFilter() === 'approved'" (click)="setFilter('approved')">✅ อนุมัติแล้ว</button>
-    <button class="filter-btn" [class.active]="activeFilter() === 'rejected'" (click)="setFilter('rejected')">❌ ไม่อนุมัติ</button>
+    <button class="filter-btn" [class.active]="activeFilter() === 'approved'" (click)="setFilter('approved')"><i class="ti ti-circle-check"></i> อนุมัติแล้ว</button>
+    <button class="filter-btn" [class.active]="activeFilter() === 'rejected'" (click)="setFilter('rejected')"><i class="ti ti-circle-x"></i> ไม่อนุมัติ</button>
     <span class="filter-divider"></span>
-    <button class="filter-btn filter-btn--type" [class.active]="typeFilter() === 'PreT3'" (click)="setTypeFilter(typeFilter() === 'PreT3' ? 'all' : 'PreT3')">📋 Pre-T3</button>
-    <button class="filter-btn filter-btn--type" [class.active]="typeFilter() === 'T3'"   (click)="setTypeFilter(typeFilter() === 'T3' ? 'all' : 'T3')">📊 T3</button>
+    <button class="filter-btn filter-btn--type" [class.active]="typeFilter() === 'PreT3'" (click)="setTypeFilter(typeFilter() === 'PreT3' ? 'all' : 'PreT3')"><i class="ti ti-clipboard-text"></i> Pre-T3</button>
+    <button class="filter-btn filter-btn--type" [class.active]="typeFilter() === 'T3'"   (click)="setTypeFilter(typeFilter() === 'T3' ? 'all' : 'T3')"><i class="ti ti-chart-bar"></i> T3</button>
   </div>
 
   <!-- CARD LIST -->
@@ -69,7 +69,6 @@
             <div class="req-card-top-left">
               <!-- Name + type badge row -->
               <div class="student-row">
-                <div class="avatar" [style.background]="card.avatarColor">{{ card.initials }}</div>
                 <div class="student-meta">
                   <div class="name-row">
                     <span class="student-name">{{ card.studentName }}</span>
@@ -90,7 +89,7 @@
                 <span class="badge-db">{{ card.database }}</span>
                 @if (card.quartile) { <span class="badge-q">{{ card.quartile }}</span> }
                 @if (card.isDiscontinued) {
-                  <span class="badge-status-discontinued">❌ Discontinued</span>
+                  <span class="badge-status-discontinued"><i class="ti ti-circle-x"></i> Discontinued</span>
                 } @else {
                   <span class="badge-status-active">● Active</span>
                 }
@@ -99,13 +98,13 @@
 
             <div class="req-card-top-right">
               @if (card.status === 'approved') {
-                <span class="cs-chip cs-approved">✅ อนุมัติสำเร็จ</span>
+                <span class="cs-chip cs-approved"><i class="ti ti-circle-check"></i> อนุมัติสำเร็จ</span>
               } @else if (card.status === 'cancelled') {
-                <span class="cs-chip cs-cancelled">🚫 ยกเลิกแล้ว</span>
+                <span class="cs-chip cs-cancelled"><i class="ti ti-ban"></i> ยกเลิกแล้ว</span>
               } @else {
-                <span class="cs-chip cs-rejected">❌ ไม่ผ่านการอนุมัติ</span>
+                <span class="cs-chip cs-rejected"><i class="ti ti-circle-x"></i> ไม่ผ่านการอนุมัติ</span>
               }
-              <span class="req-date-chip">📅 {{ card.actionDate }}</span>
+              <span class="req-date-chip"><i class="ti ti-calendar"></i> {{ card.actionDate }}</span>
             </div>
           </div>
 
@@ -127,7 +126,7 @@
       <div class="mh">
         <div class="mh-row1">
           <div class="mh-icon-title">
-            <span class="mh-file-icon">📄</span>
+            <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
             <span class="mh-title">ข้อมูลคำร้องและวารสาร</span>
           </div>
           <div class="mh-row1-right">
@@ -157,9 +156,9 @@
                 <div class="mh-date-lbl">วันที่ยื่น</div>
               </div>
               <div [class]="'mh-status-pill mh-status-pill--' + d.cardStatus">
-                @if (d.cardStatus === 'approved')  { ✅ อนุมัติแล้ว }
-                @else if (d.cardStatus === 'cancelled') { 🚫 ยกเลิกแล้ว }
-                @else { ❌ ไม่ผ่านการอนุมัติ }
+                @if (d.cardStatus === 'approved')  { <i class="ti ti-circle-check"></i> อนุมัติแล้ว }
+                @else if (d.cardStatus === 'cancelled') { <i class="ti ti-ban"></i> ยกเลิกแล้ว }
+                @else { <i class="ti ti-circle-x"></i> ไม่ผ่านการอนุมัติ }
               </div>
             </div>
           </div>
@@ -168,12 +167,12 @@
             <span class="sbadge sbadge-blue">{{ d.database }}</span>
             @if (d.quartile) { <span class="sbadge sbadge-yellow">{{ d.quartile }}</span> }
             @if (d.isDiscontinued) {
-              <span class="sbadge sbadge-red">❌ Discontinued</span>
+              <span class="sbadge sbadge-red"><i class="ti ti-circle-x"></i> Discontinued</span>
             } @else {
               <span class="sbadge sbadge-green">✔ Active</span>
             }
             @if (d.isHijacked) {
-              <span class="sbadge sbadge-red">🚫 MSU Unwanted</span>
+              <span class="sbadge sbadge-red"><i class="ti ti-ban"></i> MSU Unwanted</span>
             }
           </div>
 
@@ -203,9 +202,11 @@
 
           <!-- Section: Checklist -->
           <div class="ms-card">
-            <div class="ms-head">☑️ Pre-T3 Checklist</div>
+            <div class="ms-head"><i class="ti ti-list-check"></i> Pre-T3 Checklist</div>
             <div [class]="'ms-current ms-current--' + (d.checklistPassed ? 'approved' : 'rejected')">
-              <div class="ms-current-icon">{{ d.checklistPassed ? '✅' : '❌' }}</div>
+              <div class="ms-current-icon">
+                @if (d.checklistPassed) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-circle-x"></i> }
+              </div>
               <div class="ms-current-body">
                 <div class="ms-current-title">{{ d.checklistPassed ? 'ผ่านทุกเกณฑ์' : 'ไม่ผ่านเกณฑ์บางข้อ' }}</div>
                 <div class="ms-current-desc">{{ d.checklistPassed ? 'วารสารผ่านการตรวจสอบเกณฑ์ Pre-T3 ทุกข้อ' : 'วารสารไม่ผ่านเกณฑ์บางข้อ กรุณาตรวจสอบรายละเอียดด้านล่าง' }}</div>
@@ -229,7 +230,7 @@
           @if (d.approvals.length > 0) {
             <div class="ms-log-wrap">
               <div class="ms-log-head">
-                <span>📋</span>
+                <span><i class="ti ti-clipboard-list"></i></span>
                 <span>ผลการพิจารณา</span>
               </div>
               <div class="ms-log-body">
@@ -238,7 +239,7 @@
                     <div class="tl-item">
                       <div class="tl-left">
                         <div [class]="'tl-icon tl-' + (apv.status === 'อนุมัติ' ? 'advisor' : apv.status === 'ไม่อนุมัติ' ? 'reject' : 'waiting')">
-                          @if (apv.status === 'อนุมัติ') { ✅ } @else if (apv.status === 'ไม่อนุมัติ') { ❌ } @else { <i class="ti ti-hourglass"></i> }
+                          @if (apv.status === 'อนุมัติ') { <i class="ti ti-circle-check"></i> } @else if (apv.status === 'ไม่อนุมัติ') { <i class="ti ti-circle-x"></i> } @else { <i class="ti ti-hourglass"></i> }
                         </div>
                         @if (!last) { <div class="tl-line"></div> }
                       </div>
@@ -284,9 +285,9 @@
             {{ selectedT3Card()!.id }}
             @if (selectedT3Detail(); as d) { · ยื่น {{ d.submittedDate }} }
             <span [class]="'t3-status-badge ' + (selectedT3Card()!.status === 'approved' ? 'badge-approved' : selectedT3Card()!.status === 'cancelled' ? 'badge-cancelled' : 'badge-rejected')">
-              @if (selectedT3Card()!.status === 'approved')  { ✅ อนุมัติแล้ว }
-              @else if (selectedT3Card()!.status === 'cancelled') { 🚫 ยกเลิกแล้ว }
-              @else { ❌ ไม่อนุมัติ }
+              @if (selectedT3Card()!.status === 'approved')  { <i class="ti ti-circle-check"></i> อนุมัติแล้ว }
+              @else if (selectedT3Card()!.status === 'cancelled') { <i class="ti ti-ban"></i> ยกเลิกแล้ว }
+              @else { <i class="ti ti-circle-x"></i> ไม่อนุมัติ }
             </span>
           </div>
         </div>
@@ -322,7 +323,7 @@
               <span class="section-title">ข้อมูลวารสาร</span>
             </div>
             <div class="pre-t3-evidence-note">
-              <span class="pre-t3-evidence-icon">✅</span>
+              <span class="pre-t3-evidence-icon"><i class="ti ti-circle-check"></i></span>
               <span>ข้อมูลวารสารนี้มาจาก <strong>Pre-T3 ที่ได้รับการอนุมัติแล้ว</strong> — เป็นหลักฐานยืนยันว่านิสิตผ่านการตรวจสอบวารสารก่อนยื่น T3</span>
             </div>
             <div class="detail-grid">
@@ -363,7 +364,7 @@
                 <div class="detail-label">สถานะบทความ</div>
                 <div class="detail-value">
                   <span class="badge-pub-status" [class.pub-published]="d.pubStatus === 'published'" [class.pub-accepted]="d.pubStatus !== 'published'">
-                    {{ d.pubStatus === 'published' ? '📰 ตีพิมพ์แล้ว (Published)' : '📩 ได้รับการตอบรับ (Accepted)' }}
+                    @if (d.pubStatus === 'published') { <i class="ti ti-news"></i> ตีพิมพ์แล้ว (Published) } @else { <i class="ti ti-mail-opened"></i> ได้รับการตอบรับ (Accepted) }
                   </span>
                 </div>
               </div>
@@ -382,7 +383,7 @@
             <div class="evidence-grid">
               @for (f of evidenceFiles; track f.key) {
                 <div class="evidence-card">
-                  <div class="evidence-icon">{{ f.icon }}</div>
+                  <div class="evidence-icon"><i [class]="f.icon"></i></div>
                   <div class="evidence-info">
                     <div class="evidence-name">{{ f.label }}</div>
                     <div class="evidence-key">{{ f.key }}</div>
@@ -390,11 +391,11 @@
                   <div class="evidence-actions">
                     <button class="btn-evidence-view" [disabled]="fileViewing[f.key]"
                             (click)="viewFile(d.t3Id, f.key); $event.stopPropagation()">
-                      @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { 👁 ดูไฟล์ }
+                      @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
                     </button>
                     <button class="btn-evidence-download" [disabled]="fileLoading[f.key]"
                             (click)="downloadFile(d.t3Id, f.key); $event.stopPropagation()">
-                      @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { ⬇ ดาวน์โหลด }
+                      @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
                     </button>
                   </div>
                 </div>
@@ -406,7 +407,7 @@
           @if (d.approvals.length > 0) {
             <div class="ms-log-wrap">
               <div class="ms-log-head">
-                <span>📋</span>
+                <span><i class="ti ti-clipboard-list"></i></span>
                 <span>ผลการพิจารณา</span>
               </div>
               <div class="ms-log-body">
@@ -415,7 +416,7 @@
                     <div class="tl-item">
                       <div class="tl-left">
                         <div [class]="'tl-icon tl-' + (apv.status === 'อนุมัติ' ? 'advisor' : apv.status === 'ไม่อนุมัติ' ? 'reject' : 'waiting')">
-                          @if (apv.status === 'อนุมัติ') { ✓ } @else if (apv.status === 'ไม่อนุมัติ') { ✕ } @else { <i class="ti ti-hourglass"></i> }
+                          @if (apv.status === 'อนุมัติ') { <i class="ti ti-circle-check"></i> } @else if (apv.status === 'ไม่อนุมัติ') { <i class="ti ti-circle-x"></i> } @else { <i class="ti ti-hourglass"></i> }
                         </div>
                         @if (!last) { <div class="tl-line"></div> }
                       </div>

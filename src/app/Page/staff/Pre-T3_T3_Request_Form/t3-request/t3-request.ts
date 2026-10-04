@@ -21,12 +21,12 @@ const AVATAR_COLORS = [
 ];
 
 const EVIDENCE_FILES: { key: string; label: string; icon: string }[] = [
-  { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',     icon: '📄' },
-  { key: 'full_paper',         label: 'บทความฉบับสมบูรณ์', icon: '📑' },
-  { key: 'journal_cover',      label: 'ปกวารสาร',          icon: '📰' },
-  { key: 'table_of_contents',  label: 'สารบัญ',            icon: '📋' },
-  { key: 'database_evidence',  label: 'หลักฐานฐานข้อมูล',  icon: '🔍' },
-  { key: 'peer_review_result', label: 'ผล Peer Review',     icon: '📝' },
+  { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',     icon: 'ti ti-file-text' },
+  { key: 'full_paper',         label: 'บทความฉบับสมบูรณ์', icon: 'ti ti-file-description' },
+  { key: 'journal_cover',      label: 'ปกวารสาร',          icon: 'ti ti-news' },
+  { key: 'table_of_contents',  label: 'สารบัญ',            icon: 'ti ti-list-details' },
+  { key: 'database_evidence',  label: 'หลักฐานฐานข้อมูล',  icon: 'ti ti-search' },
+  { key: 'peer_review_result', label: 'ผล Peer Review',     icon: 'ti ti-notes' },
 ];
 
 interface T3Item {
@@ -93,7 +93,16 @@ export class T3Request implements OnInit {
 
   requests = signal<T3Item[]>([]);
 
-  ngOnInit(): void { this.loadCards(); }
+  ngOnInit(): void {
+    this.loadCards();
+    /* .tab-bar มี overflow-x:auto สำหรับจอมือถือ (3 แท็บรวมกันกว้างเกินจอแคบ) —
+       พอกดมาแท็บนี้ต้องเลื่อนแท็บที่ active เข้ามาให้เห็นในจอเอง ไม่งั้นผู้ใช้จะไม่เห็น
+       ว่าแท็บไหนกำลัง active อยู่เพราะมันตกขอบจอไปแล้ว */
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
+  }
 
   loadCards(): void {
     this.isLoading.set(true);

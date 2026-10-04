@@ -21,6 +21,15 @@ $white:  #ffffff;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: rgba(28,39,68,0.15); border-radius: 4px; }
+
+  /* :host เป็น position:sticky อยู่แล้ว ซึ่งสร้าง stacking context ใหม่ให้ตัวเอง
+     ทำให้ z-index:100 ของ .sidebar ข้างในมีผลแค่ในกรอบของ host เท่านั้น ไม่ได้ไปแข่งกับ
+     <main> ที่อยู่นอก host โดยตรง — พอ .sidebar เปลี่ยนเป็น fixed overlay ตอนจอเล็ก
+     ต้องยก z-index ของ host เองด้วย ไม่งั้น <main> (dashboard/welcome-section) จะวาดทับ
+     sidebar ทั้งก้อนเพราะอยู่หลังมันใน DOM — จำกัดไว้แค่ breakpoint นี้ ไม่กระทบขนาดโน้ตบุ๊ค */
+  @media (max-width: 1024px) {
+    z-index: 100;
+  }
 }
 
 /* ══ SIDEBAR SHELL ══ */
@@ -52,19 +61,41 @@ $white:  #ffffff;
     width: 0;
   }
 
-  @media (max-width: 768px) {
+  /* ขยาย breakpoint จาก 768 เป็น 1024 ให้ครอบคลุม iPad portrait/landscape ด้วย
+     (iPad Air/Pro portrait กว้าง 810-834px ซึ่งเกิน 768 แต่ถ้ายังปักหลักแบบ desktop
+     จะไปแย่งพื้นที่แนวนอนจากเนื้อหาหลัก ทำให้ดูเบียดกัน) — ให้ทำงานเป็น
+     overlay เลื่อนเข้า-ออกเหมือนมือถือแทนตั้งแต่ tablet ขึ้นไปจนถึง 1024px */
+  @media (max-width: 1024px) {
     position: fixed;
+    /* เต็มความสูงจอจริง (top:0, height:100vh) แล้วเว้นที่ด้านในด้วย padding-top แทน
+       การลด height ด้วย calc() — กัน bug 100vh บนมือถือที่ address bar ทำให้ viewport
+       ขยับขนาดได้ ซึ่งเคยทำให้กล่องเตี้ยเกินจริงจนเลื่อนไปสุดไม่ถึงปุ่มออกจากระบบ */
     top: 0; left: 0;
     height: 100vh;
+    /* app-header เป็น position:sticky; top:0; z-index:1000 (สูงกว่า sidebar มาก)
+       ถ้าไม่เว้น padding-top ตรงนี้ หัวสิดบาร์ (.user-card) จะโดน header บังทับ
+       (~112px = ความสูง header ปกติ) */
+    padding-top: 112px;
+    box-sizing: border-box;
     z-index: 100;
     width: 280px !important;
     transform: translateX(0);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* base rule มี overflow:hidden ซึ่งตัดเนื้อหาที่ล้นทิ้งไปเลย (เช่นปุ่มออกจากระบบ
+       ตอนเปิดเมนูย่อยค้างไว้หลายอัน) — เปลี่ยนเป็นเลื่อนดูได้แทนตอนเป็น overlay */
+    overflow-y: auto;
+    overflow-x: hidden;
 
     &.collapsed {
       transform: translateX(-100%);
       width: 280px !important;
     }
+  }
+
+  /* จอ ≤480px header หดเหลือสั้นลง (top-bar min-height 60px แทน 80px)
+     ต้องลด padding-top ให้ตามด้วย ไม่งั้นจะเหลือช่องว่างเกินจำเป็นด้านบน */
+  @media (max-width: 480px) {
+    padding-top: 92px !important;
   }
 }
 

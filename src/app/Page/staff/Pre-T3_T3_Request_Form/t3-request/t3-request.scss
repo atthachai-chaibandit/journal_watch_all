@@ -53,14 +53,28 @@ $white:  #FFFFFF;
 @keyframes spin-refresh { to { transform: rotate(360deg); } }
 
 /* ── TAB BAR ── */
-.tab-bar { display: flex; border-bottom: 2px solid $border; }
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: $bg;
+  border: 1.5px solid $border;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(28,39,68,0.06);
+}
 .tab-item {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 20px; font-size: 14px; font-weight: 600; color: $muted;
-  text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
-  transition: all 0.2s; font-family: 'Sarabun', sans-serif;
-  &:hover { color: $navy; }
-  &.tab-active { color: $navy; border-bottom-color: $yellow; font-weight: 700; }
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; color: $muted;
+  text-decoration: none; white-space: nowrap;
+  background: $white;
+  box-shadow: 0 1px 3px rgba(28,39,68,0.08);
+  transition: all 0.2s ease; font-family: 'Sarabun', sans-serif;
+  &:hover { background: rgba(232,168,0,0.08); color: $navy; }
+  &.tab-active {
+    background: $navy;
+    color: $yellow;
+    box-shadow: 0 3px 10px rgba(28,39,68,0.2);
+  }
 }
 .tab-icon { font-size: 16px; }
 
@@ -123,13 +137,11 @@ $white:  #FFFFFF;
 
 .article-title {
   font-size: 13px; color: $text;
-  padding-left: 52px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 600px;
 }
 
 .journal-row {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding-left: 52px;
 }
 
 .journal-name { font-size: 13px; font-weight: 700; color: $navy; }
@@ -151,7 +163,7 @@ $white:  #FFFFFF;
 
 .card-status-row {
   display: flex; align-items: center;
-  padding-left: 52px; margin-top: 2px;
+  margin-top: 2px;
 }
 
 .status-chip {
@@ -410,3 +422,80 @@ $white:  #FFFFFF;
 .result-title  { font-size: 15px; font-weight: 800; color: $navy; }
 .result-date   { font-size: 13px; color: $muted; }
 .result-remark { font-size: 13px; color: $text; font-style: italic; margin-top: 4px; }
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน ══ */
+@media (max-width: 768px) {
+  .page { padding: 20px 16px 60px; }
+
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; }
+  /* padding ฝั่งขวาของ container ที่ overflow-x:auto จะไม่ถูกนับรวมใน scrollable area
+     ในหลายเบราว์เซอร์ (บั๊กที่รู้จักกันดีของ CSS: trailing padding หายไปเมื่อเนื้อหา
+     ล้นออก) ทำให้แท็บตัวสุดท้ายชิดขอบขวาสุดพอดีไม่มีช่องว่างเหมือนฝั่งซ้าย ต้องใช้
+     margin บนตัวสุดท้ายแทน เพราะ margin ของ flex item ถูกนับรวมใน scrollWidth เสมอ */
+  .tab-item:last-child { margin-right: 6px; }
+
+  .modal { min-width: 0; }
+  .modal-header { padding: 16px 18px 14px; }
+  .modal-body   { padding: 16px 18px 18px; }
+  .decision-section { padding: 18px; }
+
+  .detail-grid,
+  .meeting-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .detail-value { overflow-wrap: break-word; word-break: break-word; }
+
+  /* evidence-actions (ปุ่มดูไฟล์/ดาวน์โหลด flex-shrink:0) ไม่ยอมหด ขณะที่ evidence-info
+     มี min-width:0 หดได้ไม่จำกัด ชื่อไฟล์เลยเหลือพื้นที่แคบมาก — สลับเป็น column แทน */
+  .evidence-card { flex-wrap: wrap; }
+  .evidence-info { flex-basis: 100%; }
+  .evidence-actions {
+    flex-basis: calc(100% - 38px);
+    margin-left: 38px;
+  }
+  .btn-evidence-view, .btn-evidence-download {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    padding: 8px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* .card-left (flex:1; min-width:0) หดได้ไม่จำกัด ขณะที่ .card-right (flex-shrink:0;
+     min-width:130px) กับ .card-arrow (flex-shrink:0) ไม่ยอมหด — บั๊กแพทเทิร์นเดียวกับ
+     ที่เจอซ้ำๆทั้งแอป ต้องบังคับ column ให้ตกคนละแถวแน่นอนแทน */
+  .req-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 40px 16px 16px;
+    position: relative;
+  }
+
+  .card-right {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px 10px;
+    padding-top: 10px;
+    margin-top: 2px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+  .date-row { justify-content: flex-start; }
+
+  /* ลูกศรเดิมเป็น flex child ปกติ พอการ์ดเป็น column จะตกไปเป็นแถวแยกลอยด้านล่าง
+     ต้องยึดตำแหน่งไว้ที่มุมขวาบนแทน */
+  .card-arrow {
+    position: absolute;
+    right: 8px;
+    top: 16px;
+  }
+
+  .article-title { max-width: none; }
+
+  .decision-choices { flex-direction: column; }
+}

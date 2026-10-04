@@ -20,7 +20,7 @@
 
   <!-- ALERT BANNER -->
   <div class="alert-banner">
-   
+    <span class="alert-icon"><i class="ti ti-info-circle"></i></span>
     <span class="alert-text">
       <strong>กรอกข้อมูลด้วยตนเอง</strong>
       หรือกลับไปค้นหาวารสารก่อนเพื่อให้ระบบกรอกข้อมูลวารสารอัตโนมัติ
@@ -39,7 +39,7 @@
         <!-- ── SECTION 1: นิสิต ── -->
         <div class="form-section">
           <div class="section-head">
-            <span class="section-head-icon">👤</span>
+            <span class="section-head-icon"><i class="ti ti-user"></i></span>
             <span class="section-head-title">ข้อมูลนิสิต</span>
             <span class="section-head-note">(ดึงจาก MSU Account อัตโนมัติ)</span>
           </div>
@@ -86,7 +86,7 @@
         <!-- ── SECTION 2: วารสาร ── -->
         <div class="form-section">
           <div class="section-head">
-            <span class="section-head-icon">📰</span>
+            <span class="section-head-icon"><i class="ti ti-news"></i></span>
             <span class="section-head-title">ข้อมูลวารสารเป้าหมาย</span>
           </div>
           <div class="section-divider"></div>
@@ -150,7 +150,7 @@
         <!-- ── SECTION 3: บทความ ── -->
         <div class="form-section">
           <div class="section-head">
-            <span class="section-head-icon">✏️</span>
+            <span class="section-head-icon"><i class="ti ti-pencil"></i></span>
             <span class="section-head-title">ข้อมูลบทความ</span>
             <span class="section-head-note">(บทความของนิสิตที่จะยื่นตีพิมพ์ในวารสารข้างต้น)</span>
           </div>
@@ -174,7 +174,7 @@
         <!-- ── SECTION 4: อาจารย์ ── -->
         <div class="form-section">
           <div class="section-head">
-            <span class="section-head-icon">🎓</span>
+            <span class="section-head-icon"><i class="ti ti-school"></i></span>
             <span class="section-head-title">ข้อมูลอาจารย์ที่ปรึกษา</span>
           </div>
           <div class="section-divider"></div>
@@ -219,7 +219,7 @@
               @if (isSubmitting()) {
                 <span class="submit-spinner"></span> กำลังยื่น...
               } @else {
-                📋 ยื่น Pre-T3
+                <i class="ti ti-send"></i> ยื่น Pre-T3
               }
             </button>
           </div>
@@ -235,12 +235,12 @@
     <!-- ═══ RIGHT: CHECKLIST ═══ -->
     <div class="checklist-panel">
       <div class="checklist-header">
-        <span class="checklist-title">📋 Pre-T3 Checklist {{ checklist().length }} ข้อ</span>
+        <span class="checklist-title"><i class="ti ti-clipboard-list"></i> Pre-T3 Checklist {{ checklist().length }} ข้อ</span>
         <span class="checklist-progress">{{ passCount }}/{{ checklist().length }} ผ่าน</span>
       </div>
       @if (fromSearch()) {
         <div class="checklist-warn">
-          
+          <i class="ti ti-alert-triangle"></i>
           <span>ระบบติ๊กให้อัตโนมัติจากผลการค้นหา <strong>กรุณาตรวจสอบความถูกต้องอีกครั้ง</strong> เนื่องจากข้อมูลอาจคลาดเคลื่อนได้</span>
         </div>
       }
@@ -274,7 +274,7 @@
         @if (allPass) {
           ↓ ผ่านครบทั้ง {{ checklist().length }} ข้อ — สามารถยื่น Pre-T3 ได้
         } @else {
-          ⚠️ ยังไม่ผ่านครบ {{ checklist().length }} ข้อ (ผ่านแล้ว {{ passCount }} ข้อ)
+          <i class="ti ti-alert-triangle"></i> ยังไม่ผ่านครบ {{ checklist().length }} ข้อ (ผ่านแล้ว {{ passCount }} ข้อ)
         }
       </div>
     </div>

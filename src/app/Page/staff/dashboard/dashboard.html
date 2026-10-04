@@ -5,7 +5,11 @@
     <div class="hero-overlay"></div>
 
     <div class="welcome-icon">
-      {{ staffName ? staffName[0] : 'S' }}
+      @if (userPicture) {
+        <img class="welcome-avatar" [src]="userPicture" [alt]="staffName" referrerpolicy="no-referrer" />
+      } @else {
+        {{ staffName ? staffName[0] : 'S' }}
+      }
     </div>
 
     <div class="welcome-content">
@@ -72,7 +76,7 @@
     <!-- Recent Pending -->
     <section class="panel">
       <div class="panel-head">
-        <span class="panel-title">🕐 คำร้องที่รอดำเนินการล่าสุด</span>
+        <span class="panel-title"><i class="ti ti-clock"></i> คำร้องที่รอดำเนินการล่าสุด</span>
         @if (!isLoading() && recentItems().length > 0) {
           <span class="count-chip">{{ recentItems().length }} รายการ</span>
         }
@@ -92,7 +96,7 @@
         </div>
       } @else if (recentItems().length === 0) {
         <div class="empty-state">
-          <div class="empty-state__icon">🎉</div>
+          <div class="empty-state__icon"><i class="ti ti-confetti"></i></div>
           <div class="empty-state__text">ไม่มีคำร้องที่รอดำเนินการ</div>
           <div class="empty-state__sub">ทุกคำร้องได้รับการพิจารณาแล้ว</div>
         </div>
@@ -123,14 +127,14 @@
     <!-- Quick Actions -->
     <section class="panel">
       <div class="panel-head">
-        <span class="panel-title">⚡ Quick Actions</span>
+        <span class="panel-title"><i class="ti ti-bolt"></i> Quick Actions</span>
       </div>
       <div class="quick-actions">
-        <a class="action-btn action-btn--navy"   routerLink="/staff/pre-t3-request">📋 คำร้อง Pre-T3</a>
-        <a class="action-btn action-btn--blue"   routerLink="/staff/t3-request">📊 คำร้อง T3</a>
-        <a class="action-btn action-btn--green"  routerLink="/staff/history">📁 ประวัติคำร้อง</a>
-        <a class="action-btn action-btn--yellow" routerLink="/search">🔍 ค้นหาวารสาร</a>
-        <a class="action-btn action-btn--red"    routerLink="/msu-unwanted">🚫 MSU Unwanted</a>
+        <a class="action-btn action-btn--navy"   routerLink="/staff/pre-t3-request"><i class="ti ti-clipboard-text"></i> คำร้อง Pre-T3</a>
+        <a class="action-btn action-btn--blue"   routerLink="/staff/t3-request"><i class="ti ti-chart-bar"></i> คำร้อง T3</a>
+        <a class="action-btn action-btn--green"  routerLink="/staff/history"><i class="ti ti-folder"></i> ประวัติคำร้อง</a>
+        <a class="action-btn action-btn--yellow" routerLink="/search"><i class="ti ti-search"></i> ค้นหาวารสาร</a>
+        <a class="action-btn action-btn--red"    routerLink="/msu-unwanted"><i class="ti ti-ban"></i> MSU Unwanted</a>
       </div>
     </section>
 

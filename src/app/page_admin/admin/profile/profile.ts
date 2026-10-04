@@ -101,6 +101,14 @@ export class Profile implements OnInit {
       this.saveResult.set(null);
     }
     this.isEditing.update(v => !v);
+
+    // บนจอมือถือ .pf-edit-card โผล่มาท้ายสุดของหน้า ไกลจากปุ่ม "แก้ไขข้อมูลส่วนตัว"
+    // ที่อยู่บนการ์ดแรกสุด ผู้ใช้กดแล้วมองไม่เห็นฟอร์มที่เพิ่งเปิดขึ้นมาเลยถ้าไม่เลื่อนเอง
+    if (this.isEditing() && window.innerWidth <= 720) {
+      setTimeout(() => {
+        document.querySelector('.pf-edit-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
   }
 
   saveProfile() {

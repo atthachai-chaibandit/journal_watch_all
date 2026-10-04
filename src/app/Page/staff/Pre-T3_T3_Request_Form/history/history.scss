@@ -32,14 +32,28 @@ $gray:   #9CA3AF;
 .page-subtitle  { font-size: 13px; color: $muted; margin: 0; }
 
 /* ── TAB BAR ── */
-.tab-bar { display: flex; border-bottom: 2px solid $border; }
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: $bg;
+  border: 1.5px solid $border;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(28,39,68,0.06);
+}
 .tab-item {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 20px; font-size: 14px; font-weight: 600; color: $muted;
-  text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
-  transition: all 0.2s; font-family: 'Sarabun', sans-serif;
-  &:hover { color: $navy; }
-  &.tab-active { color: $navy; border-bottom-color: $yellow; font-weight: 700; }
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; color: $muted;
+  text-decoration: none; white-space: nowrap;
+  background: $white;
+  box-shadow: 0 1px 3px rgba(28,39,68,0.08);
+  transition: all 0.2s ease; font-family: 'Sarabun', sans-serif;
+  &:hover { background: rgba(232,168,0,0.08); color: $navy; }
+  &.tab-active {
+    background: $navy;
+    color: $yellow;
+    box-shadow: 0 3px 10px rgba(28,39,68,0.2);
+  }
 }
 .tab-icon { font-size: 16px; }
 
@@ -332,6 +346,28 @@ $gray:   #9CA3AF;
 .t3-modal-body   { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 20px; }
 .t3-modal-footer { display: flex; justify-content: flex-end; padding: 14px 24px; border-top: 1px solid $border; background: $white; }
 
+/* ปุ่ม "ปิด" เป็นปุ่มเดียวใน footer นี้ (ไม่มีปุ่มคู่แบบ cancel/confirm) เลยให้
+   น้ำหนักเป็นปุ่มหลักแบบเดียวกับ .btn-save แทนปุ่มขอบบางสีเทาที่ดูจางเกินไป */
+.btn-cancel {
+  padding: 10px 28px;
+  border: none;
+  background: $navy;
+  color: $yellow;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  box-shadow: 0 2px 10px rgba(28,39,68,0.18);
+  transition: all 0.2s;
+
+  &:hover {
+    background: #2a3758;
+    box-shadow: 0 4px 14px rgba(28,39,68,0.26);
+    transform: translateY(-1px);
+  }
+}
+
 .detail-loading { padding: 20px 0; text-align: center; color: $muted; font-size: 14px; }
 
 .pre-t3-evidence-note {
@@ -435,3 +471,83 @@ $gray:   #9CA3AF;
 .modal-footer { display: flex; align-items: center; gap: 10px; padding: 16px 24px; background: $white; border-top: 1.5px solid $border; }
 .btn-mf { padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid $border; font-family: 'Sarabun', sans-serif; transition: all 0.2s; white-space: nowrap; }
 .btn-mf-close { background: $white; color: $navy; &:hover { background: $bg; } }
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน ══ */
+@media (max-width: 768px) {
+  .page { padding: 20px 16px 60px; }
+
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; }
+  /* padding ฝั่งขวาของ container ที่ overflow-x:auto จะไม่ถูกนับรวมใน scrollable area
+     ในหลายเบราว์เซอร์ (บั๊กที่รู้จักกันดีของ CSS: trailing padding หายไปเมื่อเนื้อหา
+     ล้นออก) ทำให้แท็บตัวสุดท้ายชิดขอบขวาสุดพอดีไม่มีช่องว่างเหมือนฝั่งซ้าย ต้องใช้
+     margin บนตัวสุดท้ายแทน เพราะ margin ของ flex item ถูกนับรวมใน scrollWidth เสมอ */
+  .tab-item:last-child { margin-right: 6px; }
+
+  .modal-panel, .t3-modal { min-width: 0; }
+  .mh { padding: 18px; }
+  .modal-body, .t3-modal-body { padding: 16px 18px 18px; }
+
+  /* .mh-content เดิมแถวเดียว: .mh-left (flex:1;min-width:0) หดได้ไม่จำกัด ขณะที่
+     .mh-right (flex-shrink:0) มี mh-date-box (min-width:90px) ไม่ยอมหด — บนจอแคบ
+     ชื่อวารสารฝั่งซ้ายจะเหลือพื้นที่แคบมาก ต้องสลับเป็น column แทน */
+  .mh-content { flex-direction: column; align-items: stretch; }
+  .mh-right { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
+
+  .mh-grid,
+  .detail-grid { grid-template-columns: minmax(0, 1fr); }
+
+  /* .tl-actor-row ห่อ (flex-wrap:wrap) ได้ แต่ .tl-time เดิม margin-left:auto ดันลอย
+     ไปขวาสุดแทนที่จะอยู่ชิดกับ badge เมื่อตกบรรทัดใหม่บนจอแคบ — บั๊กเดียวกับที่เจอใน
+     t3-history.scss (Student) มาก่อน */
+  .tl-time { margin-left: 0; }
+
+  /* evidence-actions (ปุ่มดูไฟล์/ดาวน์โหลด flex-shrink:0) ไม่ยอมหด ขณะที่ evidence-info
+     มี min-width:0 หดได้ไม่จำกัด — สลับเป็น column แทน (บั๊กแพทเทิร์นเดียวกับ t3-request) */
+  .evidence-card { flex-wrap: wrap; }
+  .evidence-info { flex-basis: 100%; }
+  .evidence-actions {
+    flex-basis: calc(100% - 38px);
+    margin-left: 38px;
+  }
+  .btn-evidence-view, .btn-evidence-download {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    padding: 8px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* .req-card-top-left (flex:1;min-width:0) หดได้ไม่จำกัด ขณะที่ .req-card-top-right
+     (flex-shrink:0) ไม่ยอมหด — บั๊กแพทเทิร์นเดียวกับที่เจอซ้ำๆทั้งแอป ต้องบังคับ column
+     ให้ตกคนละแถวแน่นอนแทน (ต้องใส่ width:100% ทั้งคู่ ไม่งั้นจะยุบแคบแบบที่เจอใน
+     t3-history.html มาก่อน) */
+  .req-card-top {
+    flex-direction: column;
+    align-items: stretch;
+    padding-right: 0;
+  }
+  .req-card-top-left,
+  .req-card-top-right { width: 100%; }
+
+  .req-card-top-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 12px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+
+  /* ลูกศร position:absolute; top:50% เดิมอิงความสูงการ์ดแถวเดียว พอการ์ดสูงขึ้นจาก
+     column ด้านบน ตำแหน่งจะลอยกลางการ์ดไม่สัมพันธ์กับเนื้อหาแล้ว ซ่อนทิ้งบนจอมือถือ
+     (pointer-events:none อยู่แล้ว ไม่ใช่ปุ่มกดจริง แค่ตัวบอกใบ้ hover บนเดสก์ท็อป) */
+  .req-card-arrow { display: none; }
+
+  .article-title { max-width: none; white-space: normal; }
+
+  .checklist-row { flex-wrap: wrap; }
+}

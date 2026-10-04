@@ -86,6 +86,13 @@ export class PreT3Request implements OnInit {
   ngOnInit(): void {
     window.scrollTo({ top: 0 });
     this.loadRequests();
+    // tab-bar เลื่อนแนวนอนได้บนจอแคบ (overflow-x:auto) แต่ scrollLeft เริ่มที่ 0 เสมอ
+    // ถ้าแท็บที่ active อยู่ไม่ใช่ตัวแรกจะโดนซ่อนพ้นขอบจอ ต้องเลื่อนให้เข้ามาอยู่ใน
+    // มุมมองเองตั้งแต่โหลดหน้า
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
   }
 
   loadRequests(): void {

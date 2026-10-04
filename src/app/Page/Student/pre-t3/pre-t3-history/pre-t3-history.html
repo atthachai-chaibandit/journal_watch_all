@@ -15,7 +15,7 @@
 
   <!-- PAGE TITLE -->
   <div class="page-title-row">
-    <span class="page-icon">📁</span>
+    <span class="page-icon"><i class="ti ti-folder"></i></span>
     <div class="page-title-group">
       <h1 class="page-title">ประวัติทั้งหมด</h1>
       <p class="page-sub">คำร้อง Pre-T3 ที่ดำเนินการเสร็จสิ้นแล้ว</p>
@@ -55,7 +55,7 @@
               @if (card.journalStatus === 'Active') {
                 <span class="badge-status-active">● Active</span>
               } @else {
-                <span class="badge-status-discontinued">❌ Discontinued</span>
+                <span class="badge-status-discontinued"><i class="ti ti-circle-x"></i> Discontinued</span>
               }
             </div>
           </div>
@@ -103,7 +103,7 @@
       <div class="mh">
         <div class="mh-row1">
           <div class="mh-icon-title">
-            <span class="mh-file-icon">📄</span>
+            <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
             <span class="mh-title">ข้อมูลคำร้องและวารสาร</span>
           </div>
           <div class="mh-row1-right">
@@ -144,7 +144,7 @@
           @if (d.scopusStatus === 'Active') {
             <span class="sbadge sbadge-green">✔ Active</span>
           } @else {
-            <span class="sbadge sbadge-red">❌ Discontinued</span>
+            <span class="sbadge sbadge-red"><i class="ti ti-circle-x"></i> Discontinued</span>
           }
         </div>
 
@@ -192,7 +192,7 @@
         <!-- Section: Status Log -->
         <div class="ms-log-wrap">
           <div class="ms-log-head">
-            <span>📋</span>
+            <span><i class="ti ti-clipboard-list"></i></span>
             <span>ประวัติการดำเนินการ (Status Log)</span>
           </div>
           <div class="ms-log-body">
@@ -225,9 +225,9 @@
 
       <!-- ══ MODAL FOOTER ══ -->
       <div class="modal-footer">
-        <button class="btn-mf btn-mf-print" (click)="printDetail()">🖨 พิมพ์ใบคำร้อง</button>
+        <button class="btn-mf btn-mf-print" (click)="printDetail()"><i class="ti ti-printer"></i> พิมพ์ใบคำร้อง</button>
         @if (d.cardStatus === 'approved') {
-          <a class="btn-mf btn-mf-t3" routerLink="/send-t3" (click)="closeDetail()">⬆ ยื่น T3</a>
+          <a class="btn-mf btn-mf-t3" routerLink="/send-t3" (click)="closeDetail()"><i class="ti ti-send"></i> ยื่น T3</a>
         }
       </div>
 

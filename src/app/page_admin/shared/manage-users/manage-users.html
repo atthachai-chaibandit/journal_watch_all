@@ -2,7 +2,7 @@
 
   <!-- ═══ PAGE HEADER ═══ -->
   <div class="mu-header">
-    <div class="mu-header__icon">👥</div>
+    <div class="mu-header__icon"><i class="ti ti-users"></i></div>
     <div>
       <h1 class="mu-header__title">จัดการผู้ใช้งาน</h1>
       <div class="mu-header__sub">เพิ่มบัญชีนิสิตและอาจารย์เข้าระบบ</div>
@@ -24,14 +24,14 @@
       }
     </button>
     <button class="mu-tab" [class.mu-tab--active]="activeTab() === 'staff'" (click)="setTab('staff')">
-      👤 Staff
+      <i class="ti ti-user"></i> Staff
       @if (!isLoading()) {
         <span class="mu-tab-count">{{ allStaff().length }}</span>
       }
     </button>
     @if (canSeeAdminTab) {
       <button class="mu-tab mu-tab--admin" [class.mu-tab--active]="activeTab() === 'admin'" (click)="setTab('admin')">
-        👤 Admin
+        <i class="ti ti-shield-lock"></i> Admin
         @if (!isLoadingAdmins()) {
           <span class="mu-tab-count">{{ allAdmins().length }}</span>
         }
@@ -91,7 +91,7 @@
       }
     </div>
     <div class="mu-search-wrap">
-      <span class="mu-search-icon">🔍</span>
+      <span class="mu-search-icon"><i class="ti ti-search"></i></span>
       <input
         class="mu-search"
         type="text"
@@ -113,6 +113,7 @@
 
   <!-- ═══ STUDENT LIST ═══ -->
   @if (!isLoading() && activeTab() === 'student') {
+    <div class="mu-scroll-hint"><i class="ti ti-arrows-horizontal"></i> เลื่อนซ้าย-ขวาเพื่อดูข้อมูลเพิ่มเติม</div>
     <div class="mu-table-wrap">
       <div class="mu-table-head">
         <div class="mu-th">ชื่อ-นามสกุล</div>
@@ -128,7 +129,6 @@
       @for (u of filteredStudents(); track u.user_id) {
         <div class="mu-table-row">
           <div class="mu-td mu-td--name">
-            <div class="mu-row-avatar">{{ initials(u) }}</div>
             <div class="mu-row-name-wrap">
               <span class="mu-row-name">{{ fullName(u) }}</span>
               @if (majorAdvisorName(u) !== '—') {
@@ -147,13 +147,13 @@
           </div>
           <div class="mu-td">
             <span class="mu-status-badge" [class.mu-status-badge--suspended]="u.account_status === 'Suspended'">
-              {{ u.account_status === 'Active' ? '● Active' : '⛔ Suspended' }}
+              @if (u.account_status === 'Active') { ● Active } @else { <i class="ti ti-ban"></i> Suspended }
             </span>
           </div>
           <div class="mu-td mu-td--date">{{ formatDate(u.last_login_at) }}</div>
           <div class="mu-td mu-td--actions">
             <button class="mu-row-btn mu-row-btn--edit" (click)="openEditModal(u)">
-              ✏️ <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
+              <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
             </button>
             <button class="mu-row-btn"
                     [class.mu-row-btn--suspend]="u.account_status === 'Active'"
@@ -165,13 +165,13 @@
                 <span class="mu-row-spin"></span>
                 <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
               } @else if (u.account_status === 'Active') {
-                🚫 <span class="mu-row-btn__label">ระงับบัญชี</span>
+                <i class="ti ti-ban"></i> <span class="mu-row-btn__label">ระงับบัญชี</span>
               } @else {
-                ✅ <span class="mu-row-btn__label">เปิดใช้งาน</span>
+                <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
               }
             </button>
             <button class="mu-row-btn mu-row-btn--advisor" (click)="openAssignAdvisorModal(u)">
-              👤 <span class="mu-row-btn__label">เพิ่มที่ปรึกษา</span>
+              <i class="ti ti-user-plus"></i> <span class="mu-row-btn__label">เพิ่มที่ปรึกษา</span>
             </button>
           </div>
         </div>
@@ -181,6 +181,7 @@
 
   <!-- ═══ ADVISOR LIST ═══ -->
   @if (!isLoading() && activeTab() === 'advisor') {
+    <div class="mu-scroll-hint"><i class="ti ti-arrows-horizontal"></i> เลื่อนซ้าย-ขวาเพื่อดูข้อมูลเพิ่มเติม</div>
     <div class="mu-table-wrap">
       <div class="mu-table-head">
         <div class="mu-th">ชื่อ-นามสกุล</div>
@@ -196,7 +197,6 @@
       @for (u of filteredAdvisors(); track u.user_id) {
         <div class="mu-table-row">
           <div class="mu-td mu-td--name">
-            <div class="mu-row-avatar mu-row-avatar--advisor">{{ initials(u) }}</div>
             <div class="mu-row-name-wrap">
               <span class="mu-row-name">{{ fullName(u) }}</span>
               <span class="mu-row-sub">ดูแลนิสิต {{ advisorStudentCount(u) }} คน</span>
@@ -213,13 +213,13 @@
           </div>
           <div class="mu-td">
             <span class="mu-status-badge" [class.mu-status-badge--suspended]="u.account_status === 'Suspended'">
-              {{ u.account_status === 'Active' ? '● Active' : '⛔ Suspended' }}
+              @if (u.account_status === 'Active') { ● Active } @else { <i class="ti ti-ban"></i> Suspended }
             </span>
           </div>
           <div class="mu-td mu-td--date">{{ formatDate(u.last_login_at) }}</div>
           <div class="mu-td mu-td--actions">
             <button class="mu-row-btn mu-row-btn--edit" (click)="openEditModal(u)">
-              ✏️ <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
+              <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
             </button>
             <button class="mu-row-btn"
                     [class.mu-row-btn--suspend]="u.account_status === 'Active'"
@@ -231,9 +231,9 @@
                 <span class="mu-row-spin"></span>
                 <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
               } @else if (u.account_status === 'Active') {
-                🚫 <span class="mu-row-btn__label">ระงับบัญชี</span>
+                <i class="ti ti-ban"></i> <span class="mu-row-btn__label">ระงับบัญชี</span>
               } @else {
-                ✅ <span class="mu-row-btn__label">เปิดใช้งาน</span>
+                <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
               }
             </button>
           </div>
@@ -244,6 +244,7 @@
 
   <!-- ═══ STAFF LIST ═══ -->
   @if (!isLoading() && activeTab() === 'staff') {
+    <div class="mu-scroll-hint"><i class="ti ti-arrows-horizontal"></i> เลื่อนซ้าย-ขวาเพื่อดูข้อมูลเพิ่มเติม</div>
     <div class="mu-table-wrap">
       <div class="mu-table-head">
         <div class="mu-th">ชื่อ-นามสกุล</div>
@@ -259,7 +260,6 @@
       @for (u of filteredStaff(); track u.user_id) {
         <div class="mu-table-row">
           <div class="mu-td mu-td--name">
-            <div class="mu-row-avatar mu-row-avatar--staff">{{ initials(u) }}</div>
             <div class="mu-row-name-wrap">
               <span class="mu-row-name">{{ fullName(u) }}</span>
             </div>
@@ -276,13 +276,13 @@
                   [class.mu-status-badge--pending]="u.account_status === 'Pending'">
               @if (u.account_status === 'Active') { ● Active }
               @else if (u.account_status === 'Pending') { <i class="ti ti-hourglass"></i> Pending }
-              @else { ⛔ Suspended }
+              @else { <i class="ti ti-ban"></i> Suspended }
             </span>
           </div>
           <div class="mu-td mu-td--date">{{ formatDate(u.last_login_at) }}</div>
           <div class="mu-td mu-td--actions">
             <button class="mu-row-btn mu-row-btn--edit" (click)="openEditModal(u)">
-              ✏️ <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
+              <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
             </button>
             <button class="mu-row-btn"
                     [class.mu-row-btn--approve]="u.account_status === 'Pending'"
@@ -295,11 +295,11 @@
                 <span class="mu-row-spin"></span>
                 <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
               } @else if (u.account_status === 'Pending') {
-                📋 <span class="mu-row-btn__label">อนุมัติ</span>
+                <i class="ti ti-clipboard-check"></i> <span class="mu-row-btn__label">อนุมัติ</span>
               } @else if (u.account_status === 'Active') {
-                🚫 <span class="mu-row-btn__label">ระงับบัญชี</span>
+                <i class="ti ti-ban"></i> <span class="mu-row-btn__label">ระงับบัญชี</span>
               } @else {
-                ✅ <span class="mu-row-btn__label">เปิดใช้งาน</span>
+                <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
               }
             </button>
           </div>
@@ -316,6 +316,7 @@
         <span>กำลังโหลด...</span>
       </div>
     } @else {
+      <div class="mu-scroll-hint"><i class="ti ti-arrows-horizontal"></i> เลื่อนซ้าย-ขวาเพื่อดูข้อมูลเพิ่มเติม</div>
       <div class="mu-table-wrap">
         <div class="mu-table-head mu-table-head--admin">
           <div class="mu-th">ชื่อ-นามสกุล</div>
@@ -334,7 +335,6 @@
         @for (a of filteredAdmins(); track a.user_id) {
           <div class="mu-table-row mu-table-row--admin">
             <div class="mu-td mu-td--name">
-              <div class="mu-row-avatar mu-row-avatar--admin">{{ adminInitials(a) }}</div>
               <div class="mu-row-name-wrap">
                 <span class="mu-row-name">{{ adminFullName(a) }}</span>
               </div>
@@ -354,14 +354,14 @@
             </div>
             <div class="mu-td">
               <span class="mu-status-badge" [class.mu-status-badge--suspended]="a.account_status === 'Suspended'">
-                {{ a.account_status === 'Active' ? '● Active' : '⛔ Suspended' }}
+                @if (a.account_status === 'Active') { ● Active } @else { <i class="ti ti-ban"></i> Suspended }
               </span>
             </div>
             <div class="mu-td mu-td--date">{{ formatDate(a.last_login_at) }}</div>
             @if (isSuperAdmin) {
               <div class="mu-td mu-td--actions">
                 <button class="mu-row-btn mu-row-btn--edit" (click)="openEditAdminModal(a)">
-                  ✏️ <span class="mu-row-btn__label">แก้ไข</span>
+                  <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไข</span>
                 </button>
                 <button class="mu-row-btn"
                         [class.mu-row-btn--suspend]="a.account_status === 'Active'"
@@ -373,9 +373,9 @@
                     <span class="mu-row-spin"></span>
                     <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
                   } @else if (a.account_status === 'Active') {
-                    🚫 <span class="mu-row-btn__label">ระงับ</span>
+                    <i class="ti ti-ban"></i> <span class="mu-row-btn__label">ระงับ</span>
                   } @else {
-                    ✅ <span class="mu-row-btn__label">เปิดใช้งาน</span>
+                    <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
                   }
                 </button>
               </div>
@@ -506,7 +506,7 @@
         <!-- Result -->
         @if (editSaveResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
 
@@ -518,7 +518,7 @@
         <button class="mu-btn-save" (click)="submitEdit()"
                 [disabled]="isEditSaving() || !editForm.first_name.trim() || !editForm.last_name.trim()">
           @if (isEditSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
-          @else                { 💾 บันทึกข้อมูล }
+          @else                { <i class="ti ti-device-floppy"></i> บันทึกข้อมูล }
         </button>
       </div>
 
@@ -626,7 +626,7 @@
         <!-- Result -->
         @if (addSaveResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
 
@@ -638,7 +638,7 @@
         <button class="mu-btn-save" (click)="submitAddStudent()"
                 [disabled]="isAddSaving() || !addStudentForm.first_name.trim() || !addStudentForm.last_name.trim() || !addStudentForm.msu_mail.trim()">
           @if (isAddSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
-          @else                { ➕ เพิ่มนิสิต }
+          @else                { <i class="ti ti-user-plus"></i> เพิ่มนิสิต }
         </button>
       </div>
 
@@ -657,7 +657,7 @@
 
       <div class="mu-edit-modal__header">
         <div class="mu-edit-modal__header-left">
-          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--import">📂</div>
+          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--import"><i class="ti ti-folder-open"></i></div>
           <div>
             <div class="mu-edit-modal__title">นำเข้าข้อมูลจาก CSV</div>
             <div class="mu-edit-modal__sub">POST /manage/users/import · form-data</div>
@@ -672,11 +672,11 @@
         <label class="mu-file-drop" [class.mu-file-drop--selected]="selectedFile">
           <input type="file" accept=".csv" class="mu-file-input" (change)="onFileChange($event)" />
           @if (selectedFile) {
-            <span class="mu-file-icon">📄</span>
+            <span class="mu-file-icon"><i class="ti ti-file-text"></i></span>
             <span class="mu-file-name">{{ selectedFile.name }}</span>
             <span class="mu-file-size">{{ (selectedFile.size / 1024).toFixed(1) }} KB</span>
           } @else {
-            <span class="mu-file-icon">📁</span>
+            <span class="mu-file-icon"><i class="ti ti-folder"></i></span>
             <span class="mu-file-prompt">คลิกเพื่อเลือกไฟล์ CSV</span>
             <span class="mu-file-hint">หรือลากไฟล์มาวางที่นี่</span>
           }
@@ -695,7 +695,7 @@
 
         @if (importResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
 
@@ -705,7 +705,7 @@
         <button class="mu-btn-cancel" (click)="closeImportModal()" [disabled]="isImporting()">ยกเลิก</button>
         <button class="mu-btn-save" (click)="submitImport()" [disabled]="isImporting() || !selectedFile">
           @if (isImporting()) { <span class="mu-btn-spinner"></span> กำลังนำเข้า... }
-          @else               { 📤 นำเข้าข้อมูล }
+          @else               { <i class="ti ti-upload"></i> นำเข้าข้อมูล }
         </button>
       </div>
 
@@ -724,7 +724,7 @@
 
       <div class="mu-edit-modal__header">
         <div class="mu-edit-modal__header-left">
-          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--advisor-add">👨‍🏫</div>
+          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--advisor-add"><i class="ti ti-school"></i></div>
           <div>
             <div class="mu-edit-modal__title">เพิ่มอาจารย์ใหม่</div>
             <div class="mu-edit-modal__sub">กรอกข้อมูลอาจารย์ที่ต้องการเพิ่มเข้าระบบ</div>
@@ -780,7 +780,7 @@
 
         @if (advisorSaveResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
 
@@ -791,7 +791,7 @@
         <button class="mu-btn-save mu-btn-save--advisor" (click)="submitAddAdvisor()"
                 [disabled]="isAdvisorSaving() || !addAdvisorForm.first_name.trim() || !addAdvisorForm.last_name.trim() || !addAdvisorForm.msu_mail.trim()">
           @if (isAdvisorSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
-          @else                   { 👨‍🏫 เพิ่มอาจารย์ }
+          @else                   { <i class="ti ti-user-plus"></i> เพิ่มอาจารย์ }
         </button>
       </div>
 
@@ -810,7 +810,7 @@
 
       <div class="mu-edit-modal__header">
         <div class="mu-edit-modal__header-left">
-          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--staff">👤</div>
+          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--staff"><i class="ti ti-user"></i></div>
           <div>
             <div class="mu-edit-modal__title">เพิ่ม Staff ใหม่</div>
             <div class="mu-edit-modal__sub">กรอกข้อมูล Staff ที่ต้องการเพิ่มเข้าระบบ</div>
@@ -865,7 +865,7 @@
 
         @if (staffSaveResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
 
@@ -876,7 +876,7 @@
         <button class="mu-btn-save" (click)="submitAddStaff()"
                 [disabled]="isStaffSaving() || !addStaffForm.first_name.trim() || !addStaffForm.last_name.trim() || !addStaffForm.msu_mail.trim()">
           @if (isStaffSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
-          @else                 { 👤 เพิ่ม Staff }
+          @else                 { <i class="ti ti-user-plus"></i> เพิ่ม Staff }
         </button>
       </div>
 
@@ -895,7 +895,7 @@
 
       <div class="mu-edit-modal__header">
         <div class="mu-edit-modal__header-left">
-          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--admin">🔐</div>
+          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--admin"><i class="ti ti-shield-lock"></i></div>
           <div>
             <div class="mu-edit-modal__title">เพิ่ม Admin ใหม่</div>
             <div class="mu-edit-modal__sub">บัญชี Admin ใช้ username/password (ไม่ใช่ Google)</div>
@@ -943,7 +943,7 @@
 
         @if (addAdminResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
       </div>
@@ -953,7 +953,7 @@
         <button class="mu-btn-save mu-btn-save--navy" (click)="submitAddAdmin()"
                 [disabled]="isAddAdminSaving() || !addAdminForm.first_name.trim() || !addAdminForm.last_name.trim() || !addAdminForm.msu_mail.trim() || !addAdminForm.username.trim() || !addAdminForm.password.trim()">
           @if (isAddAdminSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
-          @else                    { 🔐 เพิ่ม Admin }
+          @else                    { <i class="ti ti-shield-lock"></i> เพิ่ม Admin }
         </button>
       </div>
 
@@ -1001,7 +1001,7 @@
 
         @if (editAdminResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
       </div>
@@ -1011,7 +1011,7 @@
         <button class="mu-btn-save mu-btn-save--navy" (click)="submitEditAdmin()"
                 [disabled]="isEditAdminSaving() || !editAdminForm.first_name.trim() || !editAdminForm.last_name.trim()">
           @if (isEditAdminSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
-          @else                     { 💾 บันทึกข้อมูล }
+          @else                     { <i class="ti ti-device-floppy"></i> บันทึกข้อมูล }
         </button>
       </div>
 
@@ -1043,7 +1043,7 @@
 
         <!-- Major advisor -->
         <div class="mu-edit-field">
-          <label class="mu-edit-label">👤 อาจารย์ที่ปรึกษาหลัก (Major)</label>
+          <label class="mu-edit-label"><i class="ti ti-user"></i> อาจารย์ที่ปรึกษาหลัก (Major)</label>
           <input class="mu-edit-input" type="email"
                  placeholder="อีเมลอาจารย์ที่ปรึกษาหลัก"
                  list="advisor-list"
@@ -1052,7 +1052,7 @@
 
         <!-- Co-advisor 1 -->
         <div class="mu-edit-field">
-          <label class="mu-edit-label">👤 อาจารย์ที่ปรึกษาร่วม 1 (Co-1)</label>
+          <label class="mu-edit-label"><i class="ti ti-user"></i> อาจารย์ที่ปรึกษาร่วม 1 (Co-1)</label>
           <input class="mu-edit-input" type="email"
                  placeholder="อีเมลอาจารย์ที่ปรึกษาร่วม 1 (ไม่บังคับ)"
                  list="advisor-list"
@@ -1061,7 +1061,7 @@
 
         <!-- Co-advisor 2 -->
         <div class="mu-edit-field">
-          <label class="mu-edit-label">👤 อาจารย์ที่ปรึกษาร่วม 2 (Co-2)</label>
+          <label class="mu-edit-label"><i class="ti ti-user"></i> อาจารย์ที่ปรึกษาร่วม 2 (Co-2)</label>
           <input class="mu-edit-input" type="email"
                  placeholder="อีเมลอาจารย์ที่ปรึกษาร่วม 2 (ไม่บังคับ)"
                  list="advisor-list"
@@ -1077,7 +1077,7 @@
 
         @if (assignAdvisorResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            {{ r.ok ? '✅' : '⚠️' }} {{ r.msg }}
+            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
         }
 
@@ -1088,7 +1088,7 @@
         <button class="mu-btn-save" (click)="submitAssignAdvisor()"
                 [disabled]="isAssignSaving() || !assignAdvisorForm.advisor_major_mail.trim()">
           @if (isAssignSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
-          @else                  { 💾 บันทึกที่ปรึกษา }
+          @else                  { <i class="ti ti-device-floppy"></i> บันทึกที่ปรึกษา }
         </button>
       </div>
 

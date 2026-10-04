@@ -6,7 +6,7 @@
         <div class="captcha-topbar"></div>
 
         <div class="captcha-header">
-          <div class="captcha-icon">🛡️</div>
+          <div class="captcha-icon"><i class="ti ti-shield-check"></i></div>
           <div>
             <div class="captcha-title">ยืนยันตัวตน</div>
             <div class="captcha-subtitle">กรุณาแก้โจทย์เพื่อยืนยันว่าคุณไม่ใช่บอท</div>
@@ -48,7 +48,7 @@
             </button>
           </div>
 
-          <div class="captcha-note">🔒 ไม่ต้องยืนยันซ้ำภายใน 60 นาที</div>
+          <div class="captcha-note"><i class="ti ti-lock"></i> ไม่ต้องยืนยันซ้ำภายใน 60 นาที</div>
 
         </div>
 
@@ -66,7 +66,7 @@
     <!-- Header -->
     <div class="search-card-header">
       <div class="search-header-left">
-        <div class="search-header-icon">🔍</div>
+        <div class="search-header-icon"><i class="ti ti-search"></i></div>
         <div>
           <h2 class="search-title">ค้นหาวารสาร</h2>
           <p class="search-subtitle">ตรวจสอบวารสารจากฐานข้อมูลเพื่อประกอบการพิจารณา</p>
@@ -115,36 +115,9 @@
         @if (isLoading()) {
           <span class="spin-icon"><i class="ti ti-hourglass"></i></span> กำลังค้นหา...
         } @else {
-          🔍 ค้นหา
+          <i class="ti ti-search"></i> ค้นหา
         }
       </button>
-    </div>
-
-    <div class="search-divider"></div>
-
-    <!-- Section: Method Selector -->
-    <div class="search-section-label">
-      วิธีการดึงข้อมูล
-      <span class="section-chip section-chip--secondary">ขั้นสูง</span>
-    </div>
-    <div class="method-options">
-      @for (m of methods; track m.id) {
-        <label class="method-option" [class.selected]="method === m.id">
-          <input type="radio" [value]="m.id" [(ngModel)]="method" hidden>
-          <div class="method-radio">
-            <div class="radio-dot" [class.active]="method === m.id"></div>
-          </div>
-          <div class="method-opt-text">
-            <span class="method-opt-label">{{ m.label }}</span>
-            <span class="method-opt-sub">{{ m.sublabel }}</span>
-          </div>
-          <span class="method-opt-badge"
-            [class.badge-amber]="m.badgeColor === 'amber'"
-            [class.badge-red]="m.badgeColor === 'red'">
-            {{ m.badge }}
-          </span>
-        </label>
-      }
     </div>
 
   </div><!-- /search-card -->
@@ -180,7 +153,7 @@
       <div class="intro-db-cards">
         <div class="intro-db-card intro-db-card--scopus">
           <div class="intro-db-head">
-            <span class="intro-db-icon">📘</span>
+            <span class="intro-db-icon"><i class="ti ti-book"></i></span>
             <span class="intro-db-name">Scopus</span>
             <span class="intro-db-badge intro-db-badge--scopus">นานาชาติ</span>
           </div>
@@ -195,7 +168,7 @@
 
         <div class="intro-db-card intro-db-card--tci">
           <div class="intro-db-head">
-            <span class="intro-db-icon">📗</span>
+            <span class="intro-db-icon"><i class="ti ti-book"></i></span>
             <span class="intro-db-name">TCI</span>
             <span class="intro-db-badge intro-db-badge--tci">ไทย</span>
           </div>
@@ -240,14 +213,21 @@
   @if (isLoading()) {
     <div class="loading-card">
       <div class="loading-spinner"></div>
-      <div class="loading-text">กำลังค้นหาข้อมูลวารสาร...</div>
-      <div class="loading-sub">
-        @if (method === 'scraping') {
-          Web Scraping ใช้เวลา 3–8 วินาที กรุณารอ
-        } @else {
-          กำลังเรียก Scopus API...
-        }
-      </div>
+      @if (isRetrying()) {
+        <div class="loading-text loading-text--retry">
+          <i class="ti ti-refresh"></i> API ติด Rate Limit กำลังสลับไปใช้ Web Scraping แทน
+        </div>
+        <div class="loading-sub">ระบบตรวจพบว่า Scopus API ถูกจำกัดการใช้งานชั่วคราว กำลังลองค้นหาใหม่อัตโนมัติ กรุณารอ 3–8 วินาที</div>
+      } @else {
+        <div class="loading-text">กำลังค้นหาข้อมูลวารสาร...</div>
+        <div class="loading-sub">
+          @if (method === 'scraping') {
+            Web Scraping ใช้เวลา 3–8 วินาที กรุณารอ
+          } @else {
+            กำลังเรียก Scopus API...
+          }
+        </div>
+      }
     </div>
   }
 
@@ -259,12 +239,12 @@
         <button class="db-btn" type="button"
           [class.db-btn-active-scopus]="activeDb() === 'scopus'"
           (click)="activeDb.set('scopus')">
-          📘 Scopus
+          <i class="ti ti-book"></i> Scopus
         </button>
         <button class="db-btn" type="button"
           [class.db-btn-active-tci]="activeDb() === 'tci'"
           (click)="activeDb.set('tci')">
-          📗 TCI
+          <i class="ti ti-book"></i> TCI
         </button>
         @if (hasConflict) {
           <button class="db-btn db-btn-conflict" type="button"
@@ -286,7 +266,7 @@
           <!-- Warning Banner -->
           <div class="conflict-banner">
             <div class="conflict-banner-left">
-              <span class="conflict-banner-icon">🚨</span>
+              <span class="conflict-banner-icon"><i class="ti ti-alert-octagon"></i></span>
               <div class="conflict-banner-text">
                 <div class="conflict-banner-title">ตรวจพบข้อมูลขัดแย้งกัน — Scopus และ TCI แสดงสถานะไม่ตรงกัน</div>
                 <div class="conflict-banner-desc">
@@ -307,14 +287,14 @@
               </div>
               <div class="conflict-reason-grid">
                 <div class="conflict-reason-col">
-                  <div class="conflict-db-label conflict-db-label--scopus">📘 Scopus อัปเดตทุก: รายเดือน–ไตรมาส</div>
+                  <div class="conflict-db-label conflict-db-label--scopus"><i class="ti ti-book"></i> Scopus อัปเดตทุก: รายเดือน–ไตรมาส</div>
                   <ul class="conflict-list">
                     <li>บางครั้งวารสารถูก Discontinue จาก Scopus</li>
                     <li>โดยที่ TCI ยังไม่ทันรับข้อมูลหรืออัปเดตรอบถัดไป</li>
                   </ul>
                 </div>
                 <div class="conflict-reason-col">
-                  <div class="conflict-db-label conflict-db-label--tci">📗 TCI อัปเดตทุก: รายปี (รอบ 3 ปี)</div>
+                  <div class="conflict-db-label conflict-db-label--tci"><i class="ti ti-book"></i> TCI อัปเดตทุก: รายปี (รอบ 3 ปี)</div>
                   <ul class="conflict-list">
                     <li>การรับรองปัจจุบันอาจยังไม่หมดอายุ</li>
                     <li>แม้ Scopus จะถอดวารสารออกไปแล้วก็ตาม</li>
@@ -322,7 +302,7 @@
                 </div>
               </div>
               <div class="conflict-rule-box">
-                🔑 <strong>กฎหลัก:</strong> หาก Scopus แสดงว่า Discontinued → ถือว่าไม่ผ่านเกณฑ์ Scopus แม้ TCI จะยัง Active อยู่ก็ตาม
+                <i class="ti ti-key"></i> <strong>กฎหลัก:</strong> หาก Scopus แสดงว่า Discontinued → ถือว่าไม่ผ่านเกณฑ์ Scopus แม้ TCI จะยัง Active อยู่ก็ตาม
               </div>
             </div>
 
@@ -337,8 +317,8 @@
                   <thead>
                     <tr>
                       <th>รายการ</th>
-                      <th class="th-scopus">📘 SCOPUS</th>
-                      <th class="th-tci">📗 TCI</th>
+                      <th class="th-scopus"><i class="ti ti-book"></i> SCOPUS</th>
+                      <th class="th-tci"><i class="ti ti-book"></i> TCI</th>
                       <th>ผลสรุประบบ</th>
                     </tr>
                   </thead>
@@ -391,7 +371,7 @@
               </div>
               <div class="conflict-update-grid">
                 <div class="conflict-update-col conflict-update-col--scopus">
-                  <div class="conflict-update-header">📘 SCOPUS</div>
+                  <div class="conflict-update-header"><i class="ti ti-book"></i> SCOPUS</div>
                   <ul class="conflict-list">
                     <li>สถานะ: <strong class="bad">{{ r.status }}</strong></li>
                     <li>Coverage: {{ r.coverageStart || '—' }} – {{ r.coverageEnd || '—' }}</li>
@@ -400,7 +380,7 @@
                   </ul>
                 </div>
                 <div class="conflict-update-col conflict-update-col--tci">
-                  <div class="conflict-update-header">📗 TCI</div>
+                  <div class="conflict-update-header"><i class="ti ti-book"></i> TCI</div>
                   <ul class="conflict-list">
                     <li>สถานะ: <strong class="ok">{{ t.inactive ? 'Inactive' : 'Active' }}</strong></li>
                     <li>กลุ่มที่: {{ t.tier }}</li>
@@ -414,14 +394,14 @@
             <!-- Urgent Advice -->
             <div class="conflict-section conflict-advice-section">
               <div class="conflict-section-head">
-                <span class="conflict-section-title">💡 คำแนะนำเร่งด่วน</span>
+                <span class="conflict-section-title"><i class="ti ti-bulb"></i> คำแนะนำเร่งด่วน</span>
               </div>
               <ul class="conflict-advice-list">
-                <li>🚫 <strong>ไม่ควรนำข้อมูลนี้ไปประกอบการพิจารณาทันที</strong> — ระบบไม่สามารถสรุปผลได้อย่างมั่นใจ 100% เนื่องจากข้อมูลขัดแย้ง</li>
-                <li>📞 <strong>ติดต่อบัณฑิตวิทยาลัยโดยตรง</strong> แจ้งชื่อวารสาร ISSN {{ r.issn }} และสถานะ Scopus Discontinued vs TCI Active เพื่อขอคำยืนยัน</li>
-                <li>👨‍🏫 <strong>ปรึกษาอาจารย์ที่ปรึกษา</strong> และนำผล Screenshot ของหน้าจอแบบนี้ด้วยเพื่อประกอบการพิจารณา</li>
-                <li>📝 หากบัณฑิตวิทยาลัย<strong>อนุมัติเป็นลายลักษณ์อักษร</strong> จึงสามารถนำมายื่นได้ โดยแนบหลักฐานการอนุมัติยืนยันด้วย</li>
-                <li>🔍 พิจารณาหาวารสารสำรองที่สถานะ <strong>Scopus Active และ Q1–Q2</strong> ชัดเจน เพื่อลดความเสี่ยง</li>
+                <li><i class="ti ti-ban"></i> <strong>ไม่ควรนำข้อมูลนี้ไปประกอบการพิจารณาทันที</strong> — ระบบไม่สามารถสรุปผลได้อย่างมั่นใจ 100% เนื่องจากข้อมูลขัดแย้ง</li>
+                <li><i class="ti ti-phone"></i> <strong>ติดต่อบัณฑิตวิทยาลัยโดยตรง</strong> แจ้งชื่อวารสาร ISSN {{ r.issn }} และสถานะ Scopus Discontinued vs TCI Active เพื่อขอคำยืนยัน</li>
+                <li><i class="ti ti-school"></i> <strong>ปรึกษาอาจารย์ที่ปรึกษา</strong> และนำผล Screenshot ของหน้าจอแบบนี้ด้วยเพื่อประกอบการพิจารณา</li>
+                <li><i class="ti ti-notes"></i> หากบัณฑิตวิทยาลัย<strong>อนุมัติเป็นลายลักษณ์อักษร</strong> จึงสามารถนำมายื่นได้ โดยแนบหลักฐานการอนุมัติยืนยันด้วย</li>
+                <li><i class="ti ti-search"></i> พิจารณาหาวารสารสำรองที่สถานะ <strong>Scopus Active และ Q1–Q2</strong> ชัดเจน เพื่อลดความเสี่ยง</li>
               </ul>
             </div>
 
@@ -450,7 +430,7 @@
 
             <!-- Screenshot Note -->
             <div class="conflict-screenshot-note">
-              🖨️ <strong>หากต้องการนำ Screenshot ไปปรึกษาบัณฑิตวิทยาลัย ต้องมี:</strong>
+              <i class="ti ti-printer"></i> <strong>หากต้องการนำ Screenshot ไปปรึกษาบัณฑิตวิทยาลัย ต้องมี:</strong>
               ชื่อวารสาร · ISSN · สถานะ Scopus (Discontinued) · สถานะ TCI (Active) · วันที่ตรวจสอบ · ตารางเปรียบเทียบ · รอบการอัปเดตของทั้งสองฐาน
             </div>
 
@@ -495,7 +475,7 @@
         <!-- Blacklist Reasons -->
         <div class="pred-reasons-box">
           <div class="pred-section-header">
-            <span class="pred-section-title">🚨 เหตุผลที่วารสารนี้ถูกขึ้นบัญชีดำ</span>
+            <span class="pred-section-title"><i class="ti ti-alert-octagon"></i> เหตุผลที่วารสารนี้ถูกขึ้นบัญชีดำ</span>
             <span class="pred-source">source: Scopus API · อัปเดต 2025</span>
           </div>
           <ul class="pred-reasons-list">
@@ -507,16 +487,16 @@
 
         <!-- Locked Info -->
         <div class="pred-locked-box">
-          🔒 ข้อมูลถูกปิดกั้น — ไม่สามารถดูรายละเอียดได้สำหรับวารสารในนี้
+          <i class="ti ti-lock"></i> ข้อมูลถูกปิดกั้น — ไม่สามารถดูรายละเอียดได้สำหรับวารสารในนี้
         </div>
 
         <!-- Advice -->
         <div class="pred-advice-box">
-          <div class="pred-advice-title">💡 ข้อสังเกตสำหรับผู้ดูแลระบบ</div>
-          <p>✋ วารสารนี้ถูกระบุเป็น Predatory Journal — ไม่ผ่านเกณฑ์สำหรับทุกระดับการศึกษา</p>
-          <p>🔍 แนะนำให้นิสิตค้นหาวารสารใหม่ใน Scopus (Q1–Q2) หรือ TCI กลุ่มที่ 1 แทน</p>
-          <p>👨‍🏫 แจ้งอาจารย์ที่ปรึกษาและนิสิตเพื่อดำเนินการหาวารสารทดแทน</p>
-          <p>📞 บันทึกและรายงานต่อบัณฑิตวิทยาลัยหากพบการใช้วารสารดังกล่าว</p>
+          <div class="pred-advice-title"><i class="ti ti-bulb"></i> ข้อสังเกตสำหรับผู้ดูแลระบบ</div>
+          <p><i class="ti ti-hand-stop"></i> วารสารนี้ถูกระบุเป็น Predatory Journal — ไม่ผ่านเกณฑ์สำหรับทุกระดับการศึกษา</p>
+          <p><i class="ti ti-search"></i> แนะนำให้นิสิตค้นหาวารสารใหม่ใน Scopus (Q1–Q2) หรือ TCI กลุ่มที่ 1 แทน</p>
+          <p><i class="ti ti-school"></i> แจ้งอาจารย์ที่ปรึกษาและนิสิตเพื่อดำเนินการหาวารสารทดแทน</p>
+          <p><i class="ti ti-phone"></i> บันทึกและรายงานต่อบัณฑิตวิทยาลัยหากพบการใช้วารสารดังกล่าว</p>
         </div>
 
         <!-- Summary -->
@@ -530,7 +510,7 @@
 
         <!-- Buttons (all disabled) -->
         <div class="pred-actions">
-          <button class="btn-print-pred" disabled>พิมพ์/PDF 🔒</button>
+          <button class="btn-print-pred" disabled>พิมพ์/PDF <i class="ti ti-lock"></i></button>
         </div>
 
       </div>
@@ -543,7 +523,7 @@
       <!-- Status Banner -->
       <div class="result-banner" [style.background-color]="r.caseColor">
         <div class="banner-left">
-          <span class="banner-db-icon">📘</span>
+          <span class="banner-db-icon"><i class="ti ti-book"></i></span>
           <div class="banner-content">
             <div class="banner-title"> {{ r.caseLabel }}</div>
             <div class="banner-desc">{{ r.bannerDesc }}</div>
@@ -572,7 +552,7 @@
           @if (r.eissn) {
             <span class="badge-field">E-ISSN: {{ formatIssn(r.eissn) }}</span>
           }
-          <span class="badge-db">📘 {{ r.database }}</span>
+          <span class="badge-db"><i class="ti ti-book"></i> {{ r.database }}</span>
           @if (r.quartile) {
             <span class="badge-q">{{ r.quartile }}</span>
           }
@@ -580,18 +560,15 @@
             {{ r.status }}
           </span>
           <span class="badge-unwanted" [class.ok]="!r.isUnwanted">
-            {{ r.isUnwanted ? '🚫 ติด MSU Unwanted' : '✓ ไม่ติด MSU Unwanted' }}
+            @if (r.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { ✓ ไม่ติด MSU Unwanted }
           </span>
-          <span class="badge-date">📅 ตรวจสอบ: {{ r.checkDate }}</span>
-          <span class="badge-cache" [class.badge-cache--hit]="r.fromCache" [class.badge-cache--live]="!r.fromCache">
-            @if (r.fromCache) { ⚡ จาก Cache } @else { <i class="ti ti-refresh"></i> ข้อมูลสด }
-          </span>
+          <span class="badge-date"><i class="ti ti-calendar"></i> ตรวจสอบ: {{ r.checkDate }}</span>
         </div>
 
         <!-- Scopus Core Metrics -->
         <div class="metrics-box">
           <div class="section-header">
-            <span class="section-title">📊 Scopus Core Metrics</span>
+            <span class="section-title"><i class="ti ti-chart-bar"></i> Scopus Core Metrics</span>
             <span class="section-source">source: Scopus API · อัปเดต 2025</span>
           </div>
           <div class="metrics-grid">
@@ -641,7 +618,7 @@
         <!-- ข้อมูลพื้นฐานวารสาร -->
         <div class="base-box">
           <div class="section-header">
-            <span class="section-title">📋 ข้อมูลพื้นฐานวารสาร</span>
+            <span class="section-title"><i class="ti ti-clipboard-text"></i> ข้อมูลพื้นฐานวารสาร</span>
             <span class="section-source">source: Scopus Source List</span>
           </div>
           <div class="base-grid">
@@ -725,7 +702,7 @@
 
         <!-- Notice -->
         <div class="notice-box">
-          <span class="notice-icon">🖨️</span>
+          <span class="notice-icon"><i class="ti ti-printer"></i></span>
           <span class="notice-text">
             <strong>ข้อมูลที่แสดงในหน้าจอสำหรับประกอบการพิจารณา:</strong>
             ชื่อวารสาร · ISSN · Quartile · SJR · CiteScore · Percentile · สถานะ Active · วันที่ตรวจสอบ · ผลการประเมิน
@@ -754,7 +731,7 @@
         <!-- Banner -->
         <div class="result-banner" [style.background-color]="tciPass ? '#1A7A42' : t.inactive ? '#7B7B7B' : '#C07800'">
           <div class="banner-left">
-            <span class="banner-db-icon">📗</span>
+            <span class="banner-db-icon"><i class="ti ti-book"></i></span>
             <div class="banner-content">
               <div class="banner-title">
                 {{ tciPass ? 'พบในฐานข้อมูล TCI — วารสารผ่านเกณฑ์'
@@ -793,24 +770,21 @@
             @if (t.eissn) {
               <span class="badge-field">E-ISSN: {{ formatIssn(t.eissn) }}</span>
             }
-            <span class="badge-db">📗 TCI</span>
+            <span class="badge-db"><i class="ti ti-book"></i> TCI</span>
             <span class="t-badge">กลุ่มที่ {{ t.tier }}</span>
             <span class="badge-status" [class.active]="!t.inactive">
               {{ t.inactive ? 'Inactive' : 'Active' }}
             </span>
             <span class="badge-unwanted" [class.ok]="!t.isUnwanted">
-              {{ t.isUnwanted ? '🚫 ติด MSU Unwanted' : '✓ ไม่ติด MSU Unwanted' }}
+              @if (t.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { ✓ ไม่ติด MSU Unwanted }
             </span>
-            <span class="badge-date">📅 ตรวจสอบ: {{ t.checkDate }}</span>
-            <span class="badge-cache" [class.badge-cache--hit]="t.fromCache" [class.badge-cache--live]="!t.fromCache">
-              @if (t.fromCache) { ⚡ จาก Cache } @else { <i class="ti ti-refresh"></i> ข้อมูลสด }
-            </span>
+            <span class="badge-date"><i class="ti ti-calendar"></i> ตรวจสอบ: {{ t.checkDate }}</span>
           </div>
 
           <!-- TCI Core Information -->
           <div class="metrics-box">
             <div class="section-header">
-              <span class="section-title">📊 TCI Core Information</span>
+              <span class="section-title"><i class="ti ti-chart-bar"></i> TCI Core Information</span>
               <span class="section-source">source: TCI Database · 2025</span>
             </div>
             <div class="metrics-grid tci-metrics-grid">
@@ -842,7 +816,7 @@
           <!-- ข้อมูลพื้นฐานวารสาร -->
           <div class="base-box">
             <div class="section-header">
-              <span class="section-title">📋 ข้อมูลพื้นฐานวารสาร</span>
+              <span class="section-title"><i class="ti ti-clipboard-text"></i> ข้อมูลพื้นฐานวารสาร</span>
             </div>
             <div class="base-grid">
               <div class="base-field">
@@ -915,7 +889,7 @@
 
           <!-- Notice -->
           <div class="notice-box">
-            <span class="notice-icon">📋</span>
+            <span class="notice-icon"><i class="ti ti-clipboard-text"></i></span>
             <span class="notice-text">
               <strong>ข้อมูลที่แสดงในหน้าจอสำหรับประกอบการพิจารณา:</strong>
               ชื่อวารสาร (ไทย+อังกฤษ) · ISSN · กลุ่ม TCI · สถานะ Active · รอบการรับรอง · สาขา · วันที่ตรวจสอบ · ผลการประเมิน

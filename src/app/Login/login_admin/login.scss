@@ -444,3 +444,13 @@ form {
   .card-left, .card-right { padding: 28px 20px; }
   .login-page              { padding: 20px 10px; }
 }
+
+@media (max-width: 860px) {
+  /* background-attachment:fixed เรนเดอร์ผิดพลาด/กระพริบบนมือถือ (โดยเฉพาะ iOS
+     Safari ที่ปฏิบัติกับมันไม่เหมือน desktop) เปลี่ยนเป็น scroll แทนตอนจอแคบ */
+  .login-page { background-attachment: scroll; }
+
+  /* font-size ต้อง >= 16px ไม่งั้น iOS Safari จะ auto-zoom หน้าจอทันทีที่แตะ input
+     (เดิม 14px) */
+  .field-input { font-size: 16px; }
+}

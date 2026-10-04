@@ -51,12 +51,12 @@ const CHECKLIST_TITLES: Record<string, string> = {
 };
 
 const EVIDENCE_FILES: { key: string; label: string; icon: string }[] = [
-  { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',     icon: '📄' },
-  { key: 'full_paper',         label: 'บทความฉบับสมบูรณ์', icon: '📑' },
-  { key: 'journal_cover',      label: 'ปกวารสาร',          icon: '📰' },
-  { key: 'table_of_contents',  label: 'สารบัญ',            icon: '📋' },
-  { key: 'database_evidence',  label: 'หลักฐานฐานข้อมูล',  icon: '🔍' },
-  { key: 'peer_review_result', label: 'ผล Peer Review',     icon: '📝' },
+  { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',     icon: 'ti ti-file-check' },
+  { key: 'full_paper',         label: 'บทความฉบับสมบูรณ์', icon: 'ti ti-files' },
+  { key: 'journal_cover',      label: 'ปกวารสาร',          icon: 'ti ti-news' },
+  { key: 'table_of_contents',  label: 'สารบัญ',            icon: 'ti ti-list-details' },
+  { key: 'database_evidence',  label: 'หลักฐานฐานข้อมูล',  icon: 'ti ti-database-search' },
+  { key: 'peer_review_result', label: 'ผล Peer Review',     icon: 'ti ti-notes' },
 ];
 
 @Component({
@@ -131,7 +131,16 @@ export class History implements OnInit {
     }));
   }
 
-  ngOnInit(): void { this.loadHistory(); }
+  ngOnInit(): void {
+    this.loadHistory();
+    // tab-bar เลื่อนแนวนอนได้บนจอแคบ (overflow-x:auto) แต่ scrollLeft เริ่มที่ 0 เสมอ
+    // ถ้าแท็บที่ active อยู่ไม่ใช่ตัวแรก (เช่น "ประวัติทั้งหมด" ซึ่งเป็นตัวสุดท้าย)
+    // จะโดนซ่อนพ้นขอบจอ ต้องเลื่อนให้เข้ามาอยู่ในมุมมองเองตั้งแต่โหลดหน้า
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
+  }
 
   loadHistory(): void {
     this.isLoading.set(true);

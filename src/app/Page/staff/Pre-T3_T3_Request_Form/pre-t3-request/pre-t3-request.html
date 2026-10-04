@@ -3,7 +3,7 @@
   <!-- PAGE TITLE -->
   <div class="page-header">
     <div class="page-title-row">
-      <span class="page-title-icon">📋</span>
+      <span class="page-title-icon"><i class="ti ti-clipboard-text"></i></span>
       <h1 class="page-title">Pre-T3 คำร้อง</h1>
       <button class="btn-refresh" (click)="loadCards()" [disabled]="isLoading">
         <span class="refresh-icon" [class.spinning]="isLoading">↻</span>
@@ -45,7 +45,6 @@
         <!-- ═══ LEFT ═══ -->
         <div class="card-left">
           <div class="student-row">
-            <div class="avatar" [style.background]="card.avatarColor">{{ card.initials }}</div>
             <div class="student-meta">
               <div class="name-row">
                 <span class="student-name">{{ card.name }}</span>
@@ -67,9 +66,9 @@
             @if (card.journalStatus === 'active') {
               <span class="j-status j-active">● Active</span>
             } @else if (card.journalStatus === 'discontinued') {
-              <span class="j-status j-discontinued">❌ Discontinued</span>
+              <span class="j-status j-discontinued"><i class="ti ti-circle-x"></i> Discontinued</span>
             } @else if (card.journalStatus === 'unwanted') {
-              <span class="j-status j-unwanted">🚫 MSU Unwanted</span>
+              <span class="j-status j-unwanted"><i class="ti ti-ban"></i> MSU Unwanted</span>
             }
           </div>
 
@@ -81,9 +80,9 @@
             } @else if (card.status === 'approved') {
               <span class="status-chip chip-approved"><i class="ti ti-circle-check"></i> อนุมัติแล้ว</span>
             } @else if (card.status === 'rejected') {
-              <span class="status-chip chip-rejected">❌ ไม่อนุมัติ</span>
+              <span class="status-chip chip-rejected"><i class="ti ti-circle-x"></i> ไม่อนุมัติ</span>
             } @else if (card.status === 'auto-rejected') {
-              <span class="status-chip chip-auto-rejected">🚫 ระบบปฏิเสธอัตโนมัติ</span>
+              <span class="status-chip chip-auto-rejected"><i class="ti ti-ban"></i> ระบบปฏิเสธอัตโนมัติ</span>
             }
           </div>
 
@@ -93,7 +92,7 @@
         <div class="card-right">
           <div class="date-row">
             <span class="date-label">{{ card.dateLabel }}</span>
-            @if (card.advisorTime) { <span class="advisor-time">🕐 {{ card.advisorTime }}</span> }
+            @if (card.advisorTime) { <span class="advisor-time"><i class="ti ti-clock"></i> {{ card.advisorTime }}</span> }
             @if (card.daysAgo) { <span class="days-ago">{{ card.daysAgo }} วันแล้ว</span> }
           </div>
           <div class="request-id">{{ card.requestId }}</div>
@@ -118,7 +117,7 @@
       <div class="mh">
         <div class="mh-row1">
           <div class="mh-icon-title">
-            <span class="mh-file-icon">📄</span>
+            <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
             <span class="mh-title">Pre-T3 · {{ activeCard.requestId }}</span>
           </div>
           <div class="mh-row1-right">
@@ -139,8 +138,8 @@
             @if (activeCard.status === 'pending') { <i class="ti ti-hourglass"></i> รอดำเนินการ }
             @else if (activeCard.status === 'meeting') { ● ส่งที่ประชุมแล้ว }
             @else if (activeCard.status === 'approved') { <i class="ti ti-circle-check"></i> อนุมัติแล้ว }
-            @else if (activeCard.status === 'rejected') { ❌ ไม่อนุมัติ }
-            @else { 🚫 ระบบปฏิเสธ }
+            @else if (activeCard.status === 'rejected') { <i class="ti ti-circle-x"></i> ไม่อนุมัติ }
+            @else { <i class="ti ti-ban"></i> ระบบปฏิเสธ }
           </span>
         </div>
       </div>
@@ -151,7 +150,7 @@
 
           <!-- Section 1: ข้อมูลนิสิต -->
           <div class="ms-card">
-            <div class="ms-head">👤 ข้อมูลนิสิต</div>
+            <div class="ms-head"><i class="ti ti-user"></i> ข้อมูลนิสิต</div>
             <div class="field-grid">
               <div class="field-item">
                 <div class="field-label">ชื่อ-นามสกุล</div>
@@ -182,7 +181,7 @@
 
           <!-- Section 2: ข้อมูลวารสาร & ผลตรวจสอบ -->
           <div class="ms-card">
-            <div class="ms-head">📚 ข้อมูลวารสาร &amp; ผลตรวจสอบ</div>
+            <div class="ms-head"><i class="ti ti-books"></i> ข้อมูลวารสาร &amp; ผลตรวจสอบ</div>
             <div class="field-grid">
               <div class="field-item field-item--wide">
                 <div class="field-label">ชื่อวารสาร</div>
@@ -218,7 +217,7 @@
                   @if (d.journalActive) {
                     <span class="inline-badge badge-green">● Active</span>
                   } @else {
-                    <span class="inline-badge badge-red">❌ Discontinued</span>
+                    <span class="inline-badge badge-red"><i class="ti ti-circle-x"></i> Discontinued</span>
                   }
                 </div>
               </div>
@@ -228,7 +227,7 @@
                   @if (!d.msuUnwanted) {
                     <span class="inline-badge badge-green">✓ ไม่ติด Unwanted</span>
                   } @else {
-                    <span class="inline-badge badge-red">🚫 ติด Unwanted</span>
+                    <span class="inline-badge badge-red"><i class="ti ti-ban"></i> ติด Unwanted</span>
                   }
                 </div>
               </div>
@@ -251,7 +250,7 @@
 
           <!-- Section 3: ข้อมูลบทความ -->
           <div class="ms-card">
-            <div class="ms-head">📄 ข้อมูลบทความ</div>
+            <div class="ms-head"><i class="ti ti-file-text"></i> ข้อมูลบทความ</div>
             <div class="field-grid">
               <div class="field-item field-item--full">
                 <div class="field-label">ชื่อบทความ (EN)</div>
@@ -269,14 +268,14 @@
               </div>
             } @else {
               <div class="checklist-banner checklist-fail">
-                <span>❌</span><span>ไม่ผ่านเกณฑ์</span>
+                <span><i class="ti ti-circle-x"></i></span><span>ไม่ผ่านเกณฑ์</span>
               </div>
             }
           </div>
 
           <!-- Section 5: ความเห็นอาจารย์ที่ปรึกษา -->
           <div class="ms-card">
-            <div class="ms-head">👨‍🏫 ความเห็นอาจารย์ที่ปรึกษา</div>
+            <div class="ms-head"><i class="ti ti-school"></i> ความเห็นอาจารย์ที่ปรึกษา</div>
             <div class="field-grid">
               <div class="field-item">
                 <div class="field-label">มติอาจารย์</div>
@@ -299,7 +298,7 @@
 
           <!-- Section 6: การดำเนินการ (Timeline) -->
           <div class="ms-card">
-            <div class="ms-head">📅 การดำเนินการ</div>
+            <div class="ms-head"><i class="ti ti-calendar"></i> การดำเนินการ</div>
             <div class="timeline">
               @for (step of d.timeline; track step.label; let last = $last) {
                 <div class="tl-item">
@@ -322,7 +321,7 @@
           <!-- Section 7: การพิจารณาของเจ้าหน้าที่ -->
           @if (d.cardStatus === 'pending' || d.cardStatus === 'meeting') {
             <div class="ms-card review-section">
-              <div class="ms-head">💬 การพิจารณาของเจ้าหน้าที่</div>
+              <div class="ms-head"><i class="ti ti-message-circle"></i> การพิจารณาของเจ้าหน้าที่</div>
 
               <!-- Decision choices -->
               <div class="review-choices">
@@ -348,7 +347,7 @@
               @if (inlineDecision === 'rejected') {
                 <div class="meeting-info-panel meeting-info-panel--reject">
                   <div class="meeting-info-head">
-                    💬 เหตุผลการไม่อนุมัติ <span class="required">*</span>
+                    <i class="ti ti-message-circle"></i> เหตุผลการไม่อนุมัติ <span class="required">*</span>
                     <span class="required-note">จำเป็น</span>
                   </div>
                   <textarea class="modal-textarea modal-textarea--reject"
@@ -356,7 +355,7 @@
                     placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติ..."
                     rows="3"></textarea>
                   @if (showRejectReasonError && !inlineRejectReason.trim()) {
-                    <div class="inline-error">⚠ กรุณาระบุเหตุผลการไม่อนุมัติ</div>
+                    <div class="inline-error"><i class="ti ti-alert-triangle"></i> กรุณาระบุเหตุผลการไม่อนุมัติ</div>
                   }
                 </div>
               }
@@ -365,7 +364,7 @@
               @if (inlineDecision === 'approved') {
                 <div class="meeting-info-panel">
                   <div class="meeting-info-head">
-                    📋 ข้อมูลที่ประชุม <span class="required">*</span>
+                    <i class="ti ti-clipboard-list"></i> ข้อมูลที่ประชุม <span class="required">*</span>
                     <span class="required-note">จำเป็น</span>
                   </div>
                   <div class="meeting-info-grid">
@@ -395,13 +394,13 @@
               <button class="btn-inline-approve"
                 [disabled]="!inlineMeetingNo || !inlineMeetingDate || isSubmittingDecision"
                 (click)="submitInlineDecision('approved')">
-                ✓ ลงนาม Pre-T3
+                <i class="ti ti-circle-check"></i> ลงนาม Pre-T3
               </button>
             } @else {
               <button class="btn-inline-approve btn-inline-approve--reject"
                 [disabled]="!inlineRejectReason.trim() || isSubmittingDecision"
                 (click)="submitInlineDecision('rejected')">
-                ✗ ยืนยันไม่อนุมัติ
+                <i class="ti ti-circle-x"></i> ยืนยันไม่อนุมัติ
               </button>
             }
           </div>
@@ -416,7 +415,7 @@
             <div class="ic-topbar"></div>
 
             <div class="ic-icon">
-              {{ pendingAction === 'approved' ? '✓' : '✗' }}
+              @if (pendingAction === 'approved') { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-circle-x"></i> }
             </div>
 
             <div class="ic-title">
@@ -460,9 +459,13 @@
                 [class.ic-btn-confirm--reject]="pendingAction === 'rejected'"
                 [disabled]="isSubmittingDecision"
                 (click)="confirmAndSubmit()">
-                {{ isSubmittingDecision ? 'กำลังดำเนินการ...'
-                  : pendingAction === 'approved' ? '✓ ยืนยัน ลงนาม Pre-T3'
-                  : '✗ ยืนยัน ไม่อนุมัติ' }}
+                @if (isSubmittingDecision) {
+                  กำลังดำเนินการ...
+                } @else if (pendingAction === 'approved') {
+                  <i class="ti ti-circle-check"></i> ยืนยัน ลงนาม Pre-T3
+                } @else {
+                  <i class="ti ti-circle-x"></i> ยืนยัน ไม่อนุมัติ
+                }
               </button>
             </div>
 
@@ -481,7 +484,7 @@
   <div class="meeting-backdrop" (click)="closeMeetingModal()">
     <div class="meeting-modal" (click)="$event.stopPropagation()">
       <div class="meeting-header">
-        <span class="meeting-title">📝 บันทึกมติที่ประชุม</span>
+        <span class="meeting-title"><i class="ti ti-notes"></i> บันทึกมติที่ประชุม</span>
         <button class="modal-close" (click)="closeMeetingModal()">✕</button>
       </div>
       <div class="meeting-info-banner">
@@ -496,7 +499,7 @@
               (click)="meetingDecision = 'approved'"><i class="ti ti-circle-check"></i> อนุมัติ</button>
             <button class="decision-btn decision-reject"
               [class.active]="meetingDecision === 'rejected'"
-              (click)="meetingDecision = 'rejected'">❌ ไม่อนุมัติ</button>
+              (click)="meetingDecision = 'rejected'"><i class="ti ti-circle-x"></i> ไม่อนุมัติ</button>
           </div>
         </div>
         <div class="modal-field">
@@ -507,7 +510,7 @@
       </div>
       <div class="meeting-footer">
         <button class="btn-cancel" (click)="closeMeetingModal()">ยกเลิก</button>
-        <button class="btn-save" [disabled]="!meetingDecision" (click)="saveMeeting()">💾 บันทึกมติ</button>
+        <button class="btn-save" [disabled]="!meetingDecision" (click)="saveMeeting()"><i class="ti ti-device-floppy"></i> บันทึกมติ</button>
       </div>
     </div>
   </div>
@@ -562,7 +565,7 @@
     <div class="action-modal" (click)="$event.stopPropagation()">
 
       <div class="action-modal-header action-modal-header--reject">
-        <span class="action-modal-title action-modal-title--reject">✕ ไม่อนุมัติทันที</span>
+        <span class="action-modal-title action-modal-title--reject"><i class="ti ti-circle-x"></i> ไม่อนุมัติทันที</span>
         <button class="modal-close" (click)="closeRejectModal()">✕</button>
       </div>
 
@@ -578,7 +581,7 @@
             placeholder="ระบุเหตุผลการไม่อนุมัติ..."
             rows="4"></textarea>
           @if (!rejectReason.trim()) {
-            <div class="remark-error-msg">⚠ กรุณาระบุเหตุผล</div>
+            <div class="remark-error-msg"><i class="ti ti-alert-triangle"></i> กรุณาระบุเหตุผล</div>
           }
         </div>
       </div>
@@ -588,7 +591,7 @@
         <button class="btn-confirm-reject"
           [disabled]="!rejectReason.trim() || isRejecting"
           (click)="confirmReject()">
-          ✕ {{ isRejecting ? 'กำลังส่ง...' : 'ยืนยันไม่อนุมัติ' }}
+          <i class="ti ti-circle-x"></i> {{ isRejecting ? 'กำลังส่ง...' : 'ยืนยันไม่อนุมัติ' }}
         </button>
       </div>
 

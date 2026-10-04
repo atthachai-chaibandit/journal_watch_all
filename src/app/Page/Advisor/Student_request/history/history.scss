@@ -88,7 +88,7 @@ $white:  #FFFFFF;
 .req-card {
   display: flex; align-items: center; gap: 16px;
   background: $white; border: 1.5px solid $border; border-radius: 14px;
-  padding: 18px 20px;
+  padding: 18px 20px; position: relative;
   transition: box-shadow 0.18s, border-color 0.18s;
   &:hover { box-shadow: 0 4px 18px rgba(28,39,68,0.09); border-color: rgba(28,39,68,0.18); }
 }
@@ -333,3 +333,83 @@ $white:  #FFFFFF;
 .result-title  { font-size: 15px; font-weight: 800; color: $navy; }
 .result-date   { font-size: 13px; color: $muted; }
 .result-remark { font-size: 13px; color: $text; margin-top: 6px; font-style: italic; }
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน ══ */
+@media (max-width: 768px) {
+  .page { padding: 20px 16px 60px; }
+
+  /* 3 แท็บรวมกันกว้างเกินจอมือถือ ไม่เคยมีการจัดการมาก่อนเลย */
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; }
+
+  .modal-header { padding: 16px 18px 14px; }
+  .modal-body   { padding: 16px 18px 18px; }
+  .detail-grid  { grid-template-columns: 1fr; }
+
+  /* ค่าในกริดรายละเอียด (อีเมล ฯลฯ) และชื่อไฟล์หลักฐาน (เช่น acceptance_letter)
+     เป็นข้อความที่อาจไม่มีช่องว่างให้ตัดคำเลย ไม่เคยมี overflow-wrap มาก่อน บนจอแคบ
+     จะล้นออกนอก .modal ที่ overflow:hidden จนถูกตัดทิ้ง อ่านไม่ครบ */
+  .detail-value, .evidence-name, .evidence-key { overflow-wrap: break-word; word-break: break-word; }
+
+  /* .modal เป็น flex item ของ .modal-backdrop (flex row) ไม่มี min-width:0 กำกับไว้
+     ถ้าเนื้อหาข้างในมีจุดที่ตัดคำไม่ได้ (เช่นปุ่ม evidence ก่อนแก้ด้านล่าง) ความกว้าง
+     ขั้นต่ำอัตโนมัติจะดันทั้งโมดัลให้กว้างเกิน viewport ไปเลย ไม่ใช่แค่ล้นในกรอบตัวเอง */
+  .modal { min-width: 0; }
+}
+
+@media (max-width: 600px) {
+  /* .card-right (flex-shrink:0; min-width:130px) และ .card-arrow ไม่ยอมหด ขณะที่
+     .card-body (flex:1; min-width:0) หดได้ไม่จำกัด — ต่อให้เพิ่ม flex-wrap ก็ไม่ช่วย
+     (flexbox คำนวณว่ายังพอใส่แถวเดียวได้โดยบีบฝั่งซ้าย) ต้องบังคับ column แทน */
+  .req-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 18px 44px 18px 20px;
+  }
+  .card-body { width: 100%; }
+
+  /* .card-right เดิมเป็นคอลัมน์ชิดขวา (ไว้คู่กับหัวข้อฝั่งซ้ายในแถวเดียวกัน) พอตกมา
+     อยู่แถวใหม่เต็มความกว้าง การชิดขวาแบบเดิมจะดูลอยไม่สมดุล เปลี่ยนเป็นแถวแนวนอน
+     wrap ชิดซ้ายแทน พร้อมเส้นแบ่งบางๆ คั่นจากหัวข้อด้านบน */
+  .card-right {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 14px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+
+  /* ลูกศรเดิมเป็น flex child ลำดับที่ 3 ของ .req-card พอการ์ดถูกบังคับเป็น column
+     มันจะตกไปเป็นแถวที่ 3 แยกต่างหากแทนที่จะชี้อยู่มุมขวาเหมือนเดิม ยึดตำแหน่งไว้
+     ด้วย position:absolute แทน */
+  .card-arrow {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  }
+
+  .card-title { max-width: none; }
+
+  /* evidence-actions (ปุ่มดูไฟล์/ดาวน์โหลด) มี flex-shrink:0 + white-space:nowrap
+     จากฐาน — "ความกว้างขั้นต่ำอัตโนมัติ" ของ flex item ที่มีข้อความ nowrap จะเท่ากับ
+     ความกว้างเต็มของข้อความเสมอ ต่อให้สั่ง flex:1 ทับก็ยังหดไม่ได้ ปุ่ม "ดาวน์โหลด"
+     จะล้นออกนอกการ์ด — ต้อง min-width:0 ตัดเพดานนั้นออกพร้อมอนุญาตให้ตัดคำสำรอง
+     (บั๊กเดียวกับที่เจอและแก้ไปใน t3-request.scss) */
+  .evidence-card { flex-wrap: wrap; }
+  .evidence-info { flex-basis: 100%; }
+  .evidence-actions {
+    /* เผื่อระยะเยื้อง 38px (ไอคอน 24px + gap 14px) ไว้ใน flex-basis ตั้งแต่ต้น
+       แทนการใช้ width แยก เพราะ flex-basis ชนะ width เสมอใน flex row */
+    flex-basis: calc(100% - 38px);
+    margin-left: 38px;
+  }
+  .btn-evidence-view, .btn-evidence-download {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    padding: 8px 6px;
+  }
+}

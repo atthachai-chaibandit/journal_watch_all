@@ -104,6 +104,14 @@ export class PreT3History implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    // tab-bar เลื่อนแนวนอนได้บนจอแคบ (overflow-x:auto) แต่ scrollLeft เริ่มที่ 0 เสมอ
+    // ถ้าแท็บที่ active อยู่ขวาสุด (เช่น "ประวัติทั้งหมด") จะโดนซ่อนพ้นขอบจอ ต้อง
+    // เลื่อนให้เข้ามาอยู่ในมุมมองเองตั้งแต่โหลดหน้า โดยไม่ใช้ animation (ไม่งั้นจะ
+    // เห็นแท็บเด้งเลื่อนทุกครั้งที่เข้าหน้า)
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
   }
 
   refresh(): void {

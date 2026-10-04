@@ -161,7 +161,17 @@ export class PreT3Request implements OnInit {
     return this.cards.filter(c => c.status === this.activeFilter);
   }
 
-  ngOnInit(): void { window.scrollTo({ top: 0 }); this.loadCards(); }
+  ngOnInit(): void {
+    window.scrollTo({ top: 0 });
+    this.loadCards();
+    /* .tab-bar มี overflow-x:auto สำหรับจอมือถือ (3 แท็บรวมกันกว้างเกินจอแคบ) —
+       พอกดมาแท็บนี้ต้องเลื่อนแท็บที่ active เข้ามาให้เห็นในจอเอง ไม่งั้นผู้ใช้จะไม่เห็น
+       ว่าแท็บไหนกำลัง active อยู่เพราะมันตกขอบจอไปแล้ว */
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
+  }
 
   loadCards(): void {
     this.isLoading = true;

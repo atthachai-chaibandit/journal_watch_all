@@ -68,11 +68,8 @@ export class Login implements OnInit {
 
   private handleGoogleCallback(response: any) { // ฟังก์ชันนี้ทำให้ระบบ รับผลการยืนยันตัวตนจาก Google แล้วพานิสิตเข้าสู่ระบบได้ครบวงจร 
     this.loading.set(true);
-    console.log(' idToken:', response.credential);
     const claims = this.decodeJwt(response.credential);
     const picture: string = claims['picture'] ?? '';
-    console.log(' claims:', claims);
-    console.log(' picture URL:', picture);
     const body: Welcome = { idToken: response.credential };
 
     this.http.post<LoginRes>(`${this.constants.API_ENDPOINT}/auth/google`, body).subscribe({

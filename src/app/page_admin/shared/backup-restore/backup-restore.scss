@@ -157,6 +157,30 @@
   overflow: hidden;
 }
 
+/* ตาราง 6 คอลัมน์ (ชื่อไฟล์/ขนาด/วันที่/สร้างโดย/สถานะ/จัดการ 3 ปุ่ม) กว้างเกิน
+   จอมือถือ-iPad ได้ง่าย — .table-card มี overflow:hidden (ตัดมุมโค้ง) ซึ่งจะไปตัด
+   ตารางที่ล้นออกมาจนมองไม่เห็น/กดไม่ได้ ห่อด้วย wrapper ที่เลื่อนแนวนอนได้เองแทน */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* คำแนะนำว่าตารางเลื่อนซ้าย-ขวาได้ — โชว์เฉพาะมือถือ/iPad (ซ่อนไว้บนจอกว้างที่
+   ไม่จำเป็นต้องเลื่อนอยู่แล้ว) */
+.table-scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(232,168,0,0.08);
+  border-bottom: 1px solid rgba(28,39,68,0.06);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1C2744;
+
+  i { font-size: 15px; color: #E8A800; }
+}
+
 .table-title {
   padding: 16px 20px 12px;
   font-size: 14px;
@@ -226,4 +250,32 @@
   &:hover { background: rgba(232,168,0,0.12); }
   &.delete:hover { background: rgba(220,53,69,0.12); }
   &:disabled { opacity: 0.35; cursor: not-allowed; }
+}
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน ══ */
+@media (max-width: 1024px) {
+  /* ตารางต้องการความกว้างขั้นต่ำกว่า 800px ถึงจะไม่ต้องเลื่อน — โชว์คำแนะนำนี้
+     ตั้งแต่ iPad portrait ลงไปจนถึงมือถือ ให้ครอบคลุมทุกจอที่ต้องเลื่อนจริง */
+  .table-scroll-hint { display: flex; }
+}
+
+@media (max-width: 900px) {
+  .page-shell { padding: 20px 16px; }
+
+  .data-table { min-width: 800px; }
+}
+
+@media (max-width: 600px) {
+  .page-shell { padding: 16px 14px; gap: 16px; }
+
+  .page-header { flex-wrap: wrap; gap: 14px; padding: 18px 20px; }
+  .page-icon-wrap { width: 52px; height: 52px; font-size: 24px; }
+  .page-title { font-size: 20px; }
+
+  .info-row { padding: 16px 18px; }
+
+  /* .action-btns เดิม flex-wrap:wrap อยู่แล้ว แต่ปุ่มขนาด auto จะเรียงไม่สวย
+     บนจอแคบมากๆ — ให้ตกเป็นคนละแถวเต็มความกว้างแทน */
+  .action-btns { width: 100%; }
+  .btn-backup, .btn-restore { flex: 1 1 auto; justify-content: center; }
 }

@@ -51,7 +51,16 @@ section { margin-bottom: 32px; }
   background: rgba(255,255,255,0.12);
   border: 3px solid rgba(255,255,255,0.35);
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
   font-size: 42px; font-weight: 700; color: #fff;
+}
+
+.welcome-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
 }
 
 .welcome-content {
@@ -165,16 +174,21 @@ section { margin-bottom: 32px; }
   padding: 20px;
   border: 1.5px solid $border;
   box-shadow: 0 2px 8px rgba(28,39,68,0.05);
+  /* grid item ก็มี min-width:auto (= min-content) เป็นค่าเริ่มต้นเหมือน flex item
+     ต้องบังคับเป็น 0 ด้วย ไม่งั้นต่อให้ track เป็น minmax(0, 1fr) แล้ว ตัว .panel เอง
+     ก็ยังปฏิเสธไม่ยอมแคบกว่าเนื้อหาข้างในอยู่ดี */
+  min-width: 0;
 }
 
 .panel-head {
   display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid $border;
 }
 
-.panel-title { font-size: 15px; font-weight: 700; color: $navy; }
+.panel-title { font-size: 15px; font-weight: 700; color: $navy; min-width: 0; }
 
 .count-chip {
   background: #f0f4ff; color: $navy;
@@ -285,7 +299,12 @@ section { margin-bottom: 32px; }
 // ── RESPONSIVE ────────────────────────────────────────────────────────
 @media (max-width: 1100px) {
   .steps-grid { grid-template-columns: repeat(2, 1fr); }
-  .main-grid  { grid-template-columns: 1fr; }
+  /* grid track แบบ 1fr เฉยๆ มีพื้นขั้นต่ำอัตโนมัติ = min-content ของเนื้อหาข้างใน
+     (เหมือน flex-basis:auto ของ flexbox) ถ้าการ์ดใน .panel มีจุดที่หดไม่ได้ ตัว
+     track จะไม่ยอมแคบกว่านั้น ดัน .main-grid ทั้งก้อนล้นออกนอก viewport (วัดได้จริง
+     ว่า grid-template-columns คำนวณกว้างกว่า .main-grid เอง ~41px) ต้องใช้
+     minmax(0, 1fr) ให้พื้นขั้นต่ำเป็น 0 แทน */
+  .main-grid  { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 700px) {
@@ -296,4 +315,9 @@ section { margin-bottom: 32px; }
 
 @media (max-width: 480px) {
   .steps-grid { grid-template-columns: 1fr; }
+
+  /* ไอคอนวงกลม 100px + หัว h1 32px (มี <br> บังคับ 2 บรรทัดอยู่แล้ว) ไม่เคยลดขนาด
+     บนจอแคบเลย รวมกับชื่อเจ้าหน้าที่ที่อาจยาว ทำให้ดูใหญ่เกินสัดส่วนของจอมือถือจริง */
+  .welcome-icon { width: 72px; height: 72px; font-size: 30px; }
+  .welcome-content h1 { font-size: 24px; }
 }

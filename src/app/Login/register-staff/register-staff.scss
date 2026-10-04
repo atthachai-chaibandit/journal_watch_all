@@ -360,3 +360,9 @@
   .logo-wrap { width: 120px; height: 120px; }
   .title-jw, .title-watch { font-size: 28px; }
 }
+
+@media (max-width: 860px) {
+  /* background-attachment:fixed เรนเดอร์ผิดพลาด/กระพริบบนมือถือ (โดยเฉพาะ iOS
+     Safari) เปลี่ยนเป็น scroll แทนตอนจอแคบ */
+  .login-page { background-attachment: scroll; }
+}

@@ -18,7 +18,7 @@
 
   <!-- HEADER -->
   <div class="page-title-row">
-    <span class="page-icon">☑️</span>
+    <span class="page-icon"><i class="ti ti-clipboard-check"></i></span>
     <div class="page-title-group">
       <h1 class="page-title">คำร้องของนิสิต</h1>
       <p class="page-sub">ตรวจสอบและลงนามอนุมัติ Pre-T3 และ T3 ของนิสิตที่ท่านเป็นที่ปรึกษา</p>
@@ -73,7 +73,7 @@
             <span class="status-badge status-approved"><i class="ti ti-circle-check"></i> อนุมัติแล้ว</span>
             <div class="date-info">ลงนาม {{ req.approvedDate }}</div>
           } @else {
-            <span class="status-badge status-rejected">❌ ไม่อนุมัติ</span>
+            <span class="status-badge status-rejected"><i class="ti ti-circle-x"></i> ไม่อนุมัติ</span>
           }
           <div class="request-id">{{ req.requestId }}</div>
         </div>
@@ -100,9 +100,9 @@
               [class.badge-pending]="req.status === 'pending'"
               [class.badge-approved]="req.status === 'approved'"
               [class.badge-rejected]="req.status === 'rejected'">
-              @if (req.status === 'pending')  { 🔔 รอลงนามอาจารย์ }
+              @if (req.status === 'pending')  { <i class="ti ti-bell"></i> รอลงนามอาจารย์ }
               @if (req.status === 'approved') { <i class="ti ti-circle-check"></i> อนุมัติแล้ว }
-              @if (req.status === 'rejected') { ❌ ไม่อนุมัติ }
+              @if (req.status === 'rejected') { <i class="ti ti-circle-x"></i> ไม่อนุมัติ }
             </span>
           </div>
         </div>
@@ -213,7 +213,7 @@
                 @if (!req.isHijacked) {
                   <span class="badge-pass"><i class="ti ti-circle-check"></i> ไม่ติดรายการ</span>
                 } @else {
-                  <span class="badge-fail">❌ ติดรายการ</span>
+                  <span class="badge-fail"><i class="ti ti-circle-x"></i> ติดรายการ</span>
                 }
               </div>
             </div>
@@ -273,7 +273,7 @@
         @if (req.status === 'pending') {
           <div class="decision-section">
             <div class="decision-section-head">
-              <span>💬</span>
+              <span><i class="ti ti-message-circle"></i></span>
               <span class="decision-section-title">ความเห็นอาจารย์ที่ปรึกษา</span>
             </div>
 
@@ -312,7 +312,7 @@
                 [placeholder]="remarkRequired ? 'กรุณาระบุเหตุผลที่ไม่เห็นชอบ...' : 'ข้อเสนอแนะหรือหมายเหตุเพิ่มเติม...'"
                 rows="3"></textarea>
               @if (remarkRequired && !remark.trim()) {
-                <div class="remark-error-msg">⚠ กรุณาระบุเหตุผลการไม่เห็นชอบ</div>
+                <div class="remark-error-msg"><i class="ti ti-alert-triangle"></i> กรุณาระบุเหตุผลการไม่เห็นชอบ</div>
               }
             </div>
 
@@ -336,7 +336,7 @@
     <div class="confirm-modal" (click)="$event.stopPropagation()">
 
       <div class="confirm-icon-wrap" [class.confirm-icon-wrap--approved]="decision() === 'approved'" [class.confirm-icon-wrap--rejected]="decision() === 'rejected'">
-        @if (decision() === 'approved') { <i class="ti ti-circle-check"></i> } @else { ❌ }
+        @if (decision() === 'approved') { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-circle-x"></i> }
       </div>
 
       <div class="confirm-title">
@@ -368,7 +368,7 @@
         <button class="btn-approve" (click)="submitDecision()" [disabled]="isSubmitting()">
           @if (isSubmitting()) { <span class="btn-spinner"></span> กำลังส่ง... }
           @else if (decision() === 'approved') { <i class="ti ti-circle-check"></i> ยืนยัน ลงนาม }
-          @else { ❌ ยืนยัน ไม่อนุมัติ }
+          @else { <i class="ti ti-circle-x"></i> ยืนยัน ไม่อนุมัติ }
         </button>
       </div>
 

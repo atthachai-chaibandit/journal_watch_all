@@ -64,29 +64,18 @@ export class PreT3 implements OnInit {
   /* ── มาจากหน้าค้นหา ── */
   fromSearch = signal(false);
 
-  /* ── ข้อ 1, 9: auto-check จาก field แต่นิสิตเอาออกได้ ── */
-  autoUnchecked = signal<Set<number>>(new Set());
-
-  /* ── ข้อ 2-8: นิสิตติกเอง ── */
+  /* ── ทุกข้อ (1-9): นิสิตต้องกดติกเองทั้งหมด ระบบไม่ auto-check ให้ ── */
   manualChecks = signal<Set<number>>(new Set());
 
   toggleCheck(id: number): void {
     const item = this.checklist().find(c => c.id === id);
     if (!item?.canToggle) return;
 
-    if (id === 1 || id === 9) {
-      this.autoUnchecked.update(set => {
-        const next = new Set(set);
-        if (next.has(id)) next.delete(id); else next.add(id);
-        return next;
-      });
-    } else {
-      this.manualChecks.update(set => {
-        const next = new Set(set);
-        if (next.has(id)) next.delete(id); else next.add(id);
-        return next;
-      });
-    }
+    this.manualChecks.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }
 
   /* ── Checklist computed ── */
@@ -98,11 +87,8 @@ export class PreT3 implements OnInit {
     const q      = this.quartile().trim();
     const disc   = this.isDiscontinued();
     const manual = this.manualChecks();
-    const au     = this.autoUnchecked();
 
-    const ms   = (id: number): 'pass' | 'pending' => manual.has(id) ? 'pass' : 'pending';
-    const auto = (id: number, cond: boolean): 'pass' | 'pending' =>
-      (cond && !au.has(id)) ? 'pass' : 'pending';
+    const ms = (id: number): 'pass' | 'pending' => manual.has(id) ? 'pass' : 'pending';
 
     return [
       {
@@ -111,7 +97,7 @@ export class PreT3 implements OnInit {
         detail: name
           ? `ตรวจสอบว่า "${name}" ตรงกับชื่อในฐานข้อมูลจริง แล้วคลิกยืนยัน`
           : 'กรอกชื่อวารสารก่อน',
-        status: auto(1, !!name),
+        status: ms(1),
       },
       {
         id: 2, canToggle: true,
@@ -171,7 +157,7 @@ export class PreT3 implements OnInit {
         id: 9, canToggle: true,
         title: 'ยืนยันปรากฏฐานข้อมูล และ วันที่ขึ้น',
         detail: (db && q) ? `ฐานข้อมูล: ${db} · Quartile: ${q}` : 'ยังไม่ได้ระบุฐานข้อมูลหรือ Quartile',
-        status: auto(9, !!(db && q)),
+        status: ms(9),
       },
     ];
   });
@@ -191,6 +177,13 @@ export class PreT3 implements OnInit {
 
   ngOnInit(): void {
     window.scrollTo(0, 0);
+    // tab-bar เลื่อนแนวนอนได้บนจอแคบ (overflow-x:auto) แต่ scrollLeft เริ่มที่ 0 เสมอ
+    // ถ้าแท็บที่ active อยู่ไม่ใช่ตัวแรกจะโดนซ่อนพ้นขอบจอ ต้องเลื่อนให้เข้ามาอยู่ใน
+    // มุมมองเองตั้งแต่โหลดหน้า โดยไม่ใช้ animation
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
     const state = history.state;
     if (state?.journalName) {
       this.journalName.set(state.journalName ?? '');
@@ -204,10 +197,7 @@ export class PreT3 implements OnInit {
       this.journalUrl.set(state.journalUrl ?? '');
       this.isDiscontinued.set(state.isDiscontinued ?? false);
       this.fromSearch.set(true);
-
-      const preChecked = new Set<number>([1, 3, 4, 5, 6, 7, 9]);
-      if (!state.isDiscontinued) preChecked.add(8);
-      this.manualChecks.set(preChecked);
+      // ไม่ pre-check ให้อีกต่อไป — นิสิตต้องกดติกทั้ง 9 ข้อด้วยตนเองเสมอ ไม่ว่าจะมาจากหน้าค้นหาหรือกรอกเอง
     }
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });

@@ -35,6 +35,8 @@ export class Dashboard implements OnInit {
 
   staffName  = '';
   staffEmail = '';
+
+  get userPicture() { return this.auth.userPicture; }
   today      = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
   greeting   = this.getGreeting();
 

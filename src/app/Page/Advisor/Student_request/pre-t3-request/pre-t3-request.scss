@@ -476,3 +476,74 @@ $white:  #FFFFFF;
 
 .btn-cancel  { padding: 9px 18px; border: 1.5px solid $border; background: $white; color: $muted; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all 0.18s; &:hover { border-color: $navy; color: $navy; } }
 .btn-approve { display: flex; align-items: center; gap: 8px; padding: 9px 22px; background: #166534; color: $white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all 0.18s; &:hover { background: #14532d; } &:disabled { opacity: 0.6; cursor: not-allowed; } }
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน ══ */
+@media (max-width: 768px) {
+  .page { padding: 20px 16px 60px; }
+
+  /* 3 แท็บรวมกันกว้างเกินจอมือถือ ไม่เคยมีการจัดการมาก่อนเลย */
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; }
+
+  .modal-header { padding: 16px 18px 14px; }
+  .modal-body   { padding: 16px 18px 18px; }
+  .decision-section { padding: 18px; }
+
+  /* URL วารสารเป็นข้อความยาวไม่มีช่องว่างให้ตัดคำ (เช่นลิงก์เต็ม) ไม่เคยมี
+     overflow-wrap เลย บนจอแคบจะล้นออกนอก .modal ที่ overflow:hidden จนถูกตัดทิ้ง
+     อ่านไม่ครบ */
+  .url-link, .detail-value { overflow-wrap: break-word; word-break: break-word; }
+}
+
+@media (max-width: 600px) {
+  /* .card-right (flex-shrink:0; min-width:140px) และ .card-arrow (flex-shrink:0)
+     ไม่ยอมหดทั้งคู่ ขณะที่ .card-left (flex:1; min-width:0) หดได้ไม่จำกัด — ต่อให้
+     เพิ่ม flex-wrap ก็ไม่ช่วย (flexbox คำนวณว่ายังพอใส่แถวเดียวได้โดยบีบฝั่งซ้าย)
+     ผลคือชื่อบทความ/badge เหลือพื้นที่แค่ ~90-100px บนจอมือถือจริง อ่านแทบไม่ได้
+     ต้องบังคับ column ให้ตกคนละแถวแน่นอนแทน */
+  .request-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 18px 44px 18px 20px;
+  }
+  .card-left { width: 100%; }
+
+  /* .card-right เดิมสืบ flex-direction:column; align-items:flex-end มาจาก desktop
+     (ไว้ชิดขวาเทียบกับ .card-left ที่อยู่ฝั่งซ้ายในแถวเดียวกัน) — พอการ์ดถูกบังคับ
+     เป็น column ด้านบน .card-right ก็เลยกลายเป็นบล็อกข้อความชิดขวาลอยเดี่ยวๆ อยู่คนละ
+     ฝั่งกับหัวข้อที่ชิดซ้ายด้านบน ดูไม่สมดุล เปลี่ยนเป็นแถวแนวนอน wrap ชิดซ้ายแทน
+     ให้ status/วันที่/เลขคำร้องไหลต่อกันเป็นบรรทัดเดียวเหมือน meta row ทั่วไป
+     พร้อมเส้นแบ่งบางๆ คั่นจากหัวข้อด้านบนให้ดูเป็นสัดส่วน */
+  .card-right {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 14px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+  .request-id { margin-top: 0; }
+
+  /* ลูกศรเดิมอยู่กึ่งกลางแนวตั้งของการ์ดแถวเดียว พอการ์ดสูงขึ้นจาก column ให้ยึด
+     ตำแหน่งเดิมไว้ด้วย position:absolute แทนปล่อยให้เป็น flex item ลอยกลางการ์ด */
+  .card-arrow {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+  }
+  .request-card { position: relative; }
+
+  .article-title { max-width: none; }
+
+  .detail-grid { grid-template-columns: 1fr; }
+
+  /* การ์ดตัวเลือก "เห็นชอบ/ไม่เห็นชอบ" เรียงข้างกันแคบเกินไปบนจอมือถือจริง
+     (ไอคอนกล่อง 20px + ข้อความ) ให้ตกเป็นคนละแถวแทนเพื่อให้แตะง่ายขึ้น */
+  .decision-choices { flex-direction: column; }
+
+  .confirm-modal { padding: 26px 20px 20px; }
+}

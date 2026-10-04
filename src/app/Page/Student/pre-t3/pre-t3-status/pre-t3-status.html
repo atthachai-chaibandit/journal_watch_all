@@ -15,7 +15,7 @@
 
   <!-- PAGE TITLE -->
   <div class="page-title-row">
-    <span class="page-icon">📊</span>
+    <span class="page-icon"><i class="ti ti-chart-bar"></i></span>
     <div class="page-title-group">
       <h1 class="page-title">สถานะ Pre-T3</h1>
       <p class="page-sub">ติดตามความคืบหน้าคำร้องของคุณ</p>
@@ -85,9 +85,9 @@
         <div class="card-bottom-row">
           <div class="current-status">
             @if (card.overallStatus === 'Approved') {
-              <span class="cs-chip cs-approved"> อนุมัติสำเร็จ</span>
+              <span class="cs-chip cs-approved"><i class="ti ti-circle-check"></i> อนุมัติสำเร็จ</span>
             } @else if (card.advisorStatus === 'Rejected' || card.facultyStatus === 'Rejected') {
-              <span class="cs-chip cs-rejected"> ไม่ผ่านการอนุมัติ</span>
+              <span class="cs-chip cs-rejected"><i class="ti ti-circle-x"></i> ไม่ผ่านการอนุมัติ</span>
             } @else if (card.advisorStatus === 'Pending') {
               <span class="cs-chip cs-pending">รออาจารย์ที่ปรึกษาอนุมัติ</span>
             } @else if (card.advisorStatus === 'Approved' && card.facultyStatus === 'Pending') {
@@ -96,7 +96,14 @@
               <span class="cs-chip cs-pending">กำลังดำเนินการ</span>
             }
           </div>
-          <button class="btn-cancel-card" (click)="cancelRequest(card.id, $event)">✕ ยกเลิกคำร้องขอ</button>
+          <button class="btn-cancel-card" [disabled]="card.advisorStatus === 'Approved'"
+                  (click)="cancelRequest(card.id, $event)">
+            @if (card.advisorStatus === 'Approved') {
+              <i class="ti ti-lock"></i> ไม่สามารถยกเลิกได้
+            } @else {
+              ✕ ยกเลิกคำร้องขอ
+            }
+          </button>
         </div>
         </div><!-- /req-card-content -->
 
@@ -116,7 +123,7 @@
       <div class="mh">
         <div class="mh-row1">
           <div class="mh-icon-title">
-            <span class="mh-file-icon">📄</span>
+            <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
             <span class="mh-title">ข้อมูลคำร้องและวารสาร</span>
           </div>
           <div class="mh-row1-right">
@@ -126,11 +133,14 @@
         </div>
 
         <div class="mh-meta">
-          เลขที่คำร้อง: <strong>{{ d.id }}</strong>
-          <span class="mh-sep">·</span>
-          นิสิต: <strong>{{ d.studentName }}</strong>
-          <span class="mh-sep">·</span>
-          รหัส: <strong>{{ d.studentId }}</strong>
+          <div class="mh-meta-row">เลขที่คำร้อง: <strong>{{ d.id }}</strong></div>
+          <div class="mh-meta-row">
+            นิสิต:
+            <strong>
+              <span class="mh-nobreak">{{ d.studentName.split(' ')[0] }}</span>{{ ' ' }}<span class="mh-nobreak">{{ d.studentName.split(' ').slice(1).join(' ') }}</span>
+            </strong>
+          </div>
+          <div class="mh-meta-row">รหัส: <strong>{{ d.studentId }}</strong></div>
         </div>
 
         <div class="mh-content">
@@ -199,7 +209,7 @@
         <!-- Section: Status Log -->
         <div class="ms-log-wrap">
           <div class="ms-log-head">
-            <span>📋</span>
+            <span><i class="ti ti-clipboard-list"></i></span>
             <span>ประวัติการดำเนินการ (Status Log)</span>
           </div>
           <div class="ms-log-body">
@@ -233,9 +243,16 @@
 
       <!-- ══ MODAL FOOTER ══ -->
       <div class="modal-footer">
-<button class="btn-mf btn-mf-cancel" (click)="cancelRequest(d.id, $event); closeDetail()">❌ ยกเลิกคำร้อง</button>
+<button class="btn-mf btn-mf-cancel" [disabled]="d.advisorStatus === 'Approved'"
+        (click)="cancelRequest(d.id, $event); closeDetail()">
+  @if (d.advisorStatus === 'Approved') {
+    <i class="ti ti-lock"></i> ไม่สามารถยกเลิกได้ (อาจารย์อนุมัติแล้ว)
+  } @else {
+    <i class="ti ti-circle-x"></i> ยกเลิกคำร้อง
+  }
+</button>
         <button class="btn-mf btn-mf-t3" [disabled]="d.cardStatus !== 'approved'">
-          @if (d.cardStatus === 'approved') { ⬆ ยื่น T3 } @else { ⬆ ยื่น T3 (รออนุมัติ Pre-T3 ก่อน) }
+          @if (d.cardStatus === 'approved') { <i class="ti ti-send"></i> ยื่น T3 } @else { <i class="ti ti-send"></i> ยื่น T3 (รออนุมัติ Pre-T3 ก่อน) }
         </button>
       </div>
 

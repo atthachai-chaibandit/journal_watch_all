@@ -112,11 +112,106 @@ $border:   rgba(28,39,68,0.07);
   &::placeholder { color: $muted; }
 }
 
-.filter-select {
-  padding: 8px 12px; border-radius: 8px;
-  border: 1px solid rgba(28,39,68,0.12);
-  font-family: 'Sarabun', sans-serif; font-size: 13px; color: $navy;
-  background: #fff; cursor: pointer; outline: none;
+/* เดิมเป็น <select> ดิบๆ โชว์ลูกศร/รายการตัวเลือกแบบดีฟอลต์ของเบราว์เซอร์-OS เอง
+   ซึ่ง CSS ไปปรับแต่งรายการตัวเลือก (option list) ที่กางออกมาไม่ได้เลยไม่ว่ากรณีใด
+   (เป็น native UI ของระบบปฏิบัติการ ไม่ใช่ DOM ที่ style ได้) ต้องสร้าง dropdown
+   ของตัวเองแทนทั้งหมด ถึงจะคุมหน้าตาราบรายการที่กางออกมาได้จริง */
+.status-dropdown {
+  position: relative;
+  flex-shrink: 0;
+
+  &__trigger {
+    display: flex; align-items: center; gap: 8px;
+    height: 38px;
+    padding: 0 14px;
+    border: 1.5px solid rgba(28,39,68,0.15);
+    border-radius: 8px;
+    background: #fff;
+    font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; color: $navy;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 170px;
+    transition: border-color .15s, box-shadow .15s;
+
+    &:hover { border-color: rgba(28,39,68,0.3); }
+  }
+
+  &--open &__trigger {
+    border-color: $navy;
+    box-shadow: 0 0 0 3px rgba(28,39,68,0.08);
+  }
+
+  &__val { flex: 1; text-align: left; }
+
+  &__arrow {
+    color: $muted;
+    flex-shrink: 0;
+    transition: transform .2s;
+  }
+
+  &--open &__arrow { transform: rotate(180deg); }
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  &__panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 100%;
+    background: #fff;
+    border: 1.5px solid rgba(28,39,68,0.12);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.13);
+    z-index: 100;
+    overflow: hidden;
+    animation: statusDdIn .15s ease;
+  }
+
+  &__opt {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 13px;
+    color: $navy;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+    transition: background .12s;
+
+    &:hover { background: $bg; }
+
+    &--active { font-weight: 700; background: rgba(28,39,68,0.05); }
+  }
+
+  &__check {
+    margin-left: auto;
+    color: $navy;
+    font-weight: 800;
+    font-size: 13px;
+  }
+
+  &__dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+
+    &--all         { background: #94a3b8; }
+    &--pending     { background: $pending; }
+    &--in_progress { background: $progress; }
+    &--resolved    { background: $resolved; }
+  }
+}
+
+@keyframes statusDdIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* ══ Loading / Error / Empty ══ */
@@ -379,4 +474,39 @@ $border:   rgba(28,39,68,0.07);
 
   &:hover:not(:disabled) { background: lighten($navy, 8%); }
   &:disabled { opacity: .5; cursor: default; }
+}
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน ══ */
+@media (max-width: 900px) {
+  .page-shell { padding: 20px 16px; }
+}
+
+@media (max-width: 700px) {
+  /* minmax(320px, 1fr) มีพื้นขั้นต่ำ 320px ตายตัว — บนมือถือทั่วไป (เช่น 360px
+     หลังหักเผื่อ padding หน้าเหลือเนื้อที่จริงน้อยกว่า 320px) การ์ดจะล้นออกนอกจอ
+     ลดพื้นขั้นต่ำลงให้พอดีจอมากขึ้น */
+  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+  .status-dropdown { flex: 1 1 auto; width: 100%; }
+  .status-dropdown__trigger { width: 100%; box-sizing: border-box; }
+}
+
+@media (max-width: 420px) {
+  .page-header { flex-wrap: wrap; }
+  .page-icon-wrap { width: 48px; height: 48px; font-size: 22px; }
+  .page-title { font-size: 19px; }
+
+  .cards-grid { grid-template-columns: 1fr; }
+
+  /* .detail-row เป็น grid 2 คอลัมน์ตายตัว (110px + ที่เหลือ) บนจอแคบมากๆ ค่าที่ยาว
+     (เช่นอีเมล/URL ที่มี word-break:break-all อยู่แล้ว) จะเหลือพื้นที่โชว์แคบมาก
+     สลับเป็น label บน/value ล่างแทน */
+  .detail-row {
+    grid-template-columns: 1fr;
+    .detail-key { margin-bottom: 2px; }
+  }
+
+  .modal-overlay { padding: 12px; }
+  .detail-modal__body { padding: 16px 18px; }
+  .detail-modal__header { padding: 14px 18px; }
 }

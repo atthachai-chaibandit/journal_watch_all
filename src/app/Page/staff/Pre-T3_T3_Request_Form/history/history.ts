@@ -125,12 +125,12 @@ export class History implements OnInit {
   ];
 
   readonly evidenceFiles = [
-    { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',        icon: '📄' },
-    { key: 'full_paper',         label: 'บทความฉบับสมบูรณ์',    icon: '📝' },
-    { key: 'journal_cover',      label: 'ปกวารสาร',              icon: '📰' },
-    { key: 'table_of_contents',  label: 'สารบัญ',                icon: '📋' },
-    { key: 'database_evidence',  label: 'หลักฐานฐานข้อมูล',     icon: '🔍' },
-    { key: 'peer_review_result', label: 'ผล Peer Review',        icon: '✅' },
+    { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',        icon: 'ti ti-file-text' },
+    { key: 'full_paper',         label: 'บทความฉบับสมบูรณ์',    icon: 'ti ti-file-description' },
+    { key: 'journal_cover',      label: 'ปกวารสาร',              icon: 'ti ti-news' },
+    { key: 'table_of_contents',  label: 'สารบัญ',                icon: 'ti ti-list-details' },
+    { key: 'database_evidence',  label: 'หลักฐานฐานข้อมูล',     icon: 'ti ti-search' },
+    { key: 'peer_review_result', label: 'ผล Peer Review',        icon: 'ti ti-notes' },
   ];
 
   isLoading     = signal(true);
@@ -170,6 +170,14 @@ export class History implements OnInit {
   setTypeFilter(t: TypeFilter): void { this.typeFilter.set(t); }
 
   ngOnInit(): void {
+    /* .tab-bar มี overflow-x:auto สำหรับจอมือถือ (3 แท็บรวมกันกว้างเกินจอแคบ) —
+       พอกดมาแท็บนี้ (ขวาสุด) ต้องเลื่อนแท็บที่ active เข้ามาให้เห็นในจอเอง ไม่งั้น
+       ผู้ใช้จะไม่เห็นว่าแท็บไหนกำลัง active อยู่เพราะมันตกขอบขวาไปแล้ว */
+    setTimeout(() => {
+      document.querySelector('.tab-item.tab-active')
+        ?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    }, 0);
+
     const qp = this.route.snapshot.queryParamMap;
     const qpType   = qp.get('type')   as TypeFilter | null;
     const qpStatus = qp.get('status') as FilterType | null;

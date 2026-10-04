@@ -1,3 +1,7 @@
+:host {
+  display: block;
+  width: 100%;
+}
 
 .app-layout {
   display: flex;
@@ -17,7 +21,9 @@
 .sidebar-backdrop {
   display: none;
 
-  @media (max-width: 768px) {
+  /* ต้องตรงกับ breakpoint ที่ sidebar เปลี่ยนเป็นโหมด overlay (1024px)
+     ไม่งั้นบน iPad จะมี sidebar เลื่อนทับเนื้อหาแต่ไม่มี backdrop ให้แตะปิด */
+  @media (max-width: 1024px) {
     display: block;
     position: fixed;
     inset: 0;

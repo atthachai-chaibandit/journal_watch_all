@@ -265,6 +265,18 @@ section { margin: 0; }
 
 @media (max-width: 480px) {
   .steps-grid { grid-template-columns: 1fr; }
-  .welcome-content h1 { font-size: 26px; }
+  .welcome-content h1 { font-size: 24px; }
+  .subtitle { font-size: 14px; }
   .quick-actions { flex-direction: column; }
+
+  /* avatar วงกลม 100px กินพื้นที่สัดส่วนมากเกินไปบนจอแคบ (iPhone SE/320-375px) */
+  .welcome-icon { width: 76px; height: 76px; font-size: 32px; }
+
+  /* .meta-card min-width:220px เดิม ชนกันเองสองใบ (220*2+gap=456) บนจอแคบ <480
+     flex-wrap ทำให้แต่ละใบตกคนละแถวได้ก็จริง แต่ยังกิน min-width:220 เกินสัดส่วน
+     ของพื้นที่ที่เหลือจริง (~264px หลังหักขอบ) ทำให้ดูอัดเกินไป ลดเป็น flex-based แทน */
+  .user-meta { gap: 10px; }
+  .meta-card { min-width: 0; flex: 1 1 140px; padding: 11px 14px; }
+
+  .step-card { padding: 18px 16px; }
 }

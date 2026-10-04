@@ -47,34 +47,42 @@ $muted:  #64748b;
 }
 
 // ─── TABS ──────────────────────────────────────────────────────────
+// ─── TABS (segmented pill — เหมือน tab-bar ของ staff/manage-users) ──────
 .mu-tabs {
   display: flex;
-  gap: 0;
-  border-bottom: 2px solid $border;
+  gap: 4px;
+  width: fit-content;
+  background: $bg;
+  border: 1.5px solid $border;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
 }
 
 .mu-tab {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
-  background: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
   border: none;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: $muted;
   cursor: pointer;
   font-family: inherit;
-  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+  transition: all .2s ease;
 
-  &:hover { color: $navy; }
+  &:hover { background: rgba($gold, .12); color: $navy; }
 
   &--active {
-    color: $navy;
-    border-bottom-color: $red;
-    font-weight: 800;
+    background: $navy;
+    color: $gold;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(0,0,0,.2);
   }
 }
 
@@ -92,8 +100,8 @@ $muted:  #64748b;
   font-weight: 700;
 
   .mu-tab--active & {
-    background: rgba($navy, .12);
-    color: $navy;
+    background: rgba($gold, .22);
+    color: $gold;
   }
 }
 
@@ -275,10 +283,6 @@ $muted:  #64748b;
   background: linear-gradient(90deg, $navy 0%, #2E3A5C 100%);
 }
 
-.mu-tab--admin.mu-tab--active {
-  border-bottom-color: $navy;
-}
-
 .mu-table-head.mu-table-head--admin {
   grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr 1fr 1.2fr;
 }
@@ -416,6 +420,20 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 1.1fr 3fr;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,.05);
+}
+
+/* ซ่อนไว้บนเดสก์ท็อป (ตารางไม่ต้อง scroll) โชว์เฉพาะตอนที่ .mu-table-wrap เปิด
+   overflow-x:auto ใน media query ด้านล่าง ไม่งั้นผู้ใช้มือถือจะไม่รู้ว่าเลื่อนดู
+   คอลัมน์ที่เหลือได้ เพราะกริดคอลัมน์ถูกตัดไปแค่ส่วนที่พอดีจอ */
+.mu-scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $muted;
+  margin-bottom: -8px;
+
+  i { font-size: 14px; }
 }
 
 .mu-table-head {
@@ -762,9 +780,55 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 1.1fr 3fr;
   &.mu-page-active { background: $navy; color: #fff; border-color: $navy; }
 }
 
+@media (max-width: 900px) {
+  /* .mu-table-head/.mu-table-row เป็น grid คอลัมน์สัดส่วนตายตัว (รวมคอลัมน์
+     "จัดการ" ที่มีปุ่มพร้อมข้อความ) ไม่มีทางยุบพอดีจอมือถือได้เลยโดยไม่บีบ
+     จนอ่านไม่ออก — ให้ scroll แนวนอนแทน พร้อมกำหนด min-width ของแถวให้คอลัมน์
+     ไม่ถูกบีบต่ำกว่าที่อ่านได้ (ครอบคลุมทั้งตาราง นิสิต/อาจารย์/staff ปกติ และ
+     ตาราง admin ที่ใช้ modifier --admin เป็น grid 7 คอลัมน์แยกต่างหาก) */
+  .mu-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mu-table-head, .mu-table-row { min-width: 900px; }
+  .mu-scroll-hint { display: flex; }
+}
+
 @media (max-width: 700px) {
   .mu-page { padding: 16px; }
   .mu-toolbar { flex-wrap: wrap; }
+
+  /* มี 4 แท็บ (นิสิต/อาจารย์/Staff/Admin) พร้อม badge ตัวเลข รวมกันกว้างเกินจอ
+     มือถือได้ง่ายกว่าตอน 2 แท็บ — กันไว้ด้วย scroll แนวนอนแทนที่จะให้ล้น/บีบจนอ่านยาก */
+  .mu-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .mu-tab { flex-shrink: 0; }
+
+  /* .mu-toolbar__actions (flex-shrink:0) + .mu-dropdown (min-width:158px,
+     flex-shrink:0) รวมกันกว้างเกินจอมือถือตั้งแต่แรกแล้ว ก่อนจะถึงคิว .mu-search-wrap
+     ด้วยซ้ำ — ให้แต่ละกลุ่มตกเป็นคนละแถวเต็มความกว้างแทนที่จะเบียดกันครึ่งๆ กลางๆ */
+  .mu-toolbar__actions { width: 100%; }
+  .btn-add-user, .btn-import-csv { flex: 1; text-align: center; }
+  .mu-dropdown { width: 100%; }
+  .mu-dropdown__trigger { width: 100%; box-sizing: border-box; }
+  .mu-search-wrap { width: 100%; }
+
+  .mu-pagination { flex-wrap: wrap; gap: 10px 14px; }
+  .mu-page-btns { flex-wrap: wrap; }
+
+  .mu-modal-overlay { padding: 16px; }
+  .mu-edit-grid--2,
+  .mu-edit-grid--3 { grid-template-columns: 1fr; }
+  .mu-edit-modal__header { padding: 16px 18px 14px; }
+  .mu-edit-modal__body { padding: 18px; }
+  .mu-edit-modal__footer { padding: 12px 18px; flex-wrap: wrap; }
+  .mu-btn-cancel, .mu-btn-save { flex: 1; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  /* .mu-toast เดิม white-space:nowrap ไม่มี max-width — ข้อความแจ้งเตือนยาวๆ
+     (เช่น error message จาก backend) จะล้นออกนอกจอทั้งสองฝั่งบนมือถือจริง */
+  .mu-toast {
+    max-width: calc(100vw - 32px);
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 // ─── EDIT MODAL ──────────────────────────────────────────────────────

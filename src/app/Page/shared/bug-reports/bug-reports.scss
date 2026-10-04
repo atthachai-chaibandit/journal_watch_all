@@ -400,3 +400,30 @@ $gray-l:  #F3F4F6;
 
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
+
+// ── RESPONSIVE ──────────────────────────────────────────
+@media (max-width: 900px) {
+  .page { padding: 20px 20px 60px; }
+}
+
+@media (max-width: 600px) {
+  .page { padding: 16px 14px 48px; }
+  .pcard-body { padding: 18px 16px 20px; }
+
+  .page-title-icon { font-size: 26px; }
+  .page-title { font-size: 19px; }
+
+  /* .list-header, .report-item-header, .pagination ไม่มี flex-wrap เลยมาก่อน
+     เสี่ยงล้นบนจอแคบมากๆ ถ้าข้อความยาว (เช่น "ทั้งหมด X รายการ" + ปุ่มรีเฟรช
+     หรือมีหลายปุ่มเลขหน้า) เพิ่มไว้เป็นตัวกันชน ไม่กระทบจอกว้าง */
+  .list-header  { flex-wrap: wrap; gap: 10px; }
+  .report-item-header { flex-wrap: wrap; }
+  .pagination   { flex-wrap: wrap; }
+
+  /* ปุ่มส่งรายงาน เดิมชิดขวาขนาดตามเนื้อหา กดยากบนมือถือ ให้เต็มความกว้างแทน
+     เพื่อเป็นเป้าหมายกดที่ใหญ่และเข้าถึงง่ายขึ้น (ตามหลัก touch target) */
+  .form-actions { justify-content: stretch; }
+  .btn-submit   { width: 100%; justify-content: center; }
+
+  .report-url { max-width: 100%; }
+}

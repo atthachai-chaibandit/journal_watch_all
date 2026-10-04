@@ -90,11 +90,13 @@ $gray:   #9CA3AF;
 }
 
 .btn-cancel-card {
+  display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 12px; border-radius: 8px; border: 1.5px solid $red; flex-shrink: 0;
   background: $red-l; color: $red; font-size: 12px; font-weight: 700;
   font-family: 'Sarabun', sans-serif; cursor: pointer; white-space: nowrap;
   transition: all 0.15s;
-  &:hover { background: $red; color: $white; }
+  &:hover:not(:disabled) { background: $red; color: $white; }
+  &:disabled { background: #F3F4F6; color: $gray; border-color: $border; cursor: not-allowed; }
 }
 
 /* ── REQUEST CARD ── */
@@ -145,6 +147,7 @@ $gray:   #9CA3AF;
 /* ── CURRENT STATUS ── */
 .current-status { display: flex; }
 .cs-chip {
+  display: inline-flex; align-items: center; gap: 6px;
   font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 99px;
   background: transparent;
   &.cs-pending  { color: #6B7280; }
@@ -187,7 +190,7 @@ $gray:   #9CA3AF;
   z-index: 1000; overflow-y: auto; padding: 24px 16px 60px;
 }
 .modal-panel {
-  background: $bg; border-radius: 12px; width: 100%; max-width: 900px;
+  background: $bg; border-radius: 12px; width: 100%; max-width: 900px; min-width: 0;
   box-shadow: 0 24px 60px rgba(0,0,0,0.25); display: flex; flex-direction: column;
   animation: slideUp 0.22s ease; overflow: hidden;
 
@@ -229,10 +232,17 @@ $gray:   #9CA3AF;
   padding: 4px 12px; border-radius: 8px;
 }
 .mh-meta {
+  display: flex; flex-direction: column; gap: 4px;
   font-size: 12px; color: $muted;
   strong { color: $navy; font-weight: 700; }
 }
-.mh-sep { margin: 0 6px; }
+
+/* ภาษาไทยไม่มีช่องว่างระหว่างคำ เบราว์เซอร์เลยใช้ dictionary ตัดคำเอง (UAX#14) ซึ่ง
+   บางทีตัดกลางนามสกุลผิดจุด (เช่น "ชัย" / "บัณฑิต" คนละบรรทัด) — word-break:keep-all
+   ใช้ไม่ได้ผลกับภาษาไทย (สเปกระบุว่ามีผลเฉพาะ CJK) ทางแก้ที่ได้ผลจริงคือแยกชื่อ-นามสกุล
+   เป็นคนละ nowrap span ใน HTML (ดู mh-meta ในไฟล์ .html) ให้ตัดบรรทัดได้เฉพาะช่องว่าง
+   จริงระหว่างชื่อกับนามสกุลเท่านั้น ไม่ตัดกลางคำของแต่ละฝั่งเอง */
+.mh-nobreak { white-space: nowrap; }
 
 .mh-content    { display: flex; gap: 16px; align-items: flex-start; }
 .mh-left       { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -354,7 +364,12 @@ $gray:   #9CA3AF;
   transition: all 0.2s; white-space: nowrap;
 }
 .btn-mf-print  { background: $white; color: $navy; &:hover { background: $bg; } }
-.btn-mf-cancel { background: $red-l; color: $red; border-color: #f5c6c0; &:hover { background: $red; color: $white; } }.btn-mf-t3 {
+.btn-mf-cancel {
+  background: $red-l; color: $red; border-color: #f5c6c0;
+  &:hover:not(:disabled) { background: $red; color: $white; }
+  &:disabled { background: #F3F4F6; color: $gray; border-color: $border; cursor: not-allowed; opacity: 0.8; }
+}
+.btn-mf-t3 {
   margin-left: auto;
   &:disabled { background: #F3F4F6; color: $gray; border-color: $border; cursor: not-allowed; opacity: 0.65; }
   &:not(:disabled) { background: $navy; color: $yellow; border-color: $navy; cursor: pointer; &:hover { opacity: 0.9; } }
@@ -473,5 +488,85 @@ $gray:   #9CA3AF;
   background: $white; color: $navy; font-size: 12.5px; font-weight: 700;
   cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: 'Sarabun', sans-serif;
   &:hover { background: $navy; color: $white; border-color: $navy; }
+}
+
+/* ══ RESPONSIVE — ไฟล์นี้ไม่เคยมี @media เลยมาก่อน (เหมือนกับ pre-t3-history.scss) ══ */
+@media (max-width: 900px) {
+  .status-page { padding: 20px 16px 50px; }
+
+  /* .req-card-top-right (ชิปรหัส + ไทม์สแตมป์) มี flex-shrink:0 ไม่ยอมหด ขณะที่
+     .req-card-top-left มี flex:1; min-width:0 หดได้ไม่จำกัด — ใช้ flex-wrap เฉยๆ
+     ไม่พอ เพราะ flexbox คำนวณว่ายังพอใส่แถวเดียวได้โดยบีบฝั่งซ้ายเสมอ (ไม่มีวันขึ้น
+     แถวใหม่เอง) ผลคือชื่อบทความถูกบีบแคบผิดปกติ ต้องบังคับ column ให้ตกคนละแถว
+     แน่นอนแทน */
+  .req-card-top {
+    flex-direction: column;
+    padding-right: 0;
+  }
+  .req-card-top-left,
+  .req-card-top-right { width: 100%; }
+  .req-journal { overflow-wrap: break-word; word-break: break-word; }
+
+  /* .req-card-top-right เดิมเป็นคอลัมน์ชิดขวา (ไว้คู่กับหัวข้อฝั่งซ้ายในแถวเดียวกัน)
+     พอตกมาอยู่แถวใหม่เต็มความกว้าง การชิดขวาแบบเดิมจะดูลอยไม่สมดุลกับหัวข้อที่ชิดซ้าย
+     ด้านบน — เปลี่ยนเป็นแถวแนวนอน wrap ชิดซ้ายแทน ให้รหัสคำร้อง + เวลาไหลต่อกัน
+     เป็นบรรทัดเดียวเหมือน meta row ทั่วไป พร้อมเส้นแบ่งบางๆ คั่นจากหัวข้อ */
+  .req-card-top-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(28,39,68,0.12);
+  }
+  .req-id-chip { align-self: center; }
+  .req-timestamps { justify-content: flex-start; }
+
+  /* สถานะ (เช่น "รออาจารย์ที่ปรึกษาอนุมัติ") + ปุ่มยกเลิกคำร้อง อยู่แถวเดียวกัน
+     ไม่มี wrap มาก่อน ข้อความสถานะยาวๆ เสี่ยงเบียดปุ่มจนกดยากบนจอแคบ */
+  .card-bottom-row { flex-wrap: wrap; }
+
+  .mh-grid { grid-template-columns: 1fr 1fr; }
+
+  .mh, .modal-body, .ms-card, .ms-log-body { padding: 16px 16px; }
+
+  /* .mh-right (กล่องวันที่ยื่น + สถานะ) มี flex-shrink:0 ไม่ยอมหด ขณะที่ .mh-left
+     (ชื่อวารสาร) มี flex:1; min-width:0 หดได้ไม่จำกัด — flex-wrap เฉยๆ ไม่พอ
+     (บั๊กแพทเทิร์นเดียวกับ .req-card-top/.mh-row1 ด้านบน) ต้องบังคับ column แทน
+     พร้อมย้าย .mh-right ไปชิดซ้ายแทนชิดขวาตามที่ขอ ให้อยู่แนวเดียวกับหัวข้อด้านบน */
+  .mh-content { flex-direction: column; }
+  .mh-left, .mh-right { width: 100%; }
+  .mh-right { align-items: flex-start; }
+  .mh-journal { overflow-wrap: break-word; word-break: break-word; }
+
+  /* ปุ่มท้าย modal (ยกเลิกคำร้อง / ยื่น T3) ไม่มี wrap มาก่อน เสี่ยงล้นบนจอแคบ */
+  .modal-footer { flex-wrap: wrap; }
+  .btn-mf { flex: 1 1 auto; justify-content: center; text-align: center; }
+  .btn-mf-t3 { margin-left: 0; }
+}
+
+@media (max-width: 600px) {
+  /* 3 แท็บรวมกันกว้างเกิน 375px แน่นอน ไม่เคยมีการจัดการมาก่อนเลย */
+  .tab-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 9px 14px; font-size: 13px; flex-shrink: 0; }
+
+  /* .mh-row1 (ไอคอน+หัวข้อ modal ฝั่งซ้าย + รหัสคำร้อง/ปุ่มปิด ฝั่งขวา) ไม่มี
+     min-width:0/flex-shrink กำหนดไว้เลย บนจอแคบรวมความกว้างทั้งหมดเกิน container
+     ทำให้หัวข้อตัดขึ้นบรรทัดใหม่แบบไม่สวย ดันรหัสคำร้อง/ปุ่มปิดให้เยื้องผิดตำแหน่ง
+     ให้หัวข้อตัดจบด้วย ... แทน และยึดฝั่งขวาให้อยู่ตำแหน่งเดิมเสมอ */
+  .mh-icon-title { min-width: 0; flex: 1 1 auto; }
+  .mh-title {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mh-row1-right { flex-shrink: 0; }
+
+  .mh-grid { grid-template-columns: 1fr; }
+
+  /* stepper แนวนอน 4-5 ขั้น ไม่เคยมี breakpoint เลย ยิ่งแคบยิ่งอัดกันจนอ่านไม่ออก */
+  .step-circle { width: 38px; height: 38px; font-size: 14px; margin-bottom: 8px; }
+  .step-item:not(:last-child)::before { top: 19px; }
+  .step-label { font-size: 10.5px; padding: 0 2px; }
+  .step-sub   { font-size: 9.5px; padding: 0 2px; }
+  .step-date  { font-size: 9px; padding: 0 2px; }
 }
 

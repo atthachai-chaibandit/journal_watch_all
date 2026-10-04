@@ -140,6 +140,8 @@ export class ReqOTP implements AfterViewInit {
 
     this.http.post<PostLoginRes>(url, this.credentials).subscribe({
       next: (res) => {
+        // กันค่า user ของ session เก่าค้างอยู่เหมือนกับตอนกด login ครั้งแรก
+        localStorage.removeItem('user');
         localStorage.setItem('auth_token', res.data.otpToken);
         this.errorMsg.set('');
         this.startCooldown(60);

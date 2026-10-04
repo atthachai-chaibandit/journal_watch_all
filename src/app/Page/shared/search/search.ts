@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
@@ -33,7 +33,6 @@ interface TciJournalResult {
   passForDoctoral: boolean;
   passForMaster: boolean;
   checkDate: string;
-  fromCache: boolean;
 }
 
 interface JournalResult {
@@ -71,7 +70,6 @@ interface JournalResult {
   passForDoctoral: boolean;
   passForMaster: boolean;
   checkDate: string;
-  fromCache: boolean;
 }
 
 @Component({
@@ -92,8 +90,14 @@ export class Search implements OnInit {
 
   issn = '';
   degree: DegreeLevel = 'doctoral';
-  method: FetchMethod = 'scraping';
+  /* ไม่ให้ผู้ใช้เลือกเองอีกต่อไป — เริ่มค้นหาด้วย API เสมอ แล้วสลับไป Web Scraping
+     ให้อัตโนมัติถ้า API ติด rate limit/quota (ดู runSearch()) ค่านี้ยังคงไว้เพื่อ
+     ให้ loading-sub ในเทมเพลตแสดงข้อความที่ตรงกับ method ที่กำลังใช้งานจริง ณ ขณะนั้น */
+  method: FetchMethod = 'api';
   isLoading    = signal(false);
+  // true ช่วงที่ API ติด rate limit/quota แล้วกำลังลองใหม่ด้วย Web Scraping อัตโนมัติ
+  // ใช้โชว์ข้อความแยกให้ผู้ใช้เห็นว่าทำไมถึงรอนานกว่าปกติ ไม่ใช่แค่ loading เฉยๆ
+  isRetrying   = signal(false);
   hasSearched  = signal(false);
   result       = signal<JournalResult | null>(null);
   tciResult    = signal<TciJournalResult | null>(null);
@@ -294,16 +298,6 @@ export class Search implements OnInit {
     return p;
   }
 
-  methods = [
-    { id: 'scraping' as FetchMethod, icon: '', label: 'Web Scraping', sublabel: 'Browser automation', badge: 'Default', badgeColor: 'amber' },
-    { id: 'api' as FetchMethod, icon: '', label: 'API (Scopus / TCI)', sublabel: 'ต้องใช้ API Key', badge: 'ต้องมี Key', badgeColor: 'red' },
-  ];
-
-  methodInfo: Record<FetchMethod, string> = {
-    scraping: 'Web Scraping — ดึงข้อมูลโดยตรงจากเว็บไซต์ Scopus และ TCI ผ่าน browser automation ไม่ต้องใช้ API Key แต่ใช้เวลา 3–8 วินาที',
-    api: 'API — ดึงข้อมูลผ่าน Scopus API อย่างเป็นทางการ เร็วกว่า แต่ต้องมี API Key และมี Rate Limit 20,000 ครั้ง/สัปดาห์',
-  };
-
   comparison = [
     { label: 'API Key',     scraping: 'ไม่ต้องใช้',  api: 'ต้องใช้',         scrapingOk: true,  apiOk: false },
     { label: 'ความเร็ว',   scraping: '3–8 วินาที',   api: '< 1 วินาที',      scrapingOk: false, apiOk: true  },
@@ -338,45 +332,80 @@ export class Search implements OnInit {
   doSearch(): void {
     if (!this.issn.trim()) return;
     this.isLoading.set(true);
+    this.isRetrying.set(false);
     this.hasSearched.set(false);
     this.result.set(null);
     this.tciResult.set(null);
     this.errorMessage.set('');
     this.tciError.set('');
 
+    // เริ่มค้นหาด้วย API เสมอ — runSearch() จะสลับไป Web Scraping ให้เองถ้า API ติด limit
+    this.method = 'api';
+    this.runSearch('api');
+  }
+
+  /* ตรวจจาก response error ว่าเป็นกรณี Scopus API key ถูก throttle/rate-limit/หมด quota
+     หรือไม่ (โครงสร้างตรงกับ debug.raw_message ที่ backend ส่งกลับตอน API key มีปัญหา) */
+  private isApiQuotaError(err: any): boolean {
+    const raw: string = err?.error?.debug?.raw_message ?? err?.error?.message ?? '';
+    return /throttled|rate.?limit|quota/i.test(raw);
+  }
+
+  private runSearch(method: FetchMethod): void {
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     const issn = encodeURIComponent(this.issn.trim());
     const issnDashed = encodeURIComponent(this.toDashedIssn(this.issn.trim()));
 
-    const scopusUrl = this.method === 'api'
+    const scopusUrl = method === 'api'
       ? `${this.constants.API_ENDPOINT}/journal/scopus?issn=${issn}`
       : `${this.constants.API_ENDPOINT}/journal/scopus/scrape?issn=${issn}`;
 
-    const tciUrl = this.method === 'api'
+    const tciUrl = method === 'api'
       ? `${this.constants.API_ENDPOINT}/journal/tci?issn=${issn}`
       : `${this.constants.API_ENDPOINT}/journal/tci/scrape?issn=${issn}`;
 
+    // เก็บ error ดิบไว้ด้วย (ไม่ใช่แค่ null) เพื่อเอาไปตรวจว่าเป็น quota error หรือเปล่า
+    const withRawError = <T>(obs: Observable<T>) =>
+      obs.pipe(catchError(err => of({ __httpError: err } as any)));
+
     forkJoin({
-      scopus:   this.http.get<ScrapeScopusRes>(scopusUrl, { headers }).pipe(catchError(() => of(null))),
-      tci:      this.http.get<ScrapeTCIRes>(tciUrl, { headers }).pipe(catchError(() => of(null))),
+      scopus:   withRawError(this.http.get<ScrapeScopusRes>(scopusUrl, { headers })),
+      tci:      withRawError(this.http.get<ScrapeTCIRes>(tciUrl, { headers })),
       unwanted: this.http.get<CheckMsuUnwantedRes>
-      (`${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`, 
+      (`${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`,
         { headers }).pipe(catchError(() => of(null))),
     }).subscribe(({ scopus, tci, unwanted }) => {
-      console.log('[Scopus res]', scopus);
-      console.log('[TCI res]', tci);
+      const scopusErr = (scopus as any)?.__httpError;
+      const tciErr     = (tci as any)?.__httpError;
+
+      // ถ้ายังใช้ API อยู่ และเจอสัญญาณ key ติด limit/quota จากฝั่งไหนก็ตาม
+      // ให้ลองค้นหาใหม่ทั้งชุดด้วย Web Scraping แทนโดยอัตโนมัติ ไม่ต้องให้ผู้ใช้ทำอะไร
+      if (method === 'api' && ((scopusErr && this.isApiQuotaError(scopusErr)) || (tciErr && this.isApiQuotaError(tciErr)))) {
+        this.method = 'scraping';
+        this.isRetrying.set(true); // โชว์ข้อความแจ้งว่ากำลังสลับไป Web Scraping ให้ผู้ใช้เห็น
+        this.runSearch('scraping');
+        return;
+      }
+
+      this.isRetrying.set(false);
+
+      const scopusRes = scopusErr ? null : (scopus as ScrapeScopusRes | null);
+      const tciRes    = tciErr    ? null : (tci as ScrapeTCIRes | null);
+
+      console.log('[Scopus res]', scopusRes);
+      console.log('[TCI res]', tciRes);
       console.log('[Unwanted res]', unwanted);
 
       const isUnwanted = unwanted?.success ? unwanted.data.isUnwanted : false;
 
-      if (scopus?.success && scopus.data && (scopus.data as any).journal_name) {
-        this.result.set(this.mapResult(scopus.data as unknown as Data, isUnwanted));
+      if (scopusRes?.success && scopusRes.data && (scopusRes.data as any).journal_name) {
+        this.result.set(this.mapResult(scopusRes.data as unknown as Data, isUnwanted));
       } else {
         this.errorMessage.set('ไม่พบข้อมูลวารสารใน Scopus');
       }
 
-      if (tci?.success && tci.data && (tci.data as any).journal_name) {
-        this.tciResult.set(this.mapTciResult(tci.data as unknown as TciData, isUnwanted));
+      if (tciRes?.success && tciRes.data && (tciRes.data as any).journal_name) {
+        this.tciResult.set(this.mapTciResult(tciRes.data as unknown as TciData, isUnwanted));
       } else {
         this.tciError.set('ไม่พบข้อมูลวารสารใน TCI');
       }
@@ -387,7 +416,19 @@ export class Search implements OnInit {
       if (this.hasConflict) this.activeDb.set('conflict');
       else if (!this.result() && this.tciResult()) this.activeDb.set('tci');
       else this.activeDb.set('scopus');
+
+      this.scrollToResultsOnMobile();
     });
+  }
+
+  /* บนมือถือ ฟอร์มค้นหา + legend กินพื้นที่เกือบเต็มจอ พอได้ผลลัพธ์แล้วผู้ใช้ต้อง
+     เลื่อนจอเองถึงจะเห็น — เลื่อนลงไปที่ผลลัพธ์ให้อัตโนมัติ เฉพาะจอแคบ (มือถือ)
+     เท่านั้น ไม่ยุ่งกับเดสก์ท็อปที่เห็นผลลัพธ์อยู่แล้วโดยไม่ต้องเลื่อน */
+  private scrollToResultsOnMobile(): void {
+    if (window.innerWidth > 768) return;
+    setTimeout(() => {
+      document.querySelector('.db-toggle-row')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }
 
   private mapResult(data: Data, isUnwanted: boolean): JournalResult {
@@ -501,7 +542,6 @@ export class Search implements OnInit {
       passForDoctoral,
       passForMaster,
       checkDate: now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
-      fromCache: extra.fromCache ?? false,
     };
   }
 
@@ -529,7 +569,6 @@ export class Search implements OnInit {
       passForDoctoral,
       passForMaster,
       checkDate: now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
-      fromCache: data.fromCache ?? false,
     };
   }
 

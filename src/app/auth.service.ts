@@ -32,6 +32,10 @@ export class AuthService {
     localStorage.removeItem('auth_refresh_token');
     localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_picture');
+    // ฝั่ง admin เก็บโปรไฟล์ไว้ใน key ชื่อ 'user' แยกต่างหาก (คนละชุดกับ auth_user)
+    // แต่ app.ts (isAdmin) อ่านจาก key นี้ตรงๆ — ถ้าไม่ล้างด้วย พอ logout ฝั่งนี้แล้ว
+    // เคยมีข้อมูล admin ค้างอยู่ก่อนหน้า sidebar admin จะยังโผล่มาอยู่ดี
+    localStorage.removeItem('user');
     this._isLoggedIn.set(false);
     this._user.set(null);
   }

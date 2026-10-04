@@ -115,6 +115,9 @@ export class MsuUnwanted implements OnInit {
     if (p < 1 || p > this.totalPagesCount()) return;
     this.currentPage.set(p);
     this.loadData();
+    // เปลี่ยนหน้าแล้วเลื่อนจอขึ้นไปบนสุดของตารางให้เอง กัน (โดยเฉพาะบนมือถือ)
+    // ไม่ให้ผู้ใช้ค้างอยู่ตรงปุ่มเพจจิเนชันล่างสุดแล้วมองไม่เห็นข้อมูลหน้าใหม่
+    document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   openDetail(j: Journal): void { this.selectedJournal.set(j); }

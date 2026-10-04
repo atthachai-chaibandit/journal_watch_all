@@ -48,6 +48,11 @@ export class Login {
 
     this.http.post<PostLoginRes>(url, body).subscribe({
       next: (res) => {
+        // ล้างโปรไฟล์ admin ของ session เก่าทิ้งก่อนเสมอ เพราะ isAdmin (app.ts) อ่านจาก
+        // key นี้ตรงๆ โดยไม่เช็คว่า token ยังใช้ได้ไหม — ถ้าไม่ล้าง พอมาเริ่ม login
+        // รอบใหม่ (เช่น token เก่าหมดอายุ/ถูกเคลียร์แล้วต้อง login ใหม่) ค่าเก่าที่ค้างอยู่
+        // จะทำให้ sidebar admin โผล่มาที่หน้ากรอก OTP ทั้งที่ยังไม่ login เสร็จจริง
+        localStorage.removeItem('user');
         localStorage.setItem('auth_token', res.data.otpToken);
         this.router.navigate(['/req-otp'], {
           state: {

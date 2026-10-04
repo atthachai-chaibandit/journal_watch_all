@@ -68,6 +68,7 @@ interface T3DetailView {
   firstAuthor:  string;
   degree:       string;
   submittedDate: string;
+  advisorStatus: ApprovalStatus;
   cardStatus:   'approved' | 'rejected' | 'pending';
   statusPillText:     string;
   currentStatusTitle: string;
@@ -269,6 +270,7 @@ export class StatusT3 implements OnInit {
       firstAuthor:  d.paper_and_research_details.first_author,
       degree:       `${d.student_snapshot.degree_level} ${d.student_snapshot.study_plan_code}`.trim(),
       submittedDate: this.formatDateShort(d.created_at),
+      advisorStatus: adv,
       cardStatus,
       statusPillText,
       currentStatusTitle: title,
@@ -300,16 +302,25 @@ export class StatusT3 implements OnInit {
     const fac  = d.faculty_com_approval.status;
     const ov   = d.overall_status;
     const date = this.formatDateShort(d.created_at);
+    const advisorDate = d.advisor_approval.approved_at
+      ? this.formatDateShort(d.advisor_approval.approved_at) : '-';
+    const facultyDate = d.faculty_com_approval.approved_at
+      ? this.formatDateShort(d.faculty_com_approval.approved_at) : '-';
 
     const s1: Step = { icon: '✓', label: 'ยื่น T3 สำเร็จ', sub: '● เสร็จแล้ว', date, status: 'done' };
 
-    const s2: Step = adv === 'Approved' ? { icon: '✓',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: '-', status: 'done'    }
-                   : adv === 'Rejected' ? { icon: '✗',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '✗ ไม่อนุมัติ',      date: '-', status: 'active'  }
-                   :                     { icon: 'ti ti-hourglass',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '⚙ กำลังดำเนินการ', date,      status: 'active'  };
+    const s2: Step = adv === 'Approved' ? { icon: '✓',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: advisorDate, status: 'done'    }
+                   : adv === 'Rejected' ? { icon: '✗',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '✗ ไม่อนุมัติ',      date: '-',         status: 'active'  }
+                   :                     { icon: 'ti ti-hourglass',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '⚙ กำลังดำเนินการ', date: '-',         status: 'active'  };
 
-    const s3: Step = fac === 'Approved' ? { icon: '✓',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: '-', status: 'done'    }
-                   : fac === 'Rejected' ? { icon: '✗',  label: 'รอผลจากที่ประชุม', sub: '✗ ไม่อนุมัติ',      date: '-', status: 'active'  }
-                   :                     { icon: '🏛',  label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };
+    // รอผลจากที่ประชุม — ต้องเช็คว่าขั้นก่อนหน้า (อาจารย์) อนุมัติแล้วหรือยัง ไม่ใช่แค่
+    // เช็คสถานะของขั้นนี้เอง ไม่งั้นแม้อาจารย์จะอนุมัติแล้วก็ยังค้างแสดงเป็น "pending/
+    // รอขั้นก่อนหน้า" (วงกลมเทา) ทั้งที่จริงๆ คำร้องเดินมาถึงขั้นนี้แล้ว ควรเป็น
+    // "active/กำลังดำเนินการ" (วงกลมเหลือง) แทน
+    const s3: Step = fac === 'Approved' ? { icon: '✓',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: facultyDate, status: 'done'    }
+                   : fac === 'Rejected' ? { icon: '✗',  label: 'รอผลจากที่ประชุม', sub: '✗ ไม่อนุมัติ',      date: '-',         status: 'active'  }
+                   : adv === 'Approved' ? { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '⚙ กำลังดำเนินการ', date: '-', status: 'active'  }
+                   :                     { icon: '🏛',  label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-',         status: 'pending' };
 
     const s4: Step = ov === 'Approved'
       ? { icon: '🎓', label: 'อนุมัติสำเร็จ', sub: '● เสร็จแล้ว',       date: '-', status: 'done'    }
@@ -330,32 +341,36 @@ export class StatusT3 implements OnInit {
       time: this.formatDateFull(d.created_at),
     });
 
+    // อาจารย์ที่ปรึกษา — ถึงคิวนี้เสมอตั้งแต่ยื่นคำร้องเสร็จ
     if (adv === 'Approved') {
-      items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว' });
+      items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.advisor_approval.approved_at) });
     } else if (adv === 'Rejected') {
-      items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined });
+      items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined, time: this.formatDateFull(d.advisor_approval.approved_at) });
     } else {
       items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'กำลังพิจารณาคำร้อง T3' });
     }
 
-    if (adv === 'Approved') {
-      if (fac === 'Approved') {
-        items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว' });
-      } else if (fac === 'Rejected') {
-        items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3' });
-      } else {
-        items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอขั้นก่อนหน้า' });
-      }
+    // ที่ประชุมบัณฑิตวิทยาลัย — โชว์เสมอ ไม่ว่าจะถึงคิวหรือยัง (ต่างจากเดิมที่ซ่อน
+    // รายการนี้ไปเลยถ้าอาจารย์ยังไม่อนุมัติ) ให้ตรงกับ stepper ด้านบนที่โชว์ครบ 4 ขั้น
+    if (adv !== 'Approved') {
+      items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอขั้นก่อนหน้า' });
+    } else if (fac === 'Approved') {
+      items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
+    } else if (fac === 'Rejected') {
+      items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
+    } else {
+      items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'กำลังพิจารณา', badgeType: 'advisor', message: 'กำลังรอที่ประชุมพิจารณา' });
     }
 
-    if (fac === 'Approved') {
-      if (grad === 'Approved') {
-        items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 สำเร็จ' });
-      } else if (grad === 'Rejected') {
-        items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3' });
-      } else {
-        items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอพิจารณา' });
-      }
+    // บัณฑิตวิทยาลัย — โชว์เสมอเช่นกัน
+    if (fac !== 'Approved') {
+      items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอขั้นก่อนหน้า' });
+    } else if (grad === 'Approved') {
+      items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 สำเร็จ', time: this.formatDateFull(d.grad_school_approval.approved_at) });
+    } else if (grad === 'Rejected') {
+      items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', time: this.formatDateFull(d.grad_school_approval.approved_at) });
+    } else {
+      items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'กำลังพิจารณา', badgeType: 'advisor', message: 'กำลังรอบัณฑิตวิทยาลัยอนุมัติขั้นสุดท้าย' });
     }
 
     return items;

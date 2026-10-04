@@ -26,7 +26,7 @@
     <!-- ═══ SECTION 1: ข้อมูลนิสิต ═══ -->
     <div class="form-section">
       <div class="section-head">
-        <span class="section-head-icon">👤</span>
+        <span class="section-head-icon"><i class="ti ti-user"></i></span>
         <span class="section-head-title">ข้อมูลนิสิต</span>
         <span class="section-head-note">(ดึงจาก MSU Account อัตโนมัติ)</span>
       </div>
@@ -74,7 +74,7 @@
     <div class="form-section">
       <div class="section-head section-head--spaced">
         <div class="section-head-left">
-          <span class="section-head-icon">📋</span>
+          <span class="section-head-icon"><i class="ti ti-clipboard-check"></i></span>
           <span class="section-head-title">เลือก PRE-T3 ที่อนุมัติแล้ว</span>
         </div>
         <span class="section-head-hint">กรุณาเลือก Pre-T3 ที่อนุมัติแล้ว</span>
@@ -107,7 +107,7 @@
                 <div class="pre-t3-meta">{{ item.id }} · ยื่น {{ item.submittedDate }} · อนุมัติ {{ item.approvedDate }}</div>
                 <div class="pre-t3-title">{{ item.title }}</div>
                 <div class="pre-t3-tags">
-                  <span class="db-badge">📘 {{ item.database }} {{ item.quartile }}</span>
+                  <span class="db-badge"><i class="ti ti-database"></i> {{ item.database }} {{ item.quartile }}</span>
                   <span class="issn-tag">ISSN: {{ item.issn }}</span>
                 </div>
               </div>
@@ -118,7 +118,7 @@
                   </svg>
                   <span>ดูรายละเอียด</span>
                 </button>
-                <span class="approved-badge">✅ อนุมัติแล้ว</span>
+                <span class="approved-badge"><i class="ti ti-circle-check"></i> อนุมัติแล้ว</span>
                 <span class="approved-date">{{ item.approvedDate }}</span>
               </div>
             </div>
@@ -127,7 +127,7 @@
 
         @if (selectedPreT3Data) {
           <div class="selected-paper-box">
-            <div class="selected-paper-header">✅ ข้อมูลวารสารจาก Pre-T3 ที่เลือก</div>
+            <div class="selected-paper-header"><i class="ti ti-circle-check"></i> ข้อมูลวารสารจาก Pre-T3 ที่เลือก</div>
             <div class="selected-paper-body">
               <div class="selected-paper-title">{{ selectedPreT3Data.title }}</div>
               <div class="selected-paper-grid">
@@ -148,7 +148,7 @@
                   <div class="paper-info-value">{{ selectedPreT3Data.sjr }} / {{ selectedPreT3Data.citeScore }}</div>
                 </div>
               </div>
-              <div class="selected-paper-note">🔒 ข้อมูลวารสารอ่านอย่างเดียว — ดึงจาก Pre-T3 ที่อนุมัติแล้ว</div>
+              <div class="selected-paper-note"><i class="ti ti-lock"></i> ข้อมูลวารสารอ่านอย่างเดียว — ดึงจาก Pre-T3 ที่อนุมัติแล้ว</div>
             </div>
           </div>
         }
@@ -159,13 +159,13 @@
     <div class="form-section">
       <div class="section-head section-head--spaced">
         <div class="section-head-left">
-          
+          <span class="section-head-icon"><i class="ti ti-pencil"></i></span>
           <span class="section-head-title">ข้อมูลบทความ</span>
         </div>
       </div>
 
       <div class="sub-section-head" style="margin-top: 16px;">
-        <span class="sub-icon">✏️</span>
+        <span class="sub-icon"><i class="ti ti-pencil"></i></span>
         <span class="sub-title">ชื่อเรื่องผู้แต่ง</span>
       </div>
       <div class="section-divider"></div>
@@ -209,7 +209,7 @@
     <div class="form-section">
       <div class="section-head section-head--spaced">
         <div class="section-head-left">
-          <span class="section-head-icon">📊</span>
+          <span class="section-head-icon"><i class="ti ti-list-details"></i></span>
           <span class="section-head-title">ประเภทการดำเนินการ</span>
         </div>
       </div>
@@ -249,7 +249,7 @@
 
       <!-- journal_metrics -->
       <div class="sub-section-head sub-section-head--mt">
-        <span class="sub-icon">📈</span>
+        <span class="sub-icon"><i class="ti ti-chart-line"></i></span>
         <span class="sub-title">Journal Metrics</span>
       </div>
       <div class="section-divider"></div>
@@ -281,7 +281,7 @@
     <div class="form-section">
       <div class="section-head section-head--spaced">
         <div class="section-head-left">
-          <span class="section-head-icon">🎯</span>
+          <span class="section-head-icon"><i class="ti ti-target-arrow"></i></span>
           <span class="section-head-title">การนำไปใช้ประโยชน์</span>
         </div>
       </div>
@@ -291,19 +291,19 @@
         <label class="util-item" [class.util-item--checked]="innovationType === 'การนำไปใช้ประโยชน์เชิงพาณิชย์ (Commercial)'"
                (click)="innovationType = 'การนำไปใช้ประโยชน์เชิงพาณิชย์ (Commercial)'">
           <div class="util-radio" [class.util-radio--active]="innovationType === 'การนำไปใช้ประโยชน์เชิงพาณิชย์ (Commercial)'"></div>
-          <span class="util-icon">📦</span>
+          <span class="util-icon"><i class="ti ti-package"></i></span>
           <span class="util-label">การนำไปใช้ประโยชน์เชิงพาณิชย์ (Commercial)</span>
         </label>
         <label class="util-item" [class.util-item--checked]="innovationType === 'การนำไปใช้ประโยชน์เชิงสังคมทิศทางเศรษฐกิจ (Social/Economic)'"
                (click)="innovationType = 'การนำไปใช้ประโยชน์เชิงสังคมทิศทางเศรษฐกิจ (Social/Economic)'">
           <div class="util-radio" [class.util-radio--active]="innovationType === 'การนำไปใช้ประโยชน์เชิงสังคมทิศทางเศรษฐกิจ (Social/Economic)'"></div>
-          <span class="util-icon">🌐</span>
+          <span class="util-icon"><i class="ti ti-world"></i></span>
           <span class="util-label">การนำไปใช้ประโยชน์เชิงสังคมทิศทางเศรษฐกิจ (Social/Economic)</span>
         </label>
         <label class="util-item" [class.util-item--checked]="innovationType === 'การนำไปใช้ประโยชน์เชิงนโยบายสาธารณะ (Policy/Public)'"
                (click)="innovationType = 'การนำไปใช้ประโยชน์เชิงนโยบายสาธารณะ (Policy/Public)'">
           <div class="util-radio" [class.util-radio--active]="innovationType === 'การนำไปใช้ประโยชน์เชิงนโยบายสาธารณะ (Policy/Public)'"></div>
-          <span class="util-icon">🏛</span>
+          <span class="util-icon"><i class="ti ti-building-bank"></i></span>
           <span class="util-label">การนำไปใช้ประโยชน์เชิงนโยบายสาธารณะ (Policy/Public)</span>
         </label>
       </div>
@@ -321,14 +321,14 @@
     <div class="form-section">
       <div class="section-head section-head--spaced">
         <div class="section-head-left">
-          <span class="section-head-icon">📰</span>
+          <span class="section-head-icon"><i class="ti ti-news"></i></span>
           <span class="section-head-title">สถานะการตีพิมพ์</span>
         </div>
         <span class="section-head-hint">Publication Status</span>
       </div>
 
       <div class="sub-section-head">
-        
+        <span class="sub-icon"><i class="ti ti-file-description"></i></span>
         <span class="sub-title">สถานะบทความวิจัยฉบับนี้</span>
       </div>
       <div class="section-divider"></div>
@@ -378,7 +378,7 @@
     <div class="form-section">
       <div class="section-head section-head--spaced">
         <div class="section-head-left">
-          
+          <span class="section-head-icon"><i class="ti ti-paperclip"></i></span>
           <span class="section-head-title">เอกสารประกอบ T3</span>
         </div>
         <span class="section-head-hint">POST /upload/t3/:id/files · max 10MB</span>
@@ -386,7 +386,7 @@
 
       <!-- หลักฐานหลัก -->
       <div class="sub-section-head" style="margin-top:8px">
-        <span class="sub-icon">📌</span>
+        <span class="sub-icon"><i class="ti ti-pin"></i></span>
         <span class="sub-title">หลักฐานหลัก</span>
       </div>
       <div class="section-divider"></div>
@@ -425,7 +425,7 @@
 
       <!-- เอกสารประกอบเพิ่มเติม -->
       <div class="sub-section-head sub-section-head--mt">
-        <span class="sub-icon">📂</span>
+        <span class="sub-icon"><i class="ti ti-folder"></i></span>
         <span class="sub-title">เอกสารประกอบเพิ่มเติม</span>
         <span class="badge-optional">อ้าง</span>
       </div>
@@ -490,7 +490,7 @@
     <!-- SUCCESS BANNER -->
     @if (submitSuccess()) {
       <div class="submit-success-banner">
-        <span class="submit-success-icon">✅</span>
+        <span class="submit-success-icon"><i class="ti ti-circle-check"></i></span>
         <div class="submit-success-body">
           <div class="submit-success-title">ยื่น T3 สำเร็จแล้ว</div>
           <div class="submit-success-desc">ระบบได้รับคำร้องของคุณแล้ว กรุณารอการพิจารณาจากอาจารย์ที่ปรึกษา</div>
@@ -500,7 +500,6 @@
 
     <!-- ═══ ACTION BAR ═══ -->
     <div class="action-bar">
-      <button class="btn-cancel">✕ ยกเลิก</button>
       <div class="action-bar-spacer"></div>
       @if (submitError()) {
         <span class="action-bar-error">✗ {{ submitError() }}</span>
@@ -514,7 +513,7 @@
         @if (isSubmitting()) {
           <span class="submit-spinner"></span> กำลังยื่น...
         } @else {
-          🔒 ยืนยันการส่งมอบฟอร์ม T3
+          <i class="ti ti-lock"></i> ยืนยันการส่งมอบฟอร์ม T3
         }
       </button>
     </div>
@@ -536,7 +535,7 @@
         <div class="mh">
           <div class="mh-row1">
             <div class="mh-icon-title">
-              <span class="mh-file-icon">📄</span>
+              <span class="mh-file-icon"><i class="ti ti-file-text"></i></span>
               <span class="mh-title">ข้อมูลคำร้องและวารสาร</span>
             </div>
             <div class="mh-row1-right">
@@ -574,7 +573,7 @@
             @if (d.scopusStatus === 'Active') {
               <span class="sbadge sbadge-green">✔ Active</span>
             } @else {
-              <span class="sbadge sbadge-red">❌ Discontinued</span>
+              <span class="sbadge sbadge-red"><i class="ti ti-circle-x"></i> Discontinued</span>
             }
           </div>
 
@@ -618,7 +617,7 @@
           </div>
 
           <div class="ms-log-wrap">
-            <div class="ms-log-head"><span>📋</span><span>ประวัติการดำเนินการ (Status Log)</span></div>
+            <div class="ms-log-head"><span><i class="ti ti-clipboard-list"></i></span><span>ประวัติการดำเนินการ (Status Log)</span></div>
             <div class="ms-log-body">
               <div class="timeline">
                 @for (item of d.timeline; track item.actor; let last = $last) {
@@ -643,7 +642,7 @@
           </div>
 
           <div class="ms-card">
-            <div class="ms-head">📎 เอกสารประกอบ</div>
+            <div class="ms-head"><i class="ti ti-paperclip"></i> เอกสารประกอบ</div>
             <div class="attach-list">
               @for (a of d.attachments; track a.name) {
                 <div class="attach-item">
@@ -652,7 +651,7 @@
                     <div class="attach-name">{{ a.name }}</div>
                     <div class="attach-meta">{{ a.meta }} · {{ a.size }}</div>
                   </div>
-                  <button class="btn-download">⬇ ดาวน์โหลด</button>
+                  <button class="btn-download"><i class="ti ti-download"></i> ดาวน์โหลด</button>
                 </div>
               }
             </div>
@@ -662,7 +661,7 @@
 
         <!-- ══ MODAL FOOTER ══ -->
         <div class="modal-footer">
-          <button class="btn-mf btn-mf-print">🖨 พิมพ์ใบคำร้อง</button>
+          <button class="btn-mf btn-mf-print"><i class="ti ti-printer"></i> พิมพ์ใบคำร้อง</button>
           <button class="btn-mf btn-mf-close" (click)="closePreT3Detail()">ปิด</button>
         </div>
 

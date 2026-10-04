@@ -2,7 +2,7 @@
 
   <!-- ══ Header ══ -->
   <div class="page-header">
-    <div class="page-icon-wrap"><span>🐛</span></div>
+    <div class="page-icon-wrap"><span><i class="ti ti-bug"></i></span></div>
     <div class="page-header-text">
       <div class="page-breadcrumb">เมนูระบบ</div>
       <h1 class="page-title">Bug Reports</h1>
@@ -35,16 +35,35 @@
   <!-- ══ Filter bar ══ -->
   <div class="filter-bar">
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon"><i class="ti ti-search"></i></span>
       <input class="search-input" type="text" placeholder="ค้นหาหัวข้อ, คำอธิบาย, ผู้รายงาน..."
              [ngModel]="searchText()" (ngModelChange)="searchText.set($event)" />
     </div>
-    <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-      <option value="all">ทุกสถานะ</option>
-      <option value="pending">รอดำเนินการ</option>
-      <option value="in_progress">กำลังดำเนินการ</option>
-      <option value="resolved">แก้ไขแล้ว</option>
-    </select>
+    <div class="status-dropdown" [class.status-dropdown--open]="statusDropdownOpen()">
+      @if (statusDropdownOpen()) {
+        <div class="status-dropdown__backdrop" (click)="statusDropdownOpen.set(false)"></div>
+      }
+      <button class="status-dropdown__trigger" type="button" (click)="statusDropdownOpen.set(!statusDropdownOpen())">
+        <span class="status-dropdown__dot" [class]="'status-dropdown__dot status-dropdown__dot--' + statusFilter()"></span>
+        <span class="status-dropdown__val">{{ statusFilterLabel() }}</span>
+        <svg class="status-dropdown__arrow" width="12" height="7" viewBox="0 0 12 7" fill="none">
+          <path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      @if (statusDropdownOpen()) {
+        <div class="status-dropdown__panel">
+          @for (opt of statusFilterOptions; track opt.value) {
+            <button type="button" class="status-dropdown__opt"
+                    [class.status-dropdown__opt--active]="statusFilter() === opt.value"
+                    (click)="selectStatusFilter(opt.value)">
+              <span class="status-dropdown__dot" [class]="'status-dropdown__dot status-dropdown__dot--' + opt.value"></span>
+              {{ opt.label }}
+              @if (statusFilter() === opt.value) { <span class="status-dropdown__check">✓</span> }
+            </button>
+          }
+        </div>
+      }
+    </div>
   </div>
 
   <!-- ══ Loading ══ -->
@@ -57,7 +76,7 @@
 
   <!-- ══ Error ══ -->
   @if (loadError(); as err) {
-    <div class="br-error">⚠️ {{ err }}</div>
+    <div class="br-error"><i class="ti ti-alert-triangle"></i> {{ err }}</div>
   }
 
   <!-- ══ Cards grid ══ -->
@@ -81,11 +100,11 @@
 
             <div class="rc-meta">
               <div class="rc-meta-item">
-                <span class="rc-meta-icon">👤</span>
+                <span class="rc-meta-icon"><i class="ti ti-user"></i></span>
                 <span>{{ fullName(r.reporter_first_name, r.reporter_last_name) }}</span>
               </div>
               <div class="rc-meta-item">
-                <span class="rc-meta-icon">📅</span>
+                <span class="rc-meta-icon"><i class="ti ti-calendar"></i></span>
                 <span>{{ formatDate(r.created_at) }}</span>
               </div>
             </div>
@@ -139,7 +158,7 @@
         }
 
         @if (detailError(); as err) {
-          <div class="br-error">⚠️ {{ err }}</div>
+          <div class="br-error"><i class="ti ti-alert-triangle"></i> {{ err }}</div>
         }
 
         @if (detailData(); as d) {
@@ -230,10 +249,10 @@
               }
 
               @if (saveSuccess(); as msg) {
-                <div class="save-success">✅ {{ msg }}</div>
+                <div class="save-success"><i class="ti ti-circle-check"></i> {{ msg }}</div>
               }
               @if (saveError(); as err) {
-                <div class="save-error">⚠️ {{ err }}</div>
+                <div class="save-error"><i class="ti ti-alert-triangle"></i> {{ err }}</div>
               }
 
               <button class="save-btn" [disabled]="isSaving()" (click)="saveStatus()">

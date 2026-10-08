@@ -51,8 +51,6 @@ interface PreT3Detail {
   issn:            string;
   database:        string;
   quartile:        string;
-  sjr:             string;
-  citescore:       string;
   journalActive:   boolean;
   msuUnwanted:     boolean;
   systemCheck:     boolean;
@@ -249,7 +247,7 @@ export class PreT3Request implements OnInit {
       studentId,
       title:         '',
       journal:       snap.journal_name,
-      issn:          snap.issn || snap.eissn || '-',
+      issn:          snap.issn || '-',
       database:      snap.indexed_database,
       quartile:      snap.quartile_or_tier,
       journalStatus,
@@ -349,9 +347,14 @@ export class PreT3Request implements OnInit {
       ? { action: 'approve', meeting_no: this.inlineMeetingNo, meeting_date: this.inlineMeetingDate }
       : { action: 'reject', remark: this.inlineRejectReason };
 
+    let errorMsg = '';
     this.http
       .patch(`${this.constants.API_ENDPOINT}/pre-t3/${card.pre_t3_id}/faculty-review`, body, { headers })
-      .pipe(catchError(err => { console.error('[confirmAndSubmit]', err); return of(null); }))
+      .pipe(catchError(err => {
+        console.error('[confirmAndSubmit]', err);
+        errorMsg = err?.error?.message ?? '';
+        return of(null);
+      }))
       .subscribe(res => {
         this.isSubmittingDecision = false;
         this.showInlineConfirm    = false;
@@ -364,7 +367,7 @@ export class PreT3Request implements OnInit {
             },
           });
         } else {
-          this.showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+          this.showToast(`${errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่'}`, 'error');
         }
       });
   }
@@ -390,7 +393,8 @@ export class PreT3Request implements OnInit {
   closeSendMeetingModal(): void { this.showSendMeetingModal = false; }
 
   confirmSendMeeting(): void {
-    if (!this.sendMeetingDate || this.isSending) return;
+    // backend บังคับทั้ง meeting_no และ meeting_date ตอน approve (ไม่งั้นได้ 400 MEETING_REQUIRED)
+    if (!this.sendMeetingDate || !this.sendMeetingNo.trim() || this.isSending) return;
     this.isSending = true;
     const headers  = new HttpHeaders({
       Authorization:  `Bearer ${this.auth.token}`,
@@ -399,16 +403,18 @@ export class PreT3Request implements OnInit {
     const card = this.sendMeetingCard!;
     const body = {
       action:       'approve',
-      meeting_no:   this.sendMeetingNo,
+      meeting_no:   this.sendMeetingNo.trim(),
       meeting_date: this.sendMeetingDate, // ส่งเป็น string "YYYY-MM-DD" ตรงๆ
     };
     const url = `${this.constants.API_ENDPOINT}/pre-t3/${card.pre_t3_id}/faculty-review`;
     console.log('[confirmSendMeeting] PATCH', url);
     console.log('[confirmSendMeeting] Body:', body);
+    let errorMsg = '';
     this.http
       .patch(url, body, { headers })
       .pipe(catchError(err => {
         console.error('[confirmSendMeeting] Error:', err?.status, err?.error);
+        errorMsg = err?.error?.message ?? '';
         return of(null);
       }))
       .subscribe(res => {
@@ -419,9 +425,9 @@ export class PreT3Request implements OnInit {
             c.pre_t3_id === card.pre_t3_id ? { ...c, status: 'approved' as const } : c
           );
           this.closeSendMeetingModal();
-          this.showToast(`✅ อนุมัติสำเร็จ — ${card.requestId} · ${card.name}`);
+          this.showToast(`อนุมัติสำเร็จ — ${card.requestId} · ${card.name}`);
         } else {
-          this.showToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+          this.showToast(`${errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่'}`, 'error');
         }
         this.appRef.tick();
       });
@@ -449,11 +455,13 @@ export class PreT3Request implements OnInit {
     const url  = `${this.constants.API_ENDPOINT}/pre-t3/${card.pre_t3_id}/faculty-review`;
     console.log('[confirmReject] URL  :', url);
     console.log('[confirmReject] Body :', body);
+    let errorMsg = '';
     this.http
       .patch(url, body, { headers })
       .pipe(catchError(err => {
         console.error('[confirmReject] HTTP status :', err?.status);
         console.error('[confirmReject] Error body  :', err?.error);
+        errorMsg = err?.error?.message ?? '';
         return of(null);
       }))
       .subscribe(res => {
@@ -464,9 +472,9 @@ export class PreT3Request implements OnInit {
             c.pre_t3_id === card.pre_t3_id ? { ...c, status: 'rejected' as const } : c
           );
           this.closeRejectModal();
-          this.showToast(`❌ ไม่อนุมัติสำเร็จ — ${card.requestId} · ${card.name}`, 'error');
+          this.showToast(`ไม่อนุมัติสำเร็จ — ${card.requestId} · ${card.name}`, 'error');
         } else {
-          this.showToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+          this.showToast(`${errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่'}`, 'error');
         }
         this.appRef.tick();
       });
@@ -490,9 +498,9 @@ export class PreT3Request implements OnInit {
     const advisorOpinion  = advisorStatus.includes('approv') ? 'เห็นชอบ'
                           : advisorStatus.includes('reject') ? 'ไม่เห็นชอบ' : '-';
 
-    const db = snap.indexed_database;
+    const db = snap?.indexed_database ?? '';   // F14
     const q  = snap.quartile_or_tier;
-    const criteria = db.toLowerCase().includes('tci')
+    const criteria = (db ?? '').toLowerCase().includes('tci')
       ? `ป.โท/เอก: TCI ${q} + Active`
       : `ป.โท: Q2 ขึ้นไป + Active / ป.เอก: Q1 + Active`;
 
@@ -507,11 +515,9 @@ export class PreT3Request implements OnInit {
       email:           si?.msu_mail ?? d.student_email,
       curriculumYear:  snap2?.curriculum_year ?? '-',
       journalName:     snap.journal_name,
-      issn:            snap.issn || snap.eissn || '-',
+      issn:            snap.issn || '-',
       database:        db,
       quartile:        q,
-      sjr:             snap.sjr_score != null ? String(snap.sjr_score) : '-',
-      citescore:       snap.cite_score != null ? String(snap.cite_score) : '-',
       journalActive:   !snap.is_discontinued,
       msuUnwanted:     snap.is_hijacked,
       systemCheck:     !snap.is_discontinued && !snap.is_hijacked,
@@ -545,7 +551,7 @@ export class PreT3Request implements OnInit {
 
     const db = snap?.indexed_database ?? card.database;
     const q  = snap?.quartile_or_tier ?? card.quartile;
-    const criteria = db.toLowerCase().includes('tci')
+    const criteria = (db ?? '').toLowerCase().includes('tci')
       ? `ป.โท/เอก: TCI ${q} + Active`
       : `ป.โท: Q2 ขึ้นไป + Active / ป.เอก: Q1 + Active`;
 
@@ -557,10 +563,8 @@ export class PreT3Request implements OnInit {
       email:           d?.student_email ?? `${card.studentId}@msu.ac.th`,
       curriculumYear:  '-',
       journalName:     snap?.journal_name ?? card.journal,
-      issn:            snap?.issn || snap?.eissn || card.issn,
+      issn:            snap?.issn || card.issn,
       database:        db, quartile: q,
-      sjr:             snap?.sjr_score != null ? String(snap.sjr_score) : '-',
-      citescore:       snap?.cite_score != null ? String(snap.cite_score) : '-',
       journalActive:   !snap?.is_discontinued,
       msuUnwanted:     snap?.is_hijacked ?? false,
       systemCheck:     !snap?.is_discontinued && !snap?.is_hijacked,
@@ -581,9 +585,9 @@ export class PreT3Request implements OnInit {
     return ({
       pending:         '○ รอดำเนินการ',
       meeting:         '● ส่งที่ประชุมแล้ว',
-      approved:        '✅ อนุมัติแล้ว',
-      rejected:        '❌ ไม่อนุมัติ',
-      'auto-rejected': '🚫 ระบบปฏิเสธ',
+      approved:        'อนุมัติแล้ว',
+      rejected:        'ไม่อนุมัติ',
+      'auto-rejected': 'ระบบปฏิเสธ',
     } as any)[s] ?? s;
   }
 

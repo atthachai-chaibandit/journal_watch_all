@@ -9,6 +9,7 @@ import { GetPreT3RequestStaffRes } from '../../../model/res/get_Pre-T3_request_s
 import { GetRequestT3Res } from '../../../model/res/get_request_T3_res';
 import { PreT3HistorySatffRes } from '../../../model/res/pre-t3_history_satff_res';
 import { T3HistorySatffRes } from '../../../model/res/t3_history_satff_res';
+import { fetchAllPages } from '../../../paged-fetch';
 
 interface RecentItem {
   type: 'PreT3' | 'T3';
@@ -64,8 +65,8 @@ export class Dashboard implements OnInit {
     const profile$      = this.http.get<any>(`${api}/user/profile`, { headers }).pipe(catchError(() => of(null)));
     const preT3Pending$ = this.http.get<GetPreT3RequestStaffRes>(`${api}/pre-t3/pending`, { headers }).pipe(catchError(() => of(null)));
     const t3Pending$    = this.http.get<GetRequestT3Res>(`${api}/t3/pending`, { headers }).pipe(catchError(() => of(null)));
-    const preT3Hist$    = this.http.get<PreT3HistorySatffRes>(`${api}/pre-t3/history?page=1&limit=50`, { headers }).pipe(catchError(() => of(null)));
-    const t3Hist$       = this.http.get<T3HistorySatffRes>(`${api}/t3/history?page=1&limit=50`, { headers }).pipe(catchError(() => of(null)));
+    const preT3Hist$    = fetchAllPages<PreT3HistorySatffRes>(this.http, `${api}/pre-t3/history`, headers).pipe(catchError(() => of(null)));
+    const t3Hist$       = fetchAllPages<T3HistorySatffRes>(this.http, `${api}/t3/history`, headers).pipe(catchError(() => of(null)));
 
     forkJoin([profile$, preT3Pending$, t3Pending$, preT3Hist$, t3Hist$]).subscribe(
       ([profileRes, preT3PendRes, t3PendRes, preT3HistRes, t3HistRes]) => {

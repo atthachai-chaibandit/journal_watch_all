@@ -20,10 +20,7 @@ interface PreT3Item {
   title:         string;
   database:      string;
   quartile:      string;
-  issn:          string;
-  sjr:           string;
-  citeScore:     string;
-}
+  issn:          string;}
 
 type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -67,7 +64,6 @@ interface PreT3Detail {
   journalName:        string;
   issn:               string;
   quartile:           string;
-  sjr:                string;
   scopusStatus:       string;
   database:           string;
   degree:             string;
@@ -95,7 +91,6 @@ export class SendT3 implements OnInit {
   fullName    = signal('');
   studentId   = signal('');
   phone       = signal('');
-  faculty     = signal('');
   department  = signal('');
   degreeLevel = signal('');
   authMail    = signal('');
@@ -125,7 +120,7 @@ export class SendT3 implements OnInit {
     }).subscribe(({ profile, preT3 }) => {
       if (profile?.success) {
         const d = profile.data;
-        const name = `${d.prefix}${d.firstName} ${d.lastName}`.trim();
+        const name = `${d.prefix ?? ''}${d.firstName} ${d.lastName}`.trim();
         const sid  = d.msuMail.replace('@msu.ac.th', '');
         const deg  = `${d.degreeLevel} ${d.studyPlanCode}`.trim();
         const adv  = d.advisors?.length
@@ -135,7 +130,6 @@ export class SendT3 implements OnInit {
         this.fullName.set(name);
         this.studentId.set(sid);
         this.phone.set(d.phone ?? '');
-        this.faculty.set(d.faculty ?? '');
         this.department.set(d.department ?? '');
         this.degreeLevel.set(deg);
         this.authMail.set(d.msuMail);
@@ -160,9 +154,7 @@ export class SendT3 implements OnInit {
       title:         d.journal_snapshot.journal_name,
       database:      d.journal_snapshot.indexed_database,
       quartile:      d.journal_snapshot.quartile_or_tier,
-      issn:          d.journal_snapshot.issn || d.journal_snapshot.eissn,
-      sjr:           d.journal_snapshot.sjr_score != null ? String(d.journal_snapshot.sjr_score) : '-',
-      citeScore:     d.journal_snapshot.cite_score != null ? String(d.journal_snapshot.cite_score) : '-',
+      issn:          d.journal_snapshot.issn,
     };
   }
 
@@ -228,9 +220,9 @@ export class SendT3 implements OnInit {
     else if (adv === 'Rejected' || fac === 'Rejected')    cardStatus = 'rejected';
     else                                                   cardStatus = 'pending';
 
-    const statusPillText    = cardStatus === 'approved' ? '✅ อนุมัติสำเร็จ'
-                            : cardStatus === 'rejected' ? '❌ ไม่ผ่านการอนุมัติ' : '⚙ กำลังดำเนินการ';
-    const currentStatusIcon = cardStatus === 'approved' ? '✅' : cardStatus === 'rejected' ? '❌' : 'ti ti-hourglass';
+    const statusPillText    = cardStatus === 'approved' ? 'อนุมัติสำเร็จ'
+                            : cardStatus === 'rejected' ? 'ไม่ผ่านการอนุมัติ' : 'กำลังดำเนินการ';
+    const currentStatusIcon = cardStatus === 'approved' ? 'ti ti-circle-check' : cardStatus === 'rejected' ? 'ti ti-circle-x' : 'ti ti-hourglass';
     const { title, desc }   = this.buildCurrentStatus(d);
     const p = this._profileInfo;
 
@@ -239,9 +231,8 @@ export class SendT3 implements OnInit {
       studentName:        p.studentName,
       studentId:          p.studentId,
       journalName:        d.journal_snapshot.journal_name,
-      issn:               d.journal_snapshot.issn || d.journal_snapshot.eissn,
+      issn:               d.journal_snapshot.issn,
       quartile:           d.journal_snapshot.quartile_or_tier,
-      sjr:                d.journal_snapshot.sjr_score != null ? String(d.journal_snapshot.sjr_score) : '-',
       scopusStatus:       d.journal_snapshot.is_discontinued ? 'Discontinued' : 'Active',
       database:           d.journal_snapshot.indexed_database,
       degree:             p.degree,
@@ -255,7 +246,7 @@ export class SendT3 implements OnInit {
       steps:              this.buildSteps(d),
       timeline:           this.buildTimeline(d),
       attachments: [{
-        icon: '📄',
+        icon: 'ti ti-file-text',
         name: `แบบฟอร์ม Pre-T3 (PRE-T3-${d.pre_t3_id}).pdf`,
         meta: `สร้างเมื่อ: ${this.formatDateShort(d.created_at)}`,
         size: '-',
@@ -286,21 +277,21 @@ export class SendT3 implements OnInit {
     const ov   = d.overall_status;
     const meet = d.faculty_com_approval.meeting_no !== null;
 
-    const s1: Step = { icon: '✓', label: 'ยื่นคำร้องสำเร็จ', sub: '● เสร็จแล้ว', date: this.formatDateShort(d.created_at), status: 'done' };
+    const s1: Step = { icon: 'ti ti-check', label: 'ยื่นคำร้องสำเร็จ', sub: '● เสร็จแล้ว', date: this.formatDateShort(d.created_at), status: 'done' };
 
     let s2: Step;
-    if (adv === 'Approved')       s2 = { icon: '✓',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: this.formatDateShort(d.advisor_approval.approved_at), status: 'done'   };
-    else if (adv === 'Rejected')  s2 = { icon: '✗',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '✗ ไม่อนุมัติ',      date: '-',                                                   status: 'active' };
-    else                          s2 = { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '⚙ กำลังดำเนินการ', date: this.formatDateShort(d.created_at),                    status: 'active' };
+    if (adv === 'Approved')       s2 = { icon: 'ti ti-check',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: this.formatDateShort(d.advisor_approval.approved_at), status: 'done'   };
+    else if (adv === 'Rejected')  s2 = { icon: 'ti ti-x',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ',      date: '-',                                                   status: 'active' };
+    else                          s2 = { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● กำลังดำเนินการ', date: this.formatDateShort(d.created_at),                    status: 'active' };
 
     let s3: Step;
-    if (fac === 'Approved')       s3 = { icon: '✓',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: '-', status: 'done'    };
-    else if (meet)                s3 = { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '⚙ กำลังดำเนินการ', date: '-', status: 'active'  };
-    else                          s3 = { icon: '🏛', label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };
+    if (fac === 'Approved')       s3 = { icon: 'ti ti-check',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: '-', status: 'done'    };
+    else if (meet)                s3 = { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '● กำลังดำเนินการ', date: '-', status: 'active'  };
+    else                          s3 = { icon: 'ti ti-building-bank', label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };
 
     const s4: Step = ov === 'Approved'
-      ? { icon: '🎓', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '● เสร็จแล้ว',      date: '-', status: 'done'    }
-      : { icon: '🎓', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '○ รอขั้นก่อนหน้า', date: '-', status: 'pending' };
+      ? { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '● เสร็จแล้ว',      date: '-', status: 'done'    }
+      : { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '○ รอขั้นก่อนหน้า', date: '-', status: 'pending' };
 
     return [s1, s2, s3, s4];
   }
@@ -313,23 +304,23 @@ export class SendT3 implements OnInit {
     const adv0 = this._profileInfo.advisorName;
 
     items.push({
-      icon: '⚙️', actor: 'ระบบ Journal Watch', badge: 'ระบบ', badgeType: 'system',
+      icon: 'ti ti-settings', actor: 'ระบบ Journal Watch', badge: 'ระบบ', badgeType: 'system',
       message: `ยื่นคำร้อง PRE-T3-${d.pre_t3_id} สำเร็จ วารสาร ${d.journal_snapshot.journal_name} ${d.journal_snapshot.quartile_or_tier}`,
       time: this.formatDateFull(d.created_at),
     });
 
     if (adv === 'Approved') {
-      items.push({ icon: '👨‍🏫', actor: adv0, badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง Pre-T3 แล้ว', time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined });
+      items.push({ icon: 'ti ti-chalkboard', actor: adv0, badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง Pre-T3 แล้ว', time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined });
     } else if (adv === 'Rejected') {
-      items.push({ icon: '👨‍🏫', actor: adv0, badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง Pre-T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined });
+      items.push({ icon: 'ti ti-chalkboard', actor: adv0, badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง Pre-T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined });
     } else {
-      items.push({ icon: '👨‍🏫', actor: adv0, badge: 'อาจารย์', badgeType: 'advisor', message: 'กำลังพิจารณาคำร้อง Pre-T3 · รับแจ้งเตือนทาง MSU Mail แล้ว' });
+      items.push({ icon: 'ti ti-chalkboard', actor: adv0, badge: 'อาจารย์', badgeType: 'advisor', message: 'กำลังพิจารณาคำร้อง Pre-T3 · รับแจ้งเตือนทาง MSU Mail แล้ว' });
     }
 
     if (meet) {
-      items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: fac === 'Approved' ? 'อนุมัติ' : 'กำลังพิจารณา', badgeType: fac === 'Approved' ? 'advisor' : 'waiting', message: fac === 'Approved' ? 'อนุมัติคำร้อง Pre-T3 แล้ว' : 'กำลังพิจารณาในที่ประชุม' });
+      items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: fac === 'Approved' ? 'อนุมัติ' : 'กำลังพิจารณา', badgeType: fac === 'Approved' ? 'advisor' : 'waiting', message: fac === 'Approved' ? 'อนุมัติคำร้อง Pre-T3 แล้ว' : 'กำลังพิจารณาในที่ประชุม' });
     } else {
-      items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอขั้นก่อนหน้า' });
+      items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอขั้นก่อนหน้า' });
     }
 
     return items;
@@ -352,7 +343,31 @@ export class SendT3 implements OnInit {
   innovationDetail    = '';
 
   // ── Section 4: publication_details ───────────────
-  journalType  = 'วารสารวิชาการระดับนานาชาติ';
+  // ประเภทวารสาร — เลือกให้อัตโนมัติจากฐานข้อมูลของ Pre-T3 ที่เลือก (นิสิตเปลี่ยนเองไม่ได้)
+  // กันเลือกผิด เช่น วารสาร TCI แต่เลือก "นานาชาติ" แล้วได้ weight 1.0 เกินจริง
+  get journalType(): string {
+    const db = this.selectedPreT3Data?.database ?? '';
+    if (!db) return '';
+    return /tci/i.test(db) ? 'วารสารวิชาการระดับชาติ' : 'วารสารวิชาการระดับนานาชาติ';
+  }
+
+  get journalTypeInfo(): { icon: string; hint: string } | null {
+    if (!this.journalType) return null;
+    return this.isInternational
+      ? { icon: 'ti-world', hint: `ฐานข้อมูล ${this.selectedPreT3Data?.database ?? ''}` }
+      : { icon: 'ti-flag',  hint: `TCI ${this.selectedPreT3Data?.quartile ?? ''}` };
+  }
+
+  private get isInternational(): boolean { return /นานาชาติ/.test(this.journalType); }
+
+  // ค่าน้ำหนักคำนวณที่ backend (WEIGHT_BY_TYPE) — ตรงนี้แค่แสดงให้ตรงกัน:
+  // นานาชาติ = 1.0, ระดับชาติ ดูกลุ่ม TCI จาก Pre-T3 (กลุ่ม 1 = 0.8, อื่นๆ = 0.6)
+  get weightLabel(): string {
+    if (!this.journalType) return '—';
+    if (this.isInternational) return '1.0';
+    const tier = (this.selectedPreT3Data?.quartile ?? '').match(/\d+/)?.[0];
+    return tier === '1' ? '0.8' : '0.6';
+  }
   pubStatus    = 'accepted';
   volume       = '';
   issue        = '';
@@ -374,6 +389,23 @@ export class SendT3 implements OnInit {
     { value: () => this.titleEn,             label: 'ชื่อเรื่องภาษาอังกฤษ', fieldId: 'field-titleEn' },
     { value: () => this.correspondingAuthor, label: 'Corresponding Author', fieldId: 'field-correspondingAuthor' },
   ];
+
+  private readonly REQUIRED_FILES = [
+    { key: 'acceptance_letter', label: 'หนังสือตอบรับ (acceptance_letter)' },
+    { key: 'full_paper',        label: 'บทความฉบับสมบูรณ์ (full_paper)' },
+  ];
+  private readonly MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+  /** ปี (ค.ศ. 4 หลัก) / เล่ม / ฉบับ ต้องเป็นตัวเลข — ช่องที่ไม่บังคับ ถ้าว่างก็ผ่าน */
+  private numberFieldError(): string {
+    const year = (v: string) => /^\d{4}$/.test(v.trim());
+    const num  = (v: string) => /^\d+$/.test(v.trim());
+    if (!year(this.scoreYear))                          return 'ปีของ Score ต้องเป็นปี ค.ศ. 4 หลัก เช่น 2024';
+    if (this.publishYear.trim() && !year(this.publishYear)) return 'ปีที่ตีพิมพ์ต้องเป็นปี ค.ศ. 4 หลัก เช่น 2025';
+    if (this.volume.trim() && !num(this.volume))        return 'เล่มที่ (Volume) ต้องเป็นตัวเลข';
+    if (this.issue.trim() && !num(this.issue))          return 'ฉบับที่ (Issue) ต้องเป็นตัวเลข';
+    return '';
+  }
 
   private readonly API_FIELD_LABELS: Record<string, string> = {
     'paper_and_research_details.title_thai':           'ชื่อเรื่องภาษาไทย',
@@ -414,11 +446,31 @@ export class SendT3 implements OnInit {
   openConfirm(): void {
     if (!this.selectedPreT3 || this.isSubmitting() || this.submitSuccess()) return;
 
+    // backend ไม่บังคับ impact_factor เมื่อ has_impact_score = true → FE บังคับเอง
+    if (this.hasImpactScore && this.toNumberOrNull(this.impactFactor) === null) {
+      this.submitError.set('กรุณากรอก Impact Factor เป็นตัวเลข (หรือเอาเครื่องหมาย "วารสารมี Impact Factor" ออก)');
+      return;
+    }
+
     const missing = this.REQUIRED_FIELDS.find(f => !f.value().trim());
     if (missing) {
       this.submitError.set('');
       this.fieldWithError.set(missing.fieldId);
       this.scrollToField(missing.fieldId);
+      return;
+    }
+
+    // F3: ไฟล์จำเป็น + ช่องตัวเลข — เดิมยื่นได้โดยไม่แนบหนังสือตอบรับ/บทความฉบับสมบูรณ์
+    const missingFile = this.REQUIRED_FILES.find(f => !this.files[f.key]);
+    if (missingFile) {
+      this.submitError.set(`กรุณาแนบไฟล์ ${missingFile.label}`);
+      this.fieldWithError.set(`file-${missingFile.key}`);
+      this.scrollToField(`file-${missingFile.key}`);
+      return;
+    }
+    const badNumber = this.numberFieldError();
+    if (badNumber) {
+      this.submitError.set(badNumber);
       return;
     }
 
@@ -475,6 +527,12 @@ export class SendT3 implements OnInit {
     });
   }
 
+  private toNumberOrNull(v: unknown): number | null {
+    if (v === null || v === undefined || String(v).trim() === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
   private buildPayload(): SendT3Req {
     const preT3NumericId = this.selectedPreT3.replace('PRE-T3-', '');
     const d = this.selectedPreT3Data;
@@ -494,7 +552,6 @@ export class SendT3 implements OnInit {
       },
       publication_details: {
         type:               this.journalType,
-        weight_score:       this.journalType === 'วารสารวิชาการระดับนานาชาติ' ? 1.0 : 0.5,
         specified_database: d?.database ?? '',
         status:             this.pubStatus,
         volume:             this.volume,
@@ -503,8 +560,9 @@ export class SendT3 implements OnInit {
       },
       journal_metrics: {
         has_impact_score: this.hasImpactScore,
-        impact_factor:    this.hasImpactScore ? Number(this.impactFactor) : 0,
-        citescore:        d ? Number(d.citeScore) : 0,
+        // X20: ไม่มีค่า = ส่ง null (ห้ามส่ง NaN / 0 / "" — 0 ถูกเก็บเป็น 0 จริง, "" ได้ 500)
+        impact_factor:    this.hasImpactScore ? this.toNumberOrNull(this.impactFactor) : null,
+        citescore:        null,   // Pre-T3 ไม่เก็บ CiteScore แล้ว — staff ตรวจจากหน้าค้นหาเอง
         score_year:       this.scoreYear,
       },
     };
@@ -523,7 +581,14 @@ export class SendT3 implements OnInit {
   onFileChange(key: string, event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
-      this.files[key] = input.files[0];
+      const file = input.files[0];
+      if (file.size > this.MAX_FILE_BYTES) {
+        this.submitError.set(`ไฟล์ ${file.name} ใหญ่เกิน 10MB`);
+        input.value = '';
+        return;
+      }
+      this.files[key] = file;
+      if (this.fieldWithError() === `file-${key}`) { this.fieldWithError.set(''); this.submitError.set(''); }
     }
   }
 

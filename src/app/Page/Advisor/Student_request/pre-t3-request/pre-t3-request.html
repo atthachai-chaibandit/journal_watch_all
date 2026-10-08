@@ -87,7 +87,7 @@
 
 <!-- ═══ DETAIL MODAL ═══ -->
 @if (selectedRequest(); as req) {
-  <div class="modal-backdrop" (click)="closeDetail()">
+  <div class="modal-backdrop">
     <div class="modal" (click)="$event.stopPropagation()">
 
       <!-- Modal Header -->
@@ -106,7 +106,7 @@
             </span>
           </div>
         </div>
-        <button class="modal-close" (click)="closeDetail()">✕</button>
+        <button class="modal-close" (click)="closeDetail()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="modal-body">
@@ -137,10 +137,6 @@
               <div class="detail-field">
                 <div class="detail-label">เบอร์โทร</div>
                 <div class="detail-value">{{ d.student_info?.phone || '—' }}</div>
-              </div>
-              <div class="detail-field">
-                <div class="detail-label">คณะ</div>
-                <div class="detail-value">{{ d.student_info?.faculty || '—' }}</div>
               </div>
               <div class="detail-field">
                 <div class="detail-label">สาขาวิชา</div>
@@ -191,14 +187,6 @@
             <div class="detail-field">
               <div class="detail-label">QUARTILE (สูงสุด)</div>
               <div class="detail-value"><span class="badge-q-green">{{ req.quartile }}</span></div>
-            </div>
-            <div class="detail-field">
-              <div class="detail-label">SJR SCORE</div>
-              <div class="detail-value">{{ req.sjr }}</div>
-            </div>
-            <div class="detail-field">
-              <div class="detail-label">CITESCORE</div>
-              <div class="detail-value">{{ req.citeScore }}</div>
             </div>
 
             <div class="detail-field">
@@ -259,7 +247,7 @@
             @for (item of req.checklist; track item.id) {
               <div class="checklist-item" [class.pass]="item.status === 'pass'" [class.fail]="item.status === 'fail'">
                 <div class="check-icon" [class.pass]="item.status === 'pass'" [class.fail]="item.status === 'fail'">
-                  {{ item.status === 'pass' ? '✓' : '✗' }}
+                  @if (item.status === 'pass') { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
                 </div>
                 <div class="check-body">
                   <div class="check-title">{{ item.id }}. {{ item.title }}</div>
@@ -270,7 +258,7 @@
         </div>
 
         <!-- ── SECTION 5: ความเห็นอาจารย์ ── -->
-        @if (req.status === 'pending') {
+        @if (req.status === 'pending' && req.canReview) {
           <div class="decision-section">
             <div class="decision-section-head">
               <span><i class="ti ti-message-circle"></i></span>
@@ -283,7 +271,7 @@
                   [checked]="decision() === 'approved'"
                   (change)="decision.set('approved')">
                 <span class="dc-box" [class.dc-box--approved]="decision() === 'approved'">
-                  @if (decision() === 'approved') { ✓ }
+                  @if (decision() === 'approved') { <i class="ti ti-check"></i> }
                 </span>
                 <span class="dc-label">เห็นชอบ / อนุมัติ</span>
               </label>
@@ -292,7 +280,7 @@
                   [checked]="decision() === 'rejected'"
                   (change)="decision.set('rejected')">
                 <span class="dc-box" [class.dc-box--rejected]="decision() === 'rejected'">
-                  @if (decision() === 'rejected') { ✓ }
+                  @if (decision() === 'rejected') { <i class="ti ti-check"></i> }
                 </span>
                 <span class="dc-label">ไม่เห็นชอบ</span>
               </label>
@@ -362,6 +350,10 @@
           </div>
         }
       </div>
+
+      @if (decisionError()) {
+        <div class="confirm-error"><i class="ti ti-alert-triangle"></i> {{ decisionError() }}</div>
+      }
 
       <div class="confirm-actions">
         <button class="btn-cancel" (click)="showConfirm.set(false)">ยกเลิก</button>

@@ -176,6 +176,18 @@
           <tr><td class="dt-label">หมายเหตุ</td><td class="dt-value">{{ j.note || '—' }}</td></tr>
           <tr><td class="dt-label">วันที่บันทึก</td><td class="dt-value">{{ formatDate(j.recorded_date) }}</td></tr>
           <tr><td class="dt-label">บันทึกโดย</td><td class="dt-value">{{ addedBy(j) }}</td></tr>
+          <tr>
+            <td class="dt-label">หลักฐาน</td>
+            <td class="dt-value">
+              @if (j.evidence_file_path) {
+                <button type="button" class="btn-evidence" (click)="openEvidence(j)" [disabled]="isLoadingEvidence()">
+                  @if (isLoadingEvidence()) { <span class="btn-spinner"></span> กำลังเปิด... }
+                  @else { <i class="ti ti-file-search"></i> ดูไฟล์หลักฐาน }
+                </button>
+                @if (evidenceError()) { <div class="evidence-error"><i class="ti ti-alert-triangle"></i> {{ evidenceError() }}</div> }
+              } @else { — }
+            </td>
+          </tr>
           <tr><td class="dt-label">ผลสรุป</td><td class="dt-value dt-red"><i class="ti ti-ban"></i> ห้ามนำไปยื่น Pre-T3 / T3 ทุกกรณี</td></tr>
         </table>
       </div>
@@ -191,7 +203,7 @@
      ADD SINGLE MODAL (staff only)
 ════════════════════════════════════════════════════════════ -->
 @if (addModal()) {
-  <div class="modal-overlay" (click)="closeAddModal()">
+  <div class="modal-overlay">
     <div class="form-modal" (click)="$event.stopPropagation()">
 
       <div class="fmodal-header">
@@ -199,7 +211,7 @@
           <span class="fmodal-icon"><i class="ti ti-plus"></i></span>
           เพิ่มวารสารใหม่
         </div>
-        <button class="fmodal-close" (click)="closeAddModal()">✕</button>
+        <button class="fmodal-close" (click)="closeAddModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="fmodal-body">
@@ -268,7 +280,7 @@
      IMPORT CSV MODAL (staff only)
 ════════════════════════════════════════════════════════════ -->
 @if (csvModal()) {
-  <div class="modal-overlay" (click)="closeCsvModal()">
+  <div class="modal-overlay">
     <div class="form-modal form-modal--sm" (click)="$event.stopPropagation()">
 
       <div class="fmodal-header">
@@ -276,7 +288,7 @@
           <span class="fmodal-icon"><i class="ti ti-upload"></i></span>
           นำเข้าวารสาร (CSV)
         </div>
-        <button class="fmodal-close" (click)="closeCsvModal()">✕</button>
+        <button class="fmodal-close" (click)="closeCsvModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="fmodal-body">
@@ -324,7 +336,7 @@
      EDIT MODAL (staff only)
 ════════════════════════════════════════════════════════════ -->
 @if (editModal(); as j) {
-  <div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-overlay">
     <div class="form-modal" (click)="$event.stopPropagation()">
 
       <div class="fmodal-header fmodal-header--yellow">
@@ -332,7 +344,7 @@
           <span class="fmodal-icon"><i class="ti ti-pencil"></i></span>
           แก้ไขวารสาร
         </div>
-        <button class="fmodal-close" (click)="closeEditModal()">✕</button>
+        <button class="fmodal-close" (click)="closeEditModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="fmodal-body">
@@ -414,6 +426,9 @@
         ออกจากรายการ MSU Unwanted ใช่หรือไม่?
         <div class="delete-modal__warn">การกระทำนี้ไม่สามารถยกเลิกได้</div>
       </div>
+      @if (deleteError()) {
+        <div class="delete-modal__error"><i class="ti ti-alert-triangle"></i> {{ deleteError() }}</div>
+      }
       <div class="delete-modal__actions">
         <button class="btn-fcancel" (click)="closeDeleteModal()" [disabled]="isDeleting()">ยกเลิก</button>
         <button class="btn-fsubmit btn-fsubmit--red" (click)="submitDelete()" [disabled]="isDeleting()">

@@ -7,6 +7,7 @@ import { AuthService } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
 import { GetProfileStaffRes, Data as ProfileData } from '../../../model/res/get_profile_staff_res';
 import { PatchProfileStaffReq } from '../../../model/req/patch_profile_staff_res';
+import { apiFailure, failMsg } from '../../../server-status.service';
 
 @Component({
   selector: 'app-profile',
@@ -66,7 +67,7 @@ export class Profile implements OnInit {
         this.editForm,
         { headers }
       )
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => of(apiFailure(err))))
       .subscribe(res => {
         this.isSaving.set(false);
         if (res?.success) {
@@ -82,7 +83,7 @@ export class Profile implements OnInit {
           }
           setTimeout(() => { this.isEditing.set(false); this.saveResult.set(null); }, 1500);
         } else {
-          this.saveResult.set({ ok: false, msg: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+          this.saveResult.set({ ok: false, msg: failMsg(res) });
         }
       });
   }

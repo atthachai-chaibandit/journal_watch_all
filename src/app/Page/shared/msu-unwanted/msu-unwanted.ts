@@ -8,6 +8,7 @@ import { AuthService } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
 import { MSUUnwantedRes, Journal } from '../../../model/res/MSU_Unwanted_res';
 import { ImportMsuUnwantedRes } from '../../../model/res/import_msu_Unwanted_res';
+import { apiFailure, failMsg } from '../../../server-status.service';
 
 interface ActionResult { ok: boolean; msg: string; }
 
@@ -121,7 +122,35 @@ export class MsuUnwanted implements OnInit {
   }
 
   openDetail(j: Journal): void { this.selectedJournal.set(j); }
-  closeDetail(): void          { this.selectedJournal.set(null); }
+  closeDetail(): void          { this.selectedJournal.set(null); this.evidenceError.set(''); }
+
+  // ── ดูไฟล์หลักฐาน: GET /unwanted-journals/:id/evidence ต้องแนบ token จึงเปิดลิงก์ตรงไม่ได้
+  //    → โหลดเป็น blob แล้วเปิดในแท็บใหม่ ──
+  isLoadingEvidence = signal(false);
+  evidenceError     = signal('');
+
+  openEvidence(j: Journal): void {
+    if (this.isLoadingEvidence()) return;
+    // เปิดแท็บก่อนรอโหลด — ถ้าเปิดหลัง await เบราว์เซอร์จะบล็อกเป็น popup
+    const tab = window.open('', '_blank');
+    this.isLoadingEvidence.set(true);
+    this.evidenceError.set('');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
+    this.http.get(`${this.constants.API_ENDPOINT}/unwanted-journals/${j.unwanted_id}/evidence`, { headers, responseType: 'blob' })
+      .subscribe({
+        next: blob => {
+          this.isLoadingEvidence.set(false);
+          const url = URL.createObjectURL(blob);
+          if (tab) tab.location.href = url; else window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        },
+        error: err => {
+          this.isLoadingEvidence.set(false);
+          tab?.close();
+          this.evidenceError.set(err?.status === 404 ? 'ไม่พบไฟล์หลักฐานของวารสารนี้' : 'เปิดไฟล์หลักฐานไม่สำเร็จ กรุณาลองใหม่');
+        },
+      });
+  }
 
   // ── Add Single ────────────────────────────────────────────────────
   openAddModal(): void {
@@ -157,7 +186,7 @@ export class MsuUnwanted implements OnInit {
 
     this.http
       .post<ImportMsuUnwantedRes>(`${this.constants.API_ENDPOINT}/unwanted-journals/single`, fd, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => of(apiFailure(err))))
       .subscribe(res => {
         this.isAdding.set(false);
         if (res?.success) {
@@ -165,7 +194,7 @@ export class MsuUnwanted implements OnInit {
           this.loadData();
           setTimeout(() => this.closeAddModal(), 1600);
         } else {
-          this.addResult.set({ ok: false, msg: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+          this.addResult.set({ ok: false, msg: failMsg(res) });
         }
       });
   }
@@ -198,7 +227,7 @@ export class MsuUnwanted implements OnInit {
 
     this.http
       .post<ImportMsuUnwantedRes>(`${this.constants.API_ENDPOINT}/unwanted-journals/import`, fd, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => of(apiFailure(err))))
       .subscribe(res => {
         this.isImporting.set(false);
         if (res?.success) {
@@ -206,17 +235,31 @@ export class MsuUnwanted implements OnInit {
           this.loadData();
           setTimeout(() => this.closeCsvModal(), 1600);
         } else {
-          this.importResult.set({ ok: false, msg: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+          this.importResult.set({ ok: false, msg: failMsg(res) });
         }
       });
   }
 
   // ── Edit ──────────────────────────────────────────────────────────
+  private editOriginalDate = '';
+
+  /** DATE จาก backend → 'YYYY-MM-DD' สำหรับ <input type="date">
+   *  ห้ามใช้ toISOString(): ได้วันที่แบบ UTC — "2026-10-04T17:00Z" (= 5 ต.ค. เวลาไทย) จะกลายเป็น 4 ต.ค.
+   *  และวันที่ถอยไป 1 วันทุกครั้งที่บันทึก (X26) */
+  private toDateInput(v: unknown): string {
+    if (!v) return '';
+    const str = String(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;          // backend ส่งเป็นข้อความอยู่แล้ว (dateStrings)
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;   // วันที่ตามเวลาท้องถิ่น
+  }
+
   openEditModal(j: Journal, e: Event): void {
     e.stopPropagation();
-    const rd = j.recorded_date
-      ? new Date(j.recorded_date as any).toISOString().split('T')[0]
-      : '';
+    const rd = this.toDateInput(j.recorded_date);
+    this.editOriginalDate = rd;
     this.editForm = {
       journal_name: j.journal_name ?? '',
       issn:         j.issn ?? '',
@@ -249,16 +292,22 @@ export class MsuUnwanted implements OnInit {
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     const fd = new FormData();
     fd.append('journal_name', this.editForm.journal_name.trim());
-    if (this.editForm.issn)          fd.append('issn',          this.editForm.issn.trim());
-    if (this.editForm.publisher)     fd.append('publisher',     this.editForm.publisher.trim());
-    if (this.editForm.note)          fd.append('note',          this.editForm.note.trim());
-    if (this.editForm.recorded_date) fd.append('recorded_date', this.editForm.recorded_date);
+    // ส่ง issn/publisher/note ทุกครั้ง (ว่างก็ส่ง '') — backend ถือว่า field ที่ไม่ส่ง = ไม่เปลี่ยน
+    // ถ้าข้ามตอนว่างจะล้างค่าเดิมไม่ได้ ส่วน '' backend แปลงเป็น null ให้
+    fd.append('issn',      (this.editForm.issn      ?? '').trim());
+    fd.append('publisher', (this.editForm.publisher ?? '').trim());
+    fd.append('note',      (this.editForm.note      ?? '').trim());
+    // ส่งเฉพาะเมื่อผู้ใช้เปลี่ยนวันที่จริง — กันวันที่เพี้ยนจากการแปลง timezone (X26)
+    if (this.editForm.recorded_date && this.editForm.recorded_date !== this.editOriginalDate) {
+      fd.append('recorded_date', this.editForm.recorded_date);
+    }
     if (this.editFile)               fd.append('evidence_file', this.editFile);
     if (this.editClearEvidence)      fd.append('clear_evidence','true');
 
+    let errorMsg = '';
     this.http
       .patch<ImportMsuUnwantedRes>(`${this.constants.API_ENDPOINT}/unwanted-journals/${j.unwanted_id}`, fd, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => { errorMsg = err?.error?.message ?? ''; return of(null); }))
       .subscribe(res => {
         this.isEditing.set(false);
         if (res?.success) {
@@ -266,7 +315,7 @@ export class MsuUnwanted implements OnInit {
           this.loadData();
           setTimeout(() => this.closeEditModal(), 1600);
         } else {
-          this.editResult.set({ ok: false, msg: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+          this.editResult.set({ ok: false, msg: errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
         }
       });
   }
@@ -278,8 +327,11 @@ export class MsuUnwanted implements OnInit {
     document.body.style.overflow = 'hidden';
   }
 
+  deleteError = signal('');
+
   closeDeleteModal(): void {
     this.deleteModal.set(null);
+    this.deleteError.set('');
     document.body.style.overflow = '';
   }
 
@@ -287,15 +339,21 @@ export class MsuUnwanted implements OnInit {
     const j = this.deleteModal();
     if (!j) return;
     this.isDeleting.set(true);
+    this.deleteError.set('');
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .delete<ImportMsuUnwantedRes>(`${this.constants.API_ENDPOINT}/unwanted-journals/${j.unwanted_id}`, { headers })
-      .pipe(catchError(() => of(null)))
-      .subscribe(() => {
+      .pipe(catchError(err => of(apiFailure(err))))
+      .subscribe(res => {
         this.isDeleting.set(false);
-        this.closeDeleteModal();
-        this.loadData();
+        // เดิมปิด modal ทุกกรณี → ลบไม่สำเร็จก็ดูเหมือนลบแล้ว
+        if (res?.success) {
+          this.closeDeleteModal();
+          this.loadData();
+        } else {
+          this.deleteError.set(failMsg(res, 'ลบไม่สำเร็จ กรุณาลองใหม่'));
+        }
       });
   }
 

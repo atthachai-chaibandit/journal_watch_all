@@ -10,6 +10,7 @@ import { GetPreT3RequestRes, Datum } from '../../../../model/res/get_pre-t3_requ
 import { PreT3DetailsRes, Data as PreT3Detail } from '../../../../model/res/Pre-T3_details_res';
 import { PreT3ApprovedReq } from '../../../../model/req/Pre-T3_approved_req';
 import { PreT3RejectReq } from '../../../../model/req/Pre-T3_reject_req';
+import { apiFailure, failMsg } from '../../../../server-status.service';
 
 type StatusType = 'pending' | 'approved' | 'rejected';
 type FilterType  = 'all' | 'pending' | 'approved' | 'rejected';
@@ -28,11 +29,8 @@ interface PreT3Item {
   email:         string;
   journalName:   string;
   issn:          string;
-  eissn:         string;
   database:      string;
   quartile:      string;
-  sjr:           string;
-  citeScore:     string;
   journalStatus: string;
   isHijacked:    boolean;
   isDiscontinued: boolean;
@@ -41,6 +39,7 @@ interface PreT3Item {
   daysAgo:       number;
   requestId:     string;
   status:        StatusType;
+  canReview:     boolean;   // X16: เฉพาะอาจารย์หลักที่ยังไม่ได้ตัดสิน
   approvedDate?: string;
   advisorRemark: string | null;
   checklist:     ChecklistItem[];
@@ -138,11 +137,8 @@ export class PreT3Request implements OnInit {
       email:         d.student_email,
       journalName:   snap.journal_name,
       issn:          snap.issn,
-      eissn:         snap.eissn,
       database:      snap.indexed_database,
       quartile:      snap.quartile_or_tier,
-      sjr:           snap.sjr_score?.toString() ?? '—',
-      citeScore:     snap.cite_score?.toString() ?? '—',
       journalStatus: snap.is_discontinued ? 'Discontinued' : 'Active',
       isHijacked:    snap.is_hijacked,
       isDiscontinued: snap.is_discontinued,
@@ -151,6 +147,7 @@ export class PreT3Request implements OnInit {
       daysAgo,
       requestId:     `PRE-T3-${d.pre_t3_id}`,
       status,
+      canReview:     d.can_review === true,
       approvedDate:  approvedAt,
       advisorRemark: advisorApproval?.remark ?? null,
       checklist,
@@ -208,7 +205,11 @@ export class PreT3Request implements OnInit {
     return true;
   }
 
+  // ลงนามไม่ผ่าน (เช่น นิสิตยกเลิกคำร้องไปแล้ว) → แสดงเหตุผลใน dialog แทนการปิดเงียบ
+  decisionError = signal('');
+
   openConfirm(): void {
+    this.decisionError.set('');
     if (!this.canSubmit) return;
     this.showConfirm.set(true);
   }
@@ -234,25 +235,24 @@ export class PreT3Request implements OnInit {
     this.isSubmitting.set(true);
     this.http.patch(url, body, { headers })
       .pipe(catchError(err => {
-        console.error('[submitDecision] HTTP status :', err?.status);
-        console.error('[submitDecision] Error body  :', err?.error);
-        console.error('[submitDecision] Full error  :', err);
-        return of(null);
+        console.error('[submitDecision]', err?.status, err?.error);
+        return of(apiFailure(err));
       }))
       .subscribe(res => {
         console.log('[submitDecision] Response:', res);
         this.isSubmitting.set(false);
-        this.showConfirm.set(false);
-        if (res === null) {
-          console.warn('[submitDecision] API call failed — ไม่ได้อัปเดต status');
+        if ((res as { success?: boolean } | null)?.success === false) {
+          // ไม่ปิด dialog — อาจารย์ต้องรู้ว่าลงนามไม่สำเร็จและเพราะอะไร
+          this.decisionError.set(failMsg(res, 'ลงนามไม่สำเร็จ กรุณาลองใหม่'));
           return;
         }
+        this.showConfirm.set(false);
         const newStatus = this.decision() as 'approved' | 'rejected';
         const approvedDate = newStatus === 'approved'
           ? new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
           : undefined;
         this.requests.update(list =>
-          list.map(r => r.id === req.id ? { ...r, status: newStatus, approvedDate } : r)
+          list.map(r => r.id === req.id ? { ...r, status: newStatus, approvedDate, canReview: false } : r)
         );
         this.closeDetail();
       });

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -9,6 +9,8 @@ import { PreT3HistorySatffRes, Item as PreT3Item } from '../../../../model/res/p
 import { T3HistorySatffRes, Item as T3Item } from '../../../../model/res/t3_history_satff_res';
 import { GetPreT3DeteilsStaffRes, Data as PreT3DetailData } from '../../../../model/res/get_pre-t3_deteils_staff_res';
 import { GetDeteilsT3StaffRes, Data as T3DetailData } from '../../../../model/res/get_deteils_T3_staff_res';
+import { downloadBlob } from '../../../../file-download';
+import { fetchAllPages } from '../../../../paged-fetch';
 
 type FilterType = 'all' | 'approved' | 'rejected';
 type TypeFilter  = 'all' | 'PreT3' | 'T3';
@@ -149,8 +151,8 @@ export class History implements OnInit {
   t3DetailLoading  = signal(false);
   selectedT3Detail = signal<T3DetailView | null>(null);
   cachedT3Details: Record<string, T3DetailView> = {};
-  fileLoading: Record<string, boolean> = {};
-  fileViewing: Record<string, boolean> = {};
+  fileLoading = signal<Record<string, boolean>>({});
+  fileViewing = signal<Record<string, boolean>>({});
 
   filtered = computed(() => {
     const f    = this.activeFilter();
@@ -185,9 +187,9 @@ export class History implements OnInit {
     if (qpStatus && ['all','approved','rejected'].includes(qpStatus))           this.activeFilter.set(qpStatus);
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
-    const preT3$  = this.http.get<PreT3HistorySatffRes>(`${this.constants.API_ENDPOINT}/pre-t3/history?page=1&limit=20`, { headers })
+    const preT3$  = fetchAllPages<PreT3HistorySatffRes>(this.http, `${this.constants.API_ENDPOINT}/pre-t3/history`, headers)
                         .pipe(catchError(() => of(null)));
-    const t3$     = this.http.get<T3HistorySatffRes>(`${this.constants.API_ENDPOINT}/t3/history?page=1&limit=20`, { headers })
+    const t3$     = fetchAllPages<T3HistorySatffRes>(this.http, `${this.constants.API_ENDPOINT}/t3/history`, headers)
                         .pipe(catchError(() => of(null)));
 
     forkJoin([preT3$, t3$]).subscribe(([preT3Res, t3Res]) => {
@@ -240,8 +242,8 @@ export class History implements OnInit {
     if (!card.t3Id) return;
     this.selectedT3Card.set(card);
     this.selectedT3Detail.set(null);
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = 'hidden';
 
     const cacheKey = card.id;
@@ -273,8 +275,8 @@ export class History implements OnInit {
   closeT3Detail(): void {
     this.selectedT3Card.set(null);
     this.selectedT3Detail.set(null);
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = '';
   }
 
@@ -288,25 +290,20 @@ export class History implements OnInit {
 
   downloadFile(t3Id: number, fileKey: string): void {
     this.fetchFile(t3Id, fileKey, this.fileLoading, blob => {
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href     = url;
-      a.download = `${fileKey}_T3-${t3Id}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${fileKey}_T3-${t3Id}`);   // F13: ใส่นามสกุลไฟล์ + revoke URL หลังเริ่มดาวน์โหลด
     });
   }
 
-  private fetchFile(t3Id: number, fileKey: string, stateMap: Record<string, boolean>, onBlob: (blob: Blob) => void): void {
-    if (stateMap[fileKey]) return;
-    stateMap[fileKey] = true;
+  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void): void {
+    if (state()[fileKey]) return;
+    state.update(m => ({ ...m, [fileKey]: true }));
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get(`${this.constants.API_ENDPOINT}/upload/t3/${t3Id}/files/${fileKey}`,
            { headers, responseType: 'blob' })
       .pipe(catchError(() => of(null)))
       .subscribe(blob => {
-        stateMap[fileKey] = false;
+        state.update(m => ({ ...m, [fileKey]: false }));
         if (blob) onBlob(blob);
       });
   }
@@ -400,9 +397,9 @@ export class History implements OnInit {
   }
 
   chipLabel(card: HistoryCard): string {
-    if (card.status === 'approved')  return '✅ อนุมัติแล้ว';
-    if (card.status === 'cancelled') return '🚫 ยกเลิกแล้ว';
-    return '❌ ไม่อนุมัติ';
+    if (card.status === 'approved')  return 'อนุมัติแล้ว';
+    if (card.status === 'cancelled') return 'ยกเลิกแล้ว';
+    return 'ไม่อนุมัติ';
   }
 
   approvalChipClass(status: string): string {

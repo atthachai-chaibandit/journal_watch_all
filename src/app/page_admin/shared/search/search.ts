@@ -1,11 +1,12 @@
-import { Component, inject, signal, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { forkJoin, of, Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, shareReplay, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../../auth.service';
+import { renderTurnstile, resetTurnstile, removeTurnstile } from '../../../turnstile';
 import { Constants } from '../../../comfig/constants';
 import { ScrapeScopusRes, Data } from '../../../model/res/Scrape_Scopus_res';
 import { ScrapeTCIRes, Data as TciData } from '../../../model/res/Scrape_TCI_res';
@@ -79,7 +80,7 @@ interface JournalResult {
   templateUrl: './search.html',
   styleUrls: ['./search.scss'],
 })
-export class Search implements OnInit {
+export class Search implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.scrollTo({ top: 0 });
   }
@@ -124,180 +125,6 @@ export class Search implements OnInit {
     return this.degreeOptions.find(o => o.value === this.degree)?.label ?? '';
   }
 
-  // ── CAPTCHA (slider puzzle) ──
-  private readonly CAPTCHA_KEY = 'jw_captcha_ts';
-  private readonly CAPTCHA_TTL = 60 * 60 * 1000;
-
-  readonly CW = 320; readonly CH = 160;
-  readonly PS = 60;  readonly TR = 12;
-
-  showCaptcha  = signal(false);
-  puzzlePieceX = signal(0);
-  puzzleError  = signal(false);
-
-  private puzzleTargetX = 0;
-
-  @ViewChild('bgCanvas')    bgCvs!:    ElementRef<HTMLCanvasElement>;
-  @ViewChild('pieceCanvas') pieceCvs!: ElementRef<HTMLCanvasElement>;
-
-  private isCaptchaValid(): boolean {
-    const ts = localStorage.getItem(this.CAPTCHA_KEY);
-    if (!ts) return false;
-    return Date.now() - parseInt(ts) < this.CAPTCHA_TTL;
-  }
-
-  refreshCaptcha(): void {
-    this.puzzlePieceX.set(0);
-    this.puzzleError.set(false);
-    setTimeout(() => this.initPuzzle(), 10);
-  }
-
-  puzzleStartDrag(e: MouseEvent | TouchEvent): void {
-    e.preventDefault();
-    const startX = 'touches' in e
-      ? (e as TouchEvent).touches[0].clientX
-      : (e as MouseEvent).clientX;
-    const startPX = this.puzzlePieceX();
-
-    const onMove = (me: Event) => {
-      me.preventDefault();
-      const cx = 'touches' in me
-        ? (me as TouchEvent).touches[0].clientX
-        : (me as MouseEvent).clientX;
-      this.puzzlePieceX.set(Math.max(0, Math.min(this.CW - this.PS, startPX + cx - startX)));
-    };
-
-    const onEnd = () => {
-      document.removeEventListener('mousemove', onMove as EventListener);
-      document.removeEventListener('touchmove', onMove as EventListener);
-      document.removeEventListener('mouseup', onEnd);
-      document.removeEventListener('touchend', onEnd);
-      this.verifyPuzzle();
-    };
-
-    document.addEventListener('mousemove', onMove as EventListener);
-    document.addEventListener('touchmove', onMove as EventListener, { passive: false } as AddEventListenerOptions);
-    document.addEventListener('mouseup', onEnd);
-    document.addEventListener('touchend', onEnd);
-  }
-
-  private verifyPuzzle(): void {
-    if (Math.abs(this.puzzlePieceX() - this.puzzleTargetX) <= 8) {
-      localStorage.setItem(this.CAPTCHA_KEY, Date.now().toString());
-      this.showCaptcha.set(false);
-      this.doSearch();
-    } else {
-      this.puzzleError.set(true);
-      setTimeout(() => {
-        this.puzzleError.set(false);
-        this.puzzlePieceX.set(0);
-        setTimeout(() => this.initPuzzle(), 80);
-      }, 1000);
-    }
-  }
-
-  private initPuzzle(): void {
-    this.puzzleTargetX = 100 + Math.floor(Math.random() * (this.CW - this.PS - 120));
-    this.drawPuzzle();
-  }
-
-  private drawPuzzle(): void {
-    const bg = this.bgCvs?.nativeElement;
-    const pc = this.pieceCvs?.nativeElement;
-    if (!bg || !pc) return;
-
-    const bx = bg.getContext('2d')!;
-    const px = pc.getContext('2d')!;
-    px.clearRect(0, 0, this.PS, this.CH);
-
-    // Background gradient
-    const grad = bx.createLinearGradient(0, 0, this.CW, this.CH);
-    grad.addColorStop(0, '#1C2744');
-    grad.addColorStop(0.5, '#2A3A6E');
-    grad.addColorStop(1, '#1C2744');
-    bx.fillStyle = grad;
-    bx.fillRect(0, 0, this.CW, this.CH);
-
-    // Dot grid decoration
-    bx.save();
-    bx.globalAlpha = 0.13;
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 17; col++) {
-        bx.beginPath();
-        bx.arc(col * 20 + 10, row * 21 + 10, 2, 0, Math.PI * 2);
-        bx.fillStyle = '#E8A800';
-        bx.fill();
-      }
-    }
-    bx.restore();
-
-    // Capture piece pixels BEFORE drawing hole
-    const ty  = (this.CH - this.PS) / 2;
-    const tx  = this.puzzleTargetX;
-    const capH = this.PS + this.TR * 2;
-    const imgData = bx.getImageData(tx, ty - this.TR, this.PS, capH);
-
-    // Draw dark hole overlay
-    const holePath = this.getPiecePath(tx, ty);
-    bx.save();
-    bx.fillStyle = 'rgba(0,0,0,0.58)';
-    bx.fill(holePath);
-    bx.strokeStyle = 'rgba(255,255,255,0.35)';
-    bx.lineWidth = 1.5;
-    bx.setLineDash([4, 3]);
-    bx.stroke(holePath);
-    bx.restore();
-
-    // Draw piece via offscreen canvas (putImageData ignores clip)
-    const off = document.createElement('canvas');
-    off.width = this.PS; off.height = capH;
-    off.getContext('2d')!.putImageData(imgData, 0, 0);
-
-    const piecePath = this.getPiecePath(0, ty);
-
-    px.save();
-    px.clip(piecePath);
-    px.drawImage(off, 0, ty - this.TR);
-    px.restore();
-
-    // Piece border
-    px.save();
-    px.strokeStyle = 'rgba(255,255,255,0.9)';
-    px.lineWidth = 1.5;
-    px.shadowColor = 'rgba(0,0,0,0.4)';
-    px.shadowBlur = 4;
-    px.stroke(piecePath);
-    px.restore();
-
-    // Piece highlight (top-to-bottom gradient overlay)
-    px.save();
-    px.clip(piecePath);
-    const hl = px.createLinearGradient(0, ty, 0, ty + this.PS);
-    hl.addColorStop(0, 'rgba(255,255,255,0.22)');
-    hl.addColorStop(1, 'rgba(255,255,255,0)');
-    px.fillStyle = hl;
-    px.fillRect(0, ty, this.PS, this.PS);
-    px.restore();
-  }
-
-  private getPiecePath(x: number, y: number): Path2D {
-    const s = this.PS, r = this.TR;
-    const p = new Path2D();
-    p.moveTo(x, y);
-    // Top: tab bumps UP in center
-    p.lineTo(x + s / 2 - r, y);
-    p.arc(x + s / 2, y, r, Math.PI, 0, true);
-    p.lineTo(x + s, y);
-    // Right straight
-    p.lineTo(x + s, y + s);
-    // Bottom: notch cut inward (upward arc)
-    p.lineTo(x + s / 2 + r, y + s);
-    p.arc(x + s / 2, y + s, r, 0, Math.PI, true);
-    p.lineTo(x, y + s);
-    p.closePath();
-    return p;
-  }
-
   comparison = [
     { label: 'API Key',     scraping: 'ไม่ต้องใช้',  api: 'ต้องใช้',         scrapingOk: true,  apiOk: false },
     { label: 'ความเร็ว',   scraping: '3–8 วินาที',   api: '< 1 วินาที',      scrapingOk: false, apiOk: true  },
@@ -306,26 +133,79 @@ export class Search implements OnInit {
   ];
 
   legends = [
-    // ✅ กลุ่มผ่านเกณฑ์
+    // กลุ่มผ่านเกณฑ์
     { color: '#1A5FAB', label: 'ผ่านเกณฑ์สากล (Scopus)' },
     { color: '#1A7A42', label: 'ผ่านเกณฑ์มาตรฐาน (TCI กลุ่ม 1–2)' },
-    // 🟡 กลุ่มเฝ้าระวัง
+    // กลุ่มเฝ้าระวัง
     { color: '#D35400', label: 'ข้อมูลขัดแย้งระหว่างระบบ (Scopus / TCI)' },
     { color: '#C07800', label: 'แจ้งเตือน: MSU Unwanted แต่ Scopus Active' },
-    // 🔴 กลุ่มปฏิเสธ
+    // กลุ่มปฏิเสธ
     { color: '#962D2D', label: 'ปฏิเสธ: MSU Unwanted (ไม่อนุมัติการจบ)' },
     { color: '#7B1C1C', label: 'ปฏิเสธ: อยู่ในรายการเฝ้าระวัง (Watchlist)' },
   ];
 
+  // ── CAPTCHA (Cloudflare Turnstile) ──
+  // ค้นได้ฟรีตามโควตาของ backend (captchaIfFrequent) เกินแล้วจะได้ 428 CAPTCHA_REQUIRED
+  // → ค่อยโชว์ widget "ฉันไม่ใช่บอท" ได้ token แล้วยิงคำค้นเดิมซ้ำพร้อม header X-Captcha-Token
+  // ผ่านแล้ว backend ให้โควตารอบใหม่ ไม่ต้องขอ token ทุกครั้ง
+  captchaOpen    = signal(false);
+  captchaMessage = signal('');
+  captchaError   = signal('');
+  private captchaWidgetId: string | null = null;
+  private pendingMethod: FetchMethod = 'api';
+
+  /* widget อยู่ใน @if (captchaOpen()) — element โผล่มาเมื่อไหร่ค่อยวาด Turnstile ลงไป */
+  @ViewChild('captchaBox') set captchaBox(ref: ElementRef<HTMLElement> | undefined) {
+    if (!ref || this.captchaWidgetId) return;
+    renderTurnstile(ref.nativeElement, {
+      onToken:   token => this.onCaptchaToken(token),
+      onExpired: () => this.captchaError.set('การยืนยันหมดอายุ กรุณายืนยันใหม่อีกครั้ง'),
+      onError:   () => this.captchaError.set('โหลด CAPTCHA ไม่สำเร็จ กรุณารีเฟรชหน้าแล้วลองใหม่'),
+    }).then(id => {
+      if (this.captchaOpen()) this.captchaWidgetId = id;
+      else removeTurnstile(id);             // ปิดไปก่อนที่สคริปต์จะโหลดเสร็จ
+    }).catch(() => this.captchaError.set('โหลด CAPTCHA ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'));
+  }
+
+  ngOnDestroy(): void {
+    removeTurnstile(this.captchaWidgetId);
+  }
+
+  private isCaptchaError(err: any): boolean {
+    const code = err?.error?.code as string | undefined;
+    return err?.status === 428 || code === 'CAPTCHA_REQUIRED' || code === 'CAPTCHA_INVALID' || code === 'CAPTCHA_UNAVAILABLE';
+  }
+
+  private openCaptcha(method: FetchMethod, err: any): void {
+    const code = err?.error?.code as string | undefined;
+    this.pendingMethod = method;
+    this.captchaMessage.set(
+      code === 'CAPTCHA_REQUIRED' && err?.error?.message
+        ? err.error.message
+        : 'คุณค้นหาบ่อยเกินไป กรุณายืนยันว่าไม่ใช่บอท');
+    this.captchaError.set(
+      code === 'CAPTCHA_INVALID'     ? 'ยืนยันไม่ผ่าน กรุณายืนยันใหม่อีกครั้ง' :
+      code === 'CAPTCHA_UNAVAILABLE' ? 'ยืนยัน CAPTCHA ไม่ได้ตอนนี้ ลองใหม่อีกครั้ง' : '');
+    resetTurnstile(this.captchaWidgetId);   // token ใช้ได้ครั้งเดียว — ให้ผู้ใช้ยืนยันใหม่
+    this.captchaOpen.set(true);
+    this.isLoading.set(false);
+    this.isRetrying.set(false);
+  }
+
+  private onCaptchaToken(token: string): void {
+    this.captchaError.set('');
+    this.isLoading.set(true);
+    this.runSearch(this.pendingMethod, token);
+  }
+
+  private closeCaptcha(): void {
+    removeTurnstile(this.captchaWidgetId);
+    this.captchaWidgetId = null;
+    this.captchaOpen.set(false);
+    this.captchaError.set('');
+  }
+
   search(): void {
-    if (!this.issn.trim()) return;
-    if (!this.isCaptchaValid()) {
-      this.puzzlePieceX.set(0);
-      this.puzzleError.set(false);
-      this.showCaptcha.set(true);
-      setTimeout(() => this.initPuzzle(), 50);
-      return;
-    }
     this.doSearch();
   }
 
@@ -344,14 +224,41 @@ export class Search implements OnInit {
     this.runSearch('api');
   }
 
-  /* ตรวจจาก response error ว่าเป็นกรณี Scopus API key ถูก throttle/rate-limit/หมด quota
-     หรือไม่ (โครงสร้างตรงกับ debug.raw_message ที่ backend ส่งกลับตอน API key มีปัญหา) */
-  private isApiQuotaError(err: any): boolean {
-    const raw: string = err?.error?.debug?.raw_message ?? err?.error?.message ?? '';
-    return /throttled|rate.?limit|quota/i.test(raw);
+  /* X25: ตัดสินจาก code ก่อน แล้วค่อยดู HTTP status — ไม่พึ่ง debug.raw_message
+     (production ไม่ส่ง debug) และไม่พึ่งคำว่า "quota" ในข้อความ (ข้อความเปลี่ยนได้)
+     - Scopus API: 503 SCOPUS_QUOTA_EXCEEDED = โควตาหมด/key ถูกล็อก/ชน throttle → สลับไป scraping
+     - TCI API: ไม่มีโควตา ถ้าพัง (5xx SERVER_ERROR) ก็สลับไป scraping ได้เหมือนกัน */
+  private shouldFallbackToScraping(err: any, db: 'scopus' | 'tci'): boolean {
+    if (!err) return false;
+    if (err?.error?.code === 'SCOPUS_QUOTA_EXCEEDED') return true;
+    if (db === 'scopus' && err?.status === 503)       return true;
+    if (db === 'tci'    && err?.status >= 500)        return true;
+    return false;
   }
 
-  private runSearch(method: FetchMethod): void {
+  /* ข้อความ error ที่แสดงในการ์ดผลค้นหา — message จาก backend เป็นภาษาไทยแสดงตรงได้
+     ยกเว้น 404 (ไม่พบวารสาร) และ 400 (ISSN ผิด) ที่ backend ยังส่งภาษาอังกฤษ */
+  private searchErrorMessage(err: any, dbLabel: string): string {
+    const code   = err?.error?.code as string | undefined;
+    const status = err?.status as number | undefined;
+    const thaiMsg = (err?.error?.message as string | undefined) ?? '';
+
+    if (code === 'SCRAPER_BUSY')
+      return thaiMsg || 'ระบบค้นหาไม่ว่างในขณะนี้ (มีผู้ใช้งานจำนวนมาก) กรุณารอประมาณ 10 วินาทีแล้วลองใหม่';
+    if (code === 'RATE_LIMIT') {
+      const wait = Number(err?.headers?.get?.('Retry-After'));
+      return (thaiMsg || 'ค้นหาบ่อยเกินไป') + (wait > 0 ? ` (ลองใหม่ได้ในอีก ${Math.ceil(wait / 60)} นาที)` : '');
+    }
+    if (code === 'CAPTCHA_REQUIRED' || code === 'CAPTCHA_INVALID')
+      return thaiMsg || 'กรุณายืนยันว่าไม่ใช่บอทก่อนค้นหาต่อ';
+    if (status === 404) return `ไม่พบข้อมูลวารสารใน ${dbLabel}`;
+    if (status === 400) return 'รูปแบบ ISSN ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง (เช่น 1234-5678)';
+    if (!status)        return 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ในขณะนี้ กรุณาลองใหม่ภายหลัง';
+    if (status >= 500)  return thaiMsg || `ระบบค้นหา ${dbLabel} ขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง`;
+    return thaiMsg || `ไม่พบข้อมูลวารสารใน ${dbLabel}`;
+  }
+
+  private runSearch(method: FetchMethod, captchaToken?: string): void {
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     const issn = encodeURIComponent(this.issn.trim());
     const issnDashed = encodeURIComponent(this.toDashedIssn(this.issn.trim()));
@@ -368,17 +275,35 @@ export class Search implements OnInit {
     const withRawError = <T>(obs: Observable<T>) =>
       obs.pipe(catchError(err => of({ __httpError: err } as any)));
 
+    // token ของ Turnstile verify ได้ครั้งเดียว — ถ้ามี token ให้ยิง scopus (แนบ token) ก่อน
+    // พอ backend ให้โควตารอบใหม่แล้วค่อยยิง tci/unwanted ตาม ไม่งั้นสอง request ถือ token เดียวกันจะชนกัน
+    const scopus$ = withRawError(this.http.get<ScrapeScopusRes>(scopusUrl, {
+      headers: captchaToken ? headers.set('X-Captcha-Token', captchaToken) : headers,
+    })).pipe(shareReplay(1));
+    const afterScopus = <T>(obs: Observable<T>) => captchaToken ? scopus$.pipe(switchMap(() => obs)) : obs;
+
     forkJoin({
-      scopus:   withRawError(this.http.get<ScrapeScopusRes>(scopusUrl, { headers })),
-      tci:      withRawError(this.http.get<ScrapeTCIRes>(tciUrl, { headers })),
-      unwanted: this.http.get<CheckMsuUnwantedRes>(`${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`, { headers }).pipe(catchError(() => of(null))),
+      scopus:   scopus$,
+      tci:      afterScopus(withRawError(this.http.get<ScrapeTCIRes>(tciUrl, { headers }))),
+      unwanted: afterScopus(withRawError(this.http.get<CheckMsuUnwantedRes>(
+        `${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`, { headers }))),
     }).subscribe(({ scopus, tci, unwanted }) => {
-      const scopusErr = (scopus as any)?.__httpError;
-      const tciErr     = (tci as any)?.__httpError;
+      const scopusErr   = (scopus as any)?.__httpError;
+      const tciErr      = (tci as any)?.__httpError;
+      const unwantedErr = (unwanted as any)?.__httpError;
+
+      // เกินโควตาค้นหา (428) / token ไม่ผ่าน / Cloudflare ล่ม (503) → ให้ยืนยัน CAPTCHA แล้วค่อยยิงซ้ำ
+      // ต้องเช็คก่อน fallback เพราะ 503 CAPTCHA_UNAVAILABLE จะถูกตีความเป็น Scopus quota หมด
+      const captchaErr = [scopusErr, tciErr, unwantedErr].find(e => this.isCaptchaError(e));
+      if (captchaErr) {
+        this.openCaptcha(method, captchaErr);
+        return;
+      }
+      if (this.captchaOpen()) this.closeCaptcha();
 
       // ถ้ายังใช้ API อยู่ และเจอสัญญาณ key ติด limit/quota จากฝั่งไหนก็ตาม
       // ให้ลองค้นหาใหม่ทั้งชุดด้วย Web Scraping แทนโดยอัตโนมัติ ไม่ต้องให้ผู้ใช้ทำอะไร
-      if (method === 'api' && ((scopusErr && this.isApiQuotaError(scopusErr)) || (tciErr && this.isApiQuotaError(tciErr)))) {
+      if (method === 'api' && (this.shouldFallbackToScraping(scopusErr, 'scopus') || this.shouldFallbackToScraping(tciErr, 'tci'))) {
         this.method = 'scraping';
         this.isRetrying.set(true); // โชว์ข้อความแจ้งว่ากำลังสลับไป Web Scraping ให้ผู้ใช้เห็น
         this.runSearch('scraping');
@@ -394,18 +319,19 @@ export class Search implements OnInit {
       console.log('[TCI res]', tciRes);
       console.log('[Unwanted res]', unwanted);
 
-      const isUnwanted = unwanted?.success ? unwanted.data.isUnwanted : false;
+      const unwantedRes = unwantedErr ? null : (unwanted as CheckMsuUnwantedRes | null);
+      const isUnwanted  = unwantedRes?.success ? unwantedRes.data.isUnwanted : false;
 
       if (scopusRes?.success && scopusRes.data && (scopusRes.data as any).journal_name) {
         this.result.set(this.mapResult(scopusRes.data as unknown as Data, isUnwanted));
       } else {
-        this.errorMessage.set('ไม่พบข้อมูลวารสารใน Scopus');
+        this.errorMessage.set(scopusErr ? this.searchErrorMessage(scopusErr, 'Scopus') : 'ไม่พบข้อมูลวารสารใน Scopus');
       }
 
       if (tciRes?.success && tciRes.data && (tciRes.data as any).journal_name) {
         this.tciResult.set(this.mapTciResult(tciRes.data as unknown as TciData, isUnwanted));
       } else {
-        this.tciError.set('ไม่พบข้อมูลวารสารใน TCI');
+        this.tciError.set(tciErr ? this.searchErrorMessage(tciErr, 'TCI') : 'ไม่พบข้อมูลวารสารใน TCI');
       }
 
       this.hasSearched.set(true);
@@ -447,7 +373,7 @@ export class Search implements OnInit {
     let caseNum    = 1;
     let caseColor  = '#1A5FAB';
     let caseLabel  = '';
-    let bannerIcon = '✓';
+    let bannerIcon = 'ti ti-check';
     let bannerDesc = '';
     let blacklistReasons: string[] =
       extra.blacklist_reasons ?? extra.predatory_reasons ?? [];
@@ -488,18 +414,18 @@ export class Search implements OnInit {
       
       caseColor  = '#1A5FAB';
       caseLabel  = 'พบในฐานข้อมูล Scopus — ผ่านเกณฑ์ทุกระดับ';
-      bannerIcon = '✓';
+      bannerIcon = 'ti ti-check';
       bannerDesc = `วารสารนี้ได้รับการจัดอยู่ใน Scopus Quartile ${quartile} มีสถานะ Active และไม่ปรากฏในรายการ MSU Unwanted Journals สามารถนำไปยื่น Pre-T3 / T3 ได้ทั้ง ป.เอก และ ป.โท`;
     } else if (passForMaster) {
       caseColor  = '#1A5FAB';
       caseLabel  = 'Scopus Q3 — ผ่านเกณฑ์เฉพาะ ป.โท';
-      bannerIcon = '〜';
+      bannerIcon = 'ti ti-alert-circle';
       bannerDesc = `วารสารนี้ได้รับการจัดอยู่ใน Scopus Quartile ${quartile} มีสถานะ Active ผ่านเกณฑ์สำหรับ ป.โท แผน 2 แต่ไม่ผ่านเกณฑ์สำหรับ ป.เอก (ต้องการ Q2 ขึ้นไป)`;
     } else {
       
       caseColor  = '#64748B';
       caseLabel  = `Scopus ${quartile} — ไม่ผ่านเกณฑ์ Quartile`;
-      bannerIcon = '✗';
+      bannerIcon = 'ti ti-x';
       bannerDesc = `วารสารนี้ได้รับการจัดอยู่ใน Scopus Quartile ${quartile} มีสถานะ Active แต่ไม่ผ่านเกณฑ์ Quartile ที่ มมส. กำหนด (ต้องการ Q2 สำหรับ ป.เอก หรือ Q3 สำหรับ ป.โท)`;
     }
 

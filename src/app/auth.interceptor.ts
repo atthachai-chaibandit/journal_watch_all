@@ -9,6 +9,8 @@ import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { ErrorNotificationService, SERVER_ERROR_MESSAGE } from './error-notification.service';
 
+const AUTH_FLOW_URL = /\/auth\/(login|verify-otp|resend-otp|google|refresh|register-staff|forgot-password|reset-password)/;
+
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   // ธงกันไม่ให้ refresh token ซ้ำ ถ้ามีหลาย request เจอ 401 พร้อมกัน
@@ -27,7 +29,11 @@ export class AuthInterceptor implements HttpInterceptor {
       catchError((err: HttpErrorResponse) => {
         // ไม่ refresh ถ้า error มาจาก endpoint /auth/refresh เอง (ป้องกัน loop)
         // และไม่ redirect ถ้า user ยังไม่ได้ login อยู่ (ปล่อยให้ component จัดการ error เอง)
-        if (err.status === 401 && !req.url.includes('/auth/refresh') && this.auth.isLoggedIn) {
+        // 401 จาก endpoint ที่ใช้เข้าสู่ระบบ (login, verify-otp, google, refresh ฯลฯ) = ข้อมูลที่กรอกไม่ผ่าน
+        // ไม่ใช่ token หมดอายุ — เดิมถ้ามี token เก่าค้าง จะไป refresh แล้ว throw Error ที่ไม่มี message
+        // หน้า login เลยขึ้น "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" ทั้งที่ข้อความจริงจาก backend หายไป
+        // (/auth/me ยังต้อง refresh ตามปกติ จึงไม่ข้ามทั้ง /auth/)
+        if (err.status === 401 && !AUTH_FLOW_URL.test(req.url) && this.auth.isLoggedIn) {
           return this.handle401(req, next);
         }
         if (err.status === 500) {
@@ -57,6 +63,10 @@ export class AuthInterceptor implements HttpInterceptor {
             return next.handle(this.attachToken(req, token)); // ยิง request เดิมซ้ำด้วย token ใหม่
           }
           // refresh ล้มเหลว (refresh token ก็หมดอายุด้วย) → logout แล้ว redirect ไปหน้า login จริงๆ
+          // F2: แจ้ง request ที่รอ token ใหม่อยู่ให้ error ด้วย — เดิม subject ไม่เคย error/complete
+          // request พวกนั้น (เช่น forkJoin ใน send-t3/history) จึงค้างตลอด แล้วสร้าง subject ใหม่ไว้รอบหน้า
+          this.refreshSubject.error(new Error('Session expired'));
+          this.refreshSubject = new BehaviorSubject<string | null>(null);
           this.auth.logout();
           this.router.navigateByUrl('/login');
           return throwError(() => new Error('Session expired'));

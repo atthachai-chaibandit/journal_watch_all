@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Constants } from '../../comfig/constants';
 import { GOOGLE_CLIENT_ID } from '../../auth-config';
+import { loadGoogleIdentity } from '../../google-gsi';
 
 declare const google: any;
 
@@ -83,24 +84,13 @@ export class RegisterStaff implements OnInit {
       });
   }
 
+  // F16: ใช้ loader กลางที่รอจน google.accounts พร้อมจริง (กัน race ตอนสคริปต์ยังโหลดไม่เสร็จ)
   private loadGoogleScript(): Promise<void> {
-    return new Promise((resolve) => {
-      if (document.getElementById('google-gsi-script')) {
-        resolve();
-        return;
-      }
-      const script    = document.createElement('script');
-      script.id       = 'google-gsi-script';
-      script.src      = 'https://accounts.google.com/gsi/client';
-      script.async    = true;
-      script.defer    = true;
-      script.onload   = () => resolve();
-      document.head.appendChild(script);
-    });
+    return loadGoogleIdentity();
   }
 
   private showSnack(message: string, type: 'success' | 'error' | 'info') {
-    this.snackBar.open(message, '✕', {
+    this.snackBar.open(message, 'ปิด', {
       duration: 4000,
       panelClass: [`snack-${type}`],
       horizontalPosition: 'center',

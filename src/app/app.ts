@@ -60,6 +60,9 @@ export class App {
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe(() => {
+        // F9: modal ทุกตัวตั้ง body overflow = hidden ตอนเปิด แต่ถ้าออกจากหน้า (เช่นกด Back)
+        // ตอน modal ยังเปิดอยู่ จะไม่มีใครคืนค่า → ทั้งแอปเลื่อนไม่ได้ คืนค่าที่จุดกลางนี้ทุกครั้งที่เปลี่ยนหน้า
+        document.body.style.overflow = '';
         if (window.innerWidth <= 1024) {
           this.sidebarOpen = false;
         }

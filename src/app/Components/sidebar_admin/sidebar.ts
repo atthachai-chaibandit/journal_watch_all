@@ -62,9 +62,9 @@ export class Sidebar implements OnInit {
       next: (res) => {
         const d = res.data;
         this.userRole     = d.role;
-        this.userName     = (`${d.firstName} ${d.lastName}`).trim() || d.username;
+        this.userName     = (`${d.firstName ?? ''} ${d.lastName ?? ''}`).trim() || d.username;
         this.userEmail    = d.msuMail || d.username;
-        this.userInitials = (d.firstName.charAt(0) + d.lastName.charAt(0)).toUpperCase() || 'A';
+        this.userInitials = ((d.firstName?.charAt(0) ?? '') + (d.lastName?.charAt(0) ?? '')).toUpperCase() || 'A';   // F14
 
         this.userPicture  = d.picture ?? '';
 
@@ -96,7 +96,6 @@ export class Sidebar implements OnInit {
         group: 'ระบบ',
         items: [
           { label: 'Backup & Restore',  icon: 'ti ti-device-floppy',   route: `${prefix}/backup-restore` },
-          { label: 'Bug Reports',       icon: 'ti ti-bug',             route: `${prefix}/bug-reports` },
         ],
       },
     ];

@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, OnInit, inject, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { GetRequestT3Res, Datum } from '../../../../model/res/get_request_T3_res
 import { GetDeteilsT3Res, Data as T3Detail } from '../../../../model/res/get_deteils_T3_res';
 import { StaffActionReq } from '../../../../model/req/staff_action_req';
 import { StaffActionRejectReq } from '../../../../model/req/staff_action_reject_req';
+import { downloadBlob } from '../../../../file-download';
 
 type StatusType = 'pending' | 'approved' | 'rejected';
 type FilterType  = 'all' | 'pending' | 'approved' | 'rejected';
@@ -76,6 +77,7 @@ export class T3Request implements OnInit {
   isDetailLoading  = signal(false);
   isSubmitting     = signal(false);
   submitResult     = signal<'success' | 'error' | ''>('');
+  submitError      = signal('');
   private _resultTimer: ReturnType<typeof setTimeout> | null = null;
   activeFilter     = signal<FilterType>('all');
   selectedRequest  = signal<T3Item | null>(null);
@@ -88,8 +90,8 @@ export class T3Request implements OnInit {
   meetingDate = '';
 
   // File states
-  fileLoading: Record<string, boolean> = {};
-  fileViewing: Record<string, boolean> = {};
+  fileLoading = signal<Record<string, boolean>>({});
+  fileViewing = signal<Record<string, boolean>>({});
 
   requests = signal<T3Item[]>([]);
 
@@ -197,8 +199,8 @@ export class T3Request implements OnInit {
     this.remark     = req.staffRemark ?? '';
     this.meetingNo  = '';
     this.meetingDate = '';
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = 'hidden';
 
     this.isDetailLoading.set(true);
@@ -215,32 +217,29 @@ export class T3Request implements OnInit {
   closeDetail(): void {
     this.selectedRequest.set(null);
     this.detailData.set(null);
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = '';
   }
 
   // ── File handling ─────────────────────────────────────
-  private fetchFile(t3Id: number, fileKey: string, stateMap: Record<string, boolean>, onBlob: (blob: Blob) => void): void {
-    if (stateMap[fileKey]) return;
-    stateMap[fileKey] = true;
+  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void): void {
+    if (state()[fileKey]) return;
+    state.update(m => ({ ...m, [fileKey]: true }));
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get(`${this.constants.API_ENDPOINT}/upload/t3/${t3Id}/files/${fileKey}`,
            { headers, responseType: 'blob' })
       .pipe(catchError(() => of(null)))
       .subscribe(blob => {
-        stateMap[fileKey] = false;
+        state.update(m => ({ ...m, [fileKey]: false }));
         if (blob) onBlob(blob);
       });
   }
 
   downloadFile(t3Id: number, fileKey: string): void {
     this.fetchFile(t3Id, fileKey, this.fileLoading, blob => {
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href = url; a.download = `${fileKey}_T3-${t3Id}`; a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${fileKey}_T3-${t3Id}`);   // F13: ใส่นามสกุลไฟล์ + revoke URL หลังเริ่มดาวน์โหลด
     });
   }
 
@@ -278,15 +277,21 @@ export class T3Request implements OnInit {
 
     const url  = `${this.constants.API_ENDPOINT}/t3/${req.t3Id}/faculty-review`;
     const body: StaffActionReq | StaffActionRejectReq = this.decision() === 'approved'
-      ? { action: 'approve', meeting_no: this.meetingNo, meeting_date: new Date(this.meetingDate) }
+      ? { action: 'approve', meeting_no: this.meetingNo, meeting_date: this.meetingDate }   // ค่าจาก date picker เป็น "YYYY-MM-DD" อยู่แล้ว ส่งตรงได้
       : { action: 'reject',  remark: this.remark };
 
     this.isSubmitting.set(true);
+    let errorMsg = '';
     this.http.patch(url, body, { headers })
-      .pipe(catchError(err => { console.error('submitDecision error', err); return of(null); }))
+      .pipe(catchError(err => {
+        console.error('submitDecision error', err);
+        errorMsg = err?.error?.message ?? '';
+        return of(null);
+      }))
       .subscribe(res => {
         this.isSubmitting.set(false);
         if (res === null) {
+          this.submitError.set(errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
           this.submitResult.set('error');
           this._scheduleResultClear();
           return;

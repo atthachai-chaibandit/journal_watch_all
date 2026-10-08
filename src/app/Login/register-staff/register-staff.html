@@ -42,7 +42,7 @@
           <div class="jw-badge">ส่องวารสาร · MSU</div>
         </div>
 
-        <div class="staff-badge">🔐 เฉพาะเจ้าหน้าที่เท่านั้น</div>
+        <div class="staff-badge"><i class="ti ti-lock-access"></i> เฉพาะเจ้าหน้าที่เท่านั้น</div>
       </div>
 
       <!-- DIVIDER -->
@@ -55,7 +55,7 @@
 
         <div class="info-box">
           <div class="info-item">
-            <span class="info-icon">🔐</span>
+            <span class="info-icon"><i class="ti ti-lock-access"></i></span>
             <span>สำหรับ <strong>เจ้าหน้าที่บัณฑิตวิทยาลัย</strong> เท่านั้น ห้ามนิสิตหรือบุคคลภายนอกใช้งาน</span>
           </div>
           <div class="info-divider"></div>
@@ -69,7 +69,7 @@
         @if (errorMessage()) {
           <div class="error-banner" [class.error-banner--exists]="errorCode() === 'EMAIL_ALREADY_EXISTS'">
             <span class="error-icon">
-              {{ errorCode() === 'EMAIL_ALREADY_EXISTS' ? 'ℹ️' : '⚠️' }}
+              @if (errorCode() === 'EMAIL_ALREADY_EXISTS') { <i class="ti ti-info-circle"></i> } @else { <i class="ti ti-alert-triangle"></i> }
             </span>
             <div class="error-body">
               <div class="error-text">{{ errorMessage() }}</div>

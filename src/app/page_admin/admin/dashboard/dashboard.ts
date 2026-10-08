@@ -56,6 +56,14 @@ export class Dashboard implements OnInit {
     });
   }
 
+  /** วันรีเซ็ตโควตาของ API key (weeklyResetAt เป็นวินาที) — ค่าไม่ถูกต้องคืน '' เพื่อไม่แสดง */
+  resetDate(sec: number | null | undefined): string {
+    if (!sec) return '';
+    const d = new Date(sec * 1000);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  }
+
   pct(part: number, total: number): number {
     return total > 0 ? Math.min(100, Math.round((part / total) * 100)) : 0;
   }

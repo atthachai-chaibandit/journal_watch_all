@@ -131,7 +131,7 @@
           </div>
           <div class="mh-row1-right">
             <span class="mh-id-chip">{{ selectedCard()!.id }}</span>
-            <button class="modal-close" (click)="closeDetail()">✕</button>
+            <button class="modal-close" (click)="closeDetail()"><i class="ti ti-x"></i></button>
           </div>
         </div>
 
@@ -169,7 +169,7 @@
             @if (d.isDiscontinued) {
               <span class="sbadge sbadge-red"><i class="ti ti-circle-x"></i> Discontinued</span>
             } @else {
-              <span class="sbadge sbadge-green">✔ Active</span>
+              <span class="sbadge sbadge-green"><i class="ti ti-check"></i> Active</span>
             }
             @if (d.isHijacked) {
               <span class="sbadge sbadge-red"><i class="ti ti-ban"></i> MSU Unwanted</span>
@@ -217,7 +217,7 @@
                 @for (item of d.checklistItems; track item.key) {
                   <div [class]="'checklist-row ' + (item.passed ? 'checklist-row--pass' : 'checklist-row--fail')">
                     <div [class]="'checklist-mark ' + (item.passed ? 'checklist-mark--pass' : 'checklist-mark--fail')">
-                      {{ item.passed ? '✓' : '✕' }}
+                      @if (item.passed) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
                     </div>
                     <span class="checklist-key">{{ item.key }}</span>
                   </div>
@@ -291,7 +291,7 @@
             </span>
           </div>
         </div>
-        <button class="t3-modal-close" (click)="closeT3Detail()">✕</button>
+        <button class="t3-modal-close" (click)="closeT3Detail()"><i class="ti ti-x"></i></button>
       </div>
 
       <!-- Loading -->
@@ -330,8 +330,7 @@
               <div class="detail-field detail-field--wide"><div class="detail-label">ชื่อวารสาร</div><div class="detail-value fw-bold">{{ d.journalName }}</div></div>
               <div class="detail-field"><div class="detail-label">ISSN</div><div class="detail-value">{{ d.issn }}</div></div>
               <div class="detail-field"><div class="detail-label">ฐานข้อมูล</div><div class="detail-value"><span class="badge-db-inline">{{ d.database }}</span></div></div>
-              <div class="detail-field"><div class="detail-label">CITESCORE</div><div class="detail-value">{{ d.citescore || '—' }}</div></div>
-              <div class="detail-field"><div class="detail-label">Impact Factor</div><div class="detail-value">{{ d.impactFactor ?? 'ไม่มี' }}</div></div>
+              <div class="detail-field"><div class="detail-label">Impact Factor</div><div class="detail-value">{{ d.impactFactor != null ? (d.impactFactor | number:'1.0-4') : 'ไม่มี' }}</div></div>
               <div class="detail-field"><div class="detail-label">ปีข้อมูล Score</div><div class="detail-value">{{ d.scoreYear || '—' }}</div></div>
             </div>
           </div>
@@ -389,13 +388,13 @@
                     <div class="evidence-key">{{ f.key }}</div>
                   </div>
                   <div class="evidence-actions">
-                    <button class="btn-evidence-view" [disabled]="fileViewing[f.key]"
+                    <button class="btn-evidence-view" [disabled]="fileViewing()[f.key]"
                             (click)="viewFile(d.t3Id, f.key); $event.stopPropagation()">
-                      @if (fileViewing[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
+                      @if (fileViewing()[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
                     </button>
-                    <button class="btn-evidence-download" [disabled]="fileLoading[f.key]"
+                    <button class="btn-evidence-download" [disabled]="fileLoading()[f.key]"
                             (click)="downloadFile(d.t3Id, f.key); $event.stopPropagation()">
-                      @if (fileLoading[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
+                      @if (fileLoading()[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
                     </button>
                   </div>
                 </div>

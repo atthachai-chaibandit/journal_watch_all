@@ -49,10 +49,6 @@
 
       <div class="field-row">
         <div class="field-group">
-          <label class="field-label">คณะ <span class="badge-auto">อัตโนมัติ</span></label>
-          <input class="field-input readonly" [value]="faculty()" readonly placeholder="—" />
-        </div>
-        <div class="field-group">
           <label class="field-label">สาขาวิชา <span class="badge-auto">อัตโนมัติ</span></label>
           <input class="field-input readonly" [value]="department()" readonly placeholder="—" />
         </div>
@@ -98,7 +94,7 @@
             <div class="pre-t3-card" [class.selected]="selectedPreT3 === item.id" (click)="selectedPreT3 = item.id">
               <div class="pre-t3-radio">
                 @if (selectedPreT3 === item.id) {
-                  <div class="radio-checked">✓</div>
+                  <div class="radio-checked"><i class="ti ti-check"></i></div>
                 } @else {
                   <div class="radio-empty"></div>
                 }
@@ -142,10 +138,6 @@
                 <div class="paper-info-item">
                   <div class="paper-info-label">QUARTILE</div>
                   <div class="paper-info-value">{{ selectedPreT3Data.quartile }}</div>
-                </div>
-                <div class="paper-info-item">
-                  <div class="paper-info-label">SJR / CITESCORE</div>
-                  <div class="paper-info-value">{{ selectedPreT3Data.sjr }} / {{ selectedPreT3Data.citeScore }}</div>
                 </div>
               </div>
               <div class="selected-paper-note"><i class="ti ti-lock"></i> ข้อมูลวารสารอ่านอย่างเดียว — ดึงจาก Pre-T3 ที่อนุมัติแล้ว</div>
@@ -218,10 +210,21 @@
       <div class="field-row">
         <div class="field-group field-group--wide">
           <label class="field-label">ประเภทวารสาร/ฐานข้อมูล <span class="badge-required">*</span></label>
-          <select class="field-select" [(ngModel)]="journalType">
-            <option value="วารสารวิชาการระดับนานาชาติ">วารสารวิชาการระดับนานาชาติ (weight 1.0)</option>
-            <option value="วารสารวิชาการระดับชาติ">วารสารวิชาการระดับชาติ (weight 0.5)</option>
-          </select>
+          @if (journalTypeInfo; as info) {
+            <div class="jt-locked">
+              <span class="jt-option-icon"><i class="ti {{ info.icon }}"></i></span>
+              <span class="jt-option-body">
+                <span class="jt-option-label">{{ journalType }}</span>
+                <span class="jt-option-hint">{{ info.hint }}</span>
+              </span>
+              <span class="jt-weight-chip">weight {{ weightLabel }}</span>
+            </div>
+            <div class="jt-locked-note"><i class="ti ti-lock"></i> เลือกให้อัตโนมัติจากฐานข้อมูลของ Pre-T3 ที่เลือก</div>
+          } @else {
+            <div class="jt-locked jt-locked--empty">
+              <span class="jt-option-hint">เลือก Pre-T3 ด้านบนก่อน ระบบจะกำหนดประเภทให้อัตโนมัติ</span>
+            </div>
+          }
         </div>
         <div class="field-group">
           <label class="field-label">ฐานข้อมูล <span class="badge-required">*</span></label>
@@ -231,18 +234,8 @@
 
       <div class="score-cards">
         <div class="score-card">
-          <div class="score-label">CITESCORE</div>
-          <div class="score-value score-value--orange">{{ selectedPreT3Data?.citeScore ?? '—' }}</div>
-          <div class="score-source">{{ selectedPreT3Data?.database ?? '' }}</div>
-        </div>
-        <div class="score-card">
-          <div class="score-label">SJR SCORE</div>
-          <div class="score-value score-value--navy">{{ selectedPreT3Data?.sjr ?? '—' }}</div>
-          <div class="score-source">{{ selectedPreT3Data?.database ?? '' }}</div>
-        </div>
-        <div class="score-card">
           <div class="score-label">ค่าน้ำหนัก</div>
-          <div class="score-value score-value--green">{{ journalType === 'วารสารวิชาการระดับนานาชาติ' ? '1.0' : '0.5' }}</div>
+          <div class="score-value score-value--green">{{ weightLabel }}</div>
           <div class="score-source">weight</div>
         </div>
       </div>
@@ -392,7 +385,7 @@
       <div class="section-divider"></div>
 
       <div class="upload-grid">
-        <div class="upload-card">
+        <div class="upload-card" id="file-acceptance_letter" [class.upload-card--error]="fieldWithError() === 'file-acceptance_letter'">
           <div class="upload-required-tag">* จำเป็น</div>
           <div class="upload-icon"><i class="ti ti-file-check"></i></div>
           <div class="upload-name">acceptance_letter</div>
@@ -407,7 +400,7 @@
           }
         </div>
 
-        <div class="upload-card">
+        <div class="upload-card" id="file-full_paper" [class.upload-card--error]="fieldWithError() === 'file-full_paper'">
           <div class="upload-required-tag">* จำเป็น</div>
           <div class="upload-icon"><i class="ti ti-files"></i></div>
           <div class="upload-name">full_paper</div>
@@ -502,10 +495,10 @@
     <div class="action-bar">
       <div class="action-bar-spacer"></div>
       @if (submitError()) {
-        <span class="action-bar-error">✗ {{ submitError() }}</span>
+        <span class="action-bar-error"><i class="ti ti-x"></i> {{ submitError() }}</span>
       }
       @if (submitSuccess()) {
-        <span class="action-bar-success">✓ ยื่น T3 สำเร็จแล้ว</span>
+        <span class="action-bar-success"><i class="ti ti-check"></i> ยื่น T3 สำเร็จแล้ว</span>
       }
       <button class="btn-confirm"
               (click)="openConfirm()"
@@ -540,7 +533,7 @@
             </div>
             <div class="mh-row1-right">
               <span class="mh-id-chip">{{ d.id }}</span>
-              <button class="modal-close" (click)="closePreT3Detail()">✕</button>
+              <button class="modal-close" (click)="closePreT3Detail()"><i class="ti ti-x"></i></button>
             </div>
           </div>
 
@@ -563,7 +556,7 @@
                 <div class="mh-date-val">{{ d.submittedDate }}</div>
                 <div class="mh-date-lbl">วันที่ยื่น</div>
               </div>
-              <div class="mh-status-pill" [class]="'mh-status-pill mh-status-pill--' + d.cardStatus">{{ d.statusPillText }}</div>
+              <div class="mh-status-pill" [class]="'mh-status-pill mh-status-pill--' + d.cardStatus"><i [class]="d.currentStatusIcon"></i> {{ d.statusPillText }}</div>
             </div>
           </div>
 
@@ -571,7 +564,7 @@
             <span class="sbadge sbadge-blue">{{ d.database }}</span>
             <span class="sbadge sbadge-yellow">{{ d.quartile }}</span>
             @if (d.scopusStatus === 'Active') {
-              <span class="sbadge sbadge-green">✔ Active</span>
+              <span class="sbadge sbadge-green"><i class="ti ti-check"></i> Active</span>
             } @else {
               <span class="sbadge sbadge-red"><i class="ti ti-circle-x"></i> Discontinued</span>
             }
@@ -580,7 +573,6 @@
           <div class="mh-grid">
             <div class="mh-cell"><span class="mh-lbl">ISSN</span><span class="mh-val mono">{{ d.issn }}</span></div>
             <div class="mh-cell"><span class="mh-lbl">Quartile</span><span class="mh-val">{{ d.quartile }}</span></div>
-            <div class="mh-cell"><span class="mh-lbl">SJR</span><span class="mh-val mono">{{ d.sjr }}</span></div>
             <div class="mh-cell"><span class="mh-lbl">ฐานข้อมูล</span><span class="mh-val">{{ d.database }}</span></div>
             <div class="mh-cell"><span class="mh-lbl">ระดับ</span><span class="mh-val">{{ d.degree }}</span></div>
             <div class="mh-cell"><span class="mh-lbl">อาจารย์ที่ปรึกษา</span><span class="mh-val">{{ d.advisor }}</span></div>
@@ -623,7 +615,7 @@
                 @for (item of d.timeline; track item.actor; let last = $last) {
                   <div class="tl-item">
                     <div class="tl-left">
-                      <div class="tl-icon" [class]="'tl-' + item.badgeType">{{ item.icon }}</div>
+                      <div class="tl-icon" [class]="'tl-' + item.badgeType"><i [class]="item.icon"></i></div>
                       @if (!last) { <div class="tl-line"></div> }
                     </div>
                     <div class="tl-body">

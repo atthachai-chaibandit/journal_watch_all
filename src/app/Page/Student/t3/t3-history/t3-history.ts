@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 import { AuthService } from '../../../../auth.service';
@@ -26,10 +26,8 @@ interface T3Card {
   submittedDateTime: string;
   advisorDateTime:   string;
   facultyDateTime:   string;
-  gradDateTime:      string;
   advisorStatus:  ApprovalStatus;
   facultyStatus:  ApprovalStatus;
-  gradStatus:     ApprovalStatus;
   overallStatus:  string;
 }
 
@@ -116,7 +114,14 @@ export class T3History implements OnInit {
   private loadData(isRefresh = false): void {
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http.get<GetT3Res>(`${this.constants.API_ENDPOINT}/t3/my`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(
+        catchError(() => of(null)),
+        // finalize ทำงานเสมอ แม้ map ข้อมูลแล้ว throw — กัน spinner ค้าง
+        finalize(() => {
+          this.isLoading.set(false);
+          if (isRefresh) this.isRefreshing.set(false);
+        }),
+      )
       .subscribe(res => {
         if (res?.success) {
           this.cards = res.data
@@ -124,20 +129,15 @@ export class T3History implements OnInit {
             .filter(c =>
               c.overallStatus === 'Approved'  ||
               c.overallStatus === 'Cancelled' ||
-              c.advisorStatus === 'Rejected'  ||
-              c.facultyStatus === 'Rejected'  ||
-              c.gradStatus    === 'Rejected'
+              c.overallStatus === 'Rejected'
             );
         }
-        this.isLoading.set(false);
-        if (isRefresh) this.isRefreshing.set(false);
       });
   }
 
   private mapToCard(d: Datum): T3Card {
     const adv  = d.advisor_approval.status as ApprovalStatus;
     const fac  = d.faculty_com_approval.status as ApprovalStatus;
-    const grad = d.grad_school_approval.status as ApprovalStatus;
     const ov   = d.overall_status;
 
     let status: 'approved' | 'rejected' | 'cancelled';
@@ -159,10 +159,8 @@ export class T3History implements OnInit {
       submittedDateTime: this.formatDateCompact(d.created_at),
       advisorDateTime:   this.formatDateCompact(d.advisor_approval.approved_at),
       facultyDateTime:   this.formatDateCompact(d.faculty_com_approval.approved_at),
-      gradDateTime:      this.formatDateCompact(d.grad_school_approval.approved_at),
       advisorStatus: adv,
       facultyStatus: fac,
-      gradStatus:    grad,
       overallStatus: ov,
     };
   }
@@ -176,7 +174,7 @@ export class T3History implements OnInit {
   statusLabel(card: T3Card): string {
     if (card.status === 'approved')   return 'อนุมัติแล้ว';
     if (card.status === 'cancelled')  return 'ยกเลิกแล้ว';
-    return '❌ ไม่ผ่านการอนุมัติ';
+    return 'ไม่ผ่านการอนุมัติ';
   }
 
   statusChipClass(card: T3Card): string {
@@ -186,11 +184,11 @@ export class T3History implements OnInit {
   }
 
   actionDateLabel(card: T3Card): string {
-    if (card.status === 'approved' && card.gradDateTime) return `อนุมัติ ${card.gradDateTime}`;
+    // v3: ที่ประชุมคณะคือขั้นสุดท้าย — วันที่อนุมัติ = วันที่ที่ประชุมมีมติ
+    if (card.status === 'approved' && card.facultyDateTime) return `อนุมัติ ${card.facultyDateTime}`;
     if (card.status === 'rejected') {
       if (card.advisorStatus === 'Rejected' && card.advisorDateTime) return `ปฏิเสธ ${card.advisorDateTime}`;
       if (card.facultyStatus === 'Rejected' && card.facultyDateTime) return `ปฏิเสธ ${card.facultyDateTime}`;
-      if (card.gradStatus    === 'Rejected' && card.gradDateTime)    return `ปฏิเสธ ${card.gradDateTime}`;
     }
     return '';
   }
@@ -209,12 +207,14 @@ export class T3History implements OnInit {
     this.detailLoading.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http.get<GetMyT3Res>(`${this.constants.API_ENDPOINT}/t3/${card.t3Id}`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(
+        catchError(() => of(null)),
+        finalize(() => this.detailLoading.set(false)),
+      )
       .subscribe(res => {
         if (res?.success) {
           this.details[card.id] = this.buildDetail(res.data);
         }
-        this.detailLoading.set(false);
       });
   }
 
@@ -232,9 +232,6 @@ export class T3History implements OnInit {
   }
 
   private buildDetail(d: T3Detail): T3DetailView {
-    const adv  = d.advisor_approval.status as ApprovalStatus;
-    const fac  = d.faculty_com_approval.status as ApprovalStatus;
-    const grad = d.grad_school_approval.status as ApprovalStatus;
     const ov   = d.overall_status;
 
     let cardStatus: 'approved' | 'rejected' | 'cancelled';
@@ -243,10 +240,10 @@ export class T3History implements OnInit {
     else                     cardStatus = 'rejected';
 
     const statusPillText    = cardStatus === 'approved'  ? 'อนุมัติสำเร็จ'
-                            : cardStatus === 'cancelled' ? '🚫 ยกเลิกแล้ว'
-                            :                             '❌ ไม่ผ่านการอนุมัติ';
+                            : cardStatus === 'cancelled' ? 'ยกเลิกแล้ว'
+                            :                             'ไม่ผ่านการอนุมัติ';
     const currentStatusIcon = cardStatus === 'approved'  ? 'ti ti-circle-check'
-                            : cardStatus === 'cancelled' ? '🚫' : '❌';
+                            : cardStatus === 'cancelled' ? 'ti ti-ban' : 'ti ti-circle-x';
     const { title, desc }   = this.buildCurrentStatusText(d);
 
     return {
@@ -278,14 +275,12 @@ export class T3History implements OnInit {
   private buildCurrentStatusText(d: T3Detail): { title: string; desc: string } {
     const adv  = d.advisor_approval.status;
     const fac  = d.faculty_com_approval.status;
-    const grad = d.grad_school_approval.status;
     const ov   = d.overall_status;
 
     if (ov === 'Approved')   return { title: 'อนุมัติสำเร็จ', desc: 'คำร้อง T3 ได้รับการอนุมัติเรียบร้อยแล้ว' };
     if (ov === 'Cancelled')  return { title: 'ยกเลิกคำร้องแล้ว', desc: 'นิสิตได้ยกเลิกคำร้อง T3 นี้ด้วยตนเอง' };
     if (adv === 'Rejected')  return { title: 'ไม่ผ่านการอนุมัติจากอาจารย์ที่ปรึกษา', desc: (d.advisor_approval.remark as unknown as string | null) ?? 'กรุณาติดต่ออาจารย์ที่ปรึกษา' };
     if (fac === 'Rejected')  return { title: 'ไม่ผ่านการอนุมัติจากที่ประชุม', desc: (d.faculty_com_approval.remark as unknown as string | null) ?? 'กรุณาติดต่อบัณฑิตวิทยาลัย' };
-    if (grad === 'Rejected') return { title: 'ไม่ผ่านการอนุมัติจากบัณฑิตวิทยาลัย', desc: (d.grad_school_approval.remark as unknown as string | null) ?? 'กรุณาติดต่อบัณฑิตวิทยาลัย' };
     return { title: 'ดำเนินการเสร็จสิ้น', desc: 'คำร้องได้รับการดำเนินการแล้ว' };
   }
 
@@ -299,23 +294,23 @@ export class T3History implements OnInit {
     const facultyDate = d.faculty_com_approval.approved_at
       ? this.formatDateShort(d.faculty_com_approval.approved_at) : '-';
 
-    const s1: Step = { icon: '✓', label: 'ยื่น T3 สำเร็จ', sub: '● เสร็จแล้ว', date, status: 'done' };
+    const s1: Step = { icon: 'ti ti-check', label: 'ยื่น T3 สำเร็จ', sub: '● เสร็จแล้ว', date, status: 'done' };
 
-    const s2: Step = adv === 'Approved' ? { icon: '✓', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',  date: advisorDate, status: 'done'   }
-                   : adv === 'Rejected' ? { icon: '✗', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '✗ ไม่อนุมัติ', date: '-',         status: 'active' }
-                   :                     { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '⚙ ดำเนินการ',  date: '-',         status: 'active' };
+    const s2: Step = adv === 'Approved' ? { icon: 'ti ti-check', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',  date: advisorDate, status: 'done'   }
+                   : adv === 'Rejected' ? { icon: 'ti ti-x', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ', date: '-',         status: 'active' }
+                   :                     { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ดำเนินการ',  date: '-',         status: 'active' };
 
     // รอผลจากที่ประชุม — ต้องเช็คว่าอาจารย์อนุมัติแล้วหรือยังด้วย ไม่งั้นแม้อาจารย์
     // อนุมัติแล้วก็จะยังค้างแสดงเป็น pending/รอขั้นก่อนหน้า ทั้งที่คำร้องเดินมาถึง
     // ขั้นนี้แล้ว (บั๊กแพทเทิร์นเดียวกับที่แก้ไปใน status-t3.ts/pre-t3-status.ts)
-    const s3: Step = fac === 'Approved' ? { icon: '✓', label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',      date: facultyDate, status: 'done'    }
-                   : fac === 'Rejected' ? { icon: '✗', label: 'รอผลจากที่ประชุม', sub: '✗ ไม่อนุมัติ',     date: '-',         status: 'active'  }
-                   : adv === 'Approved' ? { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '⚙ กำลังดำเนินการ', date: '-', status: 'active' }
-                   :                     { icon: '🏛', label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า', date: '-',         status: 'pending' };
+    const s3: Step = fac === 'Approved' ? { icon: 'ti ti-check', label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',      date: facultyDate, status: 'done'    }
+                   : fac === 'Rejected' ? { icon: 'ti ti-x', label: 'รอผลจากที่ประชุม', sub: '● ไม่อนุมัติ',     date: '-',         status: 'active'  }
+                   : adv === 'Approved' ? { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '● กำลังดำเนินการ', date: '-', status: 'active' }
+                   :                     { icon: 'ti ti-building-bank', label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า', date: '-',         status: 'pending' };
 
     const s4: Step = ov === 'Approved'
-      ? { icon: '🎓', label: 'อนุมัติสำเร็จ', sub: '● เสร็จแล้ว',      date: '-', status: 'done'    }
-      : { icon: '🎓', label: 'อนุมัติสำเร็จ', sub: '○ รอขั้นก่อนหน้า', date: '-', status: 'pending' };
+      ? { icon: 'ti ti-school', label: 'อนุมัติสำเร็จ', sub: '● เสร็จแล้ว',      date: '-', status: 'done'    }
+      : { icon: 'ti ti-school', label: 'อนุมัติสำเร็จ', sub: '○ รอขั้นก่อนหน้า', date: '-', status: 'pending' };
 
     return [s1, s2, s3, s4];
   }
@@ -324,39 +319,30 @@ export class T3History implements OnInit {
     const items: TimelineItem[] = [];
     const adv  = d.advisor_approval.status;
     const fac  = d.faculty_com_approval.status;
-    const grad = d.grad_school_approval.status;
     const ov   = d.overall_status;
 
     items.push({
-      icon: '⚙️', actor: 'ระบบ Journal Watch', badge: 'ระบบ', badgeType: 'system',
+      icon: 'ti ti-settings', actor: 'ระบบ Journal Watch', badge: 'ระบบ', badgeType: 'system',
       message: `ยื่นคำร้อง T3-${d.t3_id} สำเร็จ บทความ: ${d.paper_and_research_details.title_thai}`,
       time: this.formatDateFull(d.created_at),
     });
 
     if (adv === 'Approved') {
-      items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.advisor_approval.approved_at) });
+      items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.advisor_approval.approved_at) });
     } else if (adv === 'Rejected') {
-      items.push({ icon: '👨‍🏫', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined, time: this.formatDateFull(d.advisor_approval.approved_at) });
+      items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined, time: this.formatDateFull(d.advisor_approval.approved_at) });
     }
 
     if (adv === 'Approved') {
       if (fac === 'Approved') {
-        items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
+        items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
       } else if (fac === 'Rejected') {
-        items.push({ icon: '🏛', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
-      }
-    }
-
-    if (fac === 'Approved') {
-      if (grad === 'Approved') {
-        items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 สำเร็จ', time: this.formatDateFull(d.grad_school_approval.approved_at) });
-      } else if (grad === 'Rejected') {
-        items.push({ icon: '🎓', actor: 'บัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', time: this.formatDateFull(d.grad_school_approval.approved_at) });
+        items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
       }
     }
 
     if (ov === 'Cancelled') {
-      items.push({ icon: '🚫', actor: 'นิสิต', badge: 'ยกเลิก', badgeType: 'waiting', message: 'ยกเลิกคำร้อง T3 ด้วยตนเอง' });
+      items.push({ icon: 'ti ti-ban', actor: 'นิสิต', badge: 'ยกเลิก', badgeType: 'waiting', message: 'ยกเลิกคำร้อง T3 ด้วยตนเอง' });
     }
 
     return items;

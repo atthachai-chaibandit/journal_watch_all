@@ -1,61 +1,3 @@
-<!-- ═══ CAPTCHA MODAL ═══ -->
-  @if (showCaptcha()) {
-    <div class="captcha-backdrop" (click)="showCaptcha.set(false)">
-      <div class="captcha-modal" (click)="$event.stopPropagation()">
-
-        <div class="captcha-topbar"></div>
-
-        <div class="captcha-header">
-          <div class="captcha-icon"><i class="ti ti-shield-check"></i></div>
-          <div>
-            <div class="captcha-title">ยืนยันตัวตน</div>
-            <div class="captcha-subtitle">กรุณาแก้โจทย์เพื่อยืนยันว่าคุณไม่ใช่บอท</div>
-          </div>
-        </div>
-
-        <div class="captcha-body">
-
-          <!-- Puzzle canvas area -->
-          <div class="puzzle-wrap">
-            <canvas #bgCanvas [width]="CW" [height]="CH" class="puzzle-bg"></canvas>
-            <canvas #pieceCanvas [width]="PS" [height]="CH" class="puzzle-piece"
-                    [style.left.px]="puzzlePieceX()"
-                    (mousedown)="puzzleStartDrag($event)"
-                    (touchstart)="puzzleStartDrag($event)"></canvas>
-          </div>
-
-          @if (puzzleError()) {
-            <div class="captcha-error-msg">ตำแหน่งไม่ถูกต้อง — กรุณาลองใหม่อีกครั้ง</div>
-          }
-
-          <!-- Slider track -->
-          <div class="puzzle-slider-wrap">
-            <div class="puzzle-slider-track">
-              <div class="puzzle-slider-fill" [style.width.px]="puzzlePieceX()"></div>
-              <div class="puzzle-slider-handle"
-                   [style.left.px]="puzzlePieceX()"
-                   (mousedown)="puzzleStartDrag($event)"
-                   (touchstart)="puzzleStartDrag($event)">
-                ›
-              </div>
-            </div>
-            <span class="puzzle-slider-hint">← เลื่อนจิ๊กซอว์ให้เข้ารูป</span>
-          </div>
-
-          <div class="captcha-actions">
-            <button class="captcha-btn-refresh" (click)="refreshCaptcha()" type="button">
-              ↺ รีเซ็ต
-            </button>
-          </div>
-
-          <div class="captcha-note"><i class="ti ti-lock"></i> ไม่ต้องยืนยันซ้ำภายใน 60 นาที</div>
-
-        </div>
-
-      </div>
-    </div>
-  }
-
 <!-- BG BAND: full width, เฉพาะ search-card + legend-card -->
 <div class="search-bg-band">
   <div class="search-band-inner">
@@ -104,7 +46,7 @@
           <div class="cs-dropdown">
             @for (opt of degreeOptions; track opt.value) {
               <div class="cs-option" [class.cs-option--active]="degree === opt.value" (click)="selectDegree(opt.value)">
-                @if (degree === opt.value) { <span class="cs-check">✓</span> }
+                @if (degree === opt.value) { <span class="cs-check"><i class="ti ti-check"></i></span> }
                 {{ opt.label }}
               </div>
             }
@@ -119,6 +61,23 @@
         }
       </button>
     </div>
+
+    <!-- CAPTCHA: โผล่เฉพาะตอน backend ตอบ 428 (ค้นหาบ่อยเกินโควตา) — ยืนยันแล้วค้นหาต่อให้อัตโนมัติ -->
+    @if (captchaOpen()) {
+      <div class="captcha-panel" role="alert">
+        <div class="captcha-head">
+          <span class="captcha-icon"><i class="ti ti-shield-lock"></i></span>
+          <div>
+            <div class="captcha-title">ยืนยันว่าไม่ใช่บอท</div>
+            <div class="captcha-desc">{{ captchaMessage() }} — ยืนยันแล้วระบบจะค้นหาต่อให้ทันที</div>
+          </div>
+        </div>
+        <div #captchaBox class="captcha-widget"></div>
+        @if (captchaError()) {
+          <div class="captcha-error"><i class="ti ti-alert-triangle"></i> {{ captchaError() }}</div>
+        }
+      </div>
+    }
 
   </div><!-- /search-card -->
 
@@ -351,13 +310,13 @@
                       <td>Beall's List</td>
                       <td class="td-ok">ไม่พบ</td>
                       <td class="td-ok">ไม่พบ</td>
-                      <td class="td-ok">✓ ไม่ติด</td>
+                      <td class="td-ok"><i class="ti ti-check"></i> ไม่ติด</td>
                     </tr>
                     <tr>
                       <td>MSU Unwanted</td>
                       <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted">{{ r.isUnwanted ? 'พบ' : 'ไม่พบ' }}</td>
                       <td class="td-ok">ไม่พบ</td>
-                      <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted">{{ r.isUnwanted ? '✗ ติด' : '✓ ไม่ติด' }}</td>
+                      <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted">@if (r.isUnwanted) { <i class="ti ti-x"></i> ติด } @else { <i class="ti ti-check"></i> ไม่ติด }</td>
                     </tr>
                   </tbody>
                 </table>
@@ -410,16 +369,16 @@
               <div class="conflict-summary-title"><i class="ti ti-alert-triangle"></i> สรุปผล — ไม่สามารถสรุปได้อัตโนมัติ (Indeterminate)</div>
               <div class="conflict-summary-row">
                 <span>Scopus Status</span>
-                <span class="bad">{{ r.status }} ✗</span>
+                <span class="bad">{{ r.status }} <i class="ti ti-x"></i></span>
               </div>
               <div class="conflict-summary-row">
                 <span>TCI Status</span>
-                <span class="ok">{{ t.inactive ? 'Inactive' : 'Active' }} กลุ่ม {{ t.tier }} ✓</span>
+                <span class="ok">{{ t.inactive ? 'Inactive' : 'Active' }} กลุ่ม {{ t.tier }} <i class="ti ti-check"></i></span>
               </div>
               <div class="conflict-summary-row">
                 <span>Beall's / MSU Unwanted</span>
                 <span [class.ok]="!r.isUnwanted && !r.isPredatory" [class.bad]="r.isUnwanted || r.isPredatory">
-                  {{ r.isUnwanted || r.isPredatory ? 'พบ ✗' : 'ไม่พบ ✓' }}
+                  @if (r.isUnwanted || r.isPredatory) { พบ <i class="ti ti-x"></i> } @else { ไม่พบ <i class="ti ti-check"></i> }
                 </span>
               </div>
               <div class="conflict-summary-row">
@@ -466,7 +425,7 @@
           <div class="pred-badge-row">
             <span class="badge-field">ISSN: {{ r.issn }}</span>
             @if (r.eissn) { <span class="badge-field">E-ISSN: {{ r.eissn }}</span> }
-            <span class="badge-forbidden">✗ ห้ามใช้</span>
+            <span class="badge-forbidden"><i class="ti ti-x"></i> ห้ามใช้</span>
           </div>
         </div>
 
@@ -502,10 +461,10 @@
         <!-- Summary -->
         <div class="pred-summary-box">
           <div class="pred-summary-title"><i class="ti ti-ban"></i> สรุปผล — วารสารนี้ไม่ผ่านเกณฑ์</div>
-          <div class="pred-summary-row"><span>สถานะ Scopus</span><span class="bad">ไม่พบ ✗</span></div>
-          <div class="pred-summary-row"><span>สถานะ TCI</span><span class="bad">ไม่พบ ✗</span></div>
-          <div class="pred-summary-row"><span>สถานะ นานาชาติไม่รองรับ</span><span class="bad">พบ ✗</span></div>
-          <div class="pred-summary-row"><span>MSU Unwanted</span><span class="bad">พบ ✗</span></div>
+          <div class="pred-summary-row"><span>สถานะ Scopus</span><span class="bad">ไม่พบ <i class="ti ti-x"></i></span></div>
+          <div class="pred-summary-row"><span>สถานะ TCI</span><span class="bad">ไม่พบ <i class="ti ti-x"></i></span></div>
+          <div class="pred-summary-row"><span>สถานะ นานาชาติไม่รองรับ</span><span class="bad">พบ <i class="ti ti-x"></i></span></div>
+          <div class="pred-summary-row"><span>MSU Unwanted</span><span class="bad">พบ <i class="ti ti-x"></i></span></div>
         </div>
 
         <!-- Buttons (all disabled) -->
@@ -530,7 +489,7 @@
           </div>
         </div>
         <span class="banner-badge" [class.fail]="!passForCurrentDegree">
-          {{ passForCurrentDegree ? '✓ ผ่านเกณฑ์' : '✗ ไม่ผ่านเกณฑ์' }}
+          @if (passForCurrentDegree) { <i class="ti ti-check"></i> ผ่านเกณฑ์ } @else { <i class="ti ti-x"></i> ไม่ผ่านเกณฑ์ }
         </span>
       </div>
 
@@ -560,7 +519,7 @@
             {{ r.status }}
           </span>
           <span class="badge-unwanted" [class.ok]="!r.isUnwanted">
-            @if (r.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { ✓ ไม่ติด MSU Unwanted }
+            @if (r.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { <i class="ti ti-check"></i> ไม่ติด MSU Unwanted }
           </span>
           <span class="badge-date"><i class="ti ti-calendar"></i> ตรวจสอบ: {{ r.checkDate }}</span>
         </div>
@@ -647,7 +606,7 @@
             <div class="base-field">
               <div class="base-label">OPEN ACCESS</div>
               @if (r.openAccess) {
-                <div class="base-value oa-value">✓ {{ r.openAccess }}</div>
+                <div class="base-value oa-value"><i class="ti ti-check"></i> {{ r.openAccess }}</div>
                 <div class="base-sub">{{ r.openAccessType || '' }}</div>
               } @else {
                 <div class="base-value">—</div>
@@ -664,13 +623,13 @@
         <!-- สรุปเกณฑ์ -->
         <div class="criteria-box" [class.fail]="!passForCurrentDegree">
           <div class="criteria-title">
-            {{ passForCurrentDegree ? '✓' : '✗' }} สรุปเกณฑ์การยื่นของ มมส. — {{ degreeLabel }}
+            @if (passForCurrentDegree) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> } สรุปเกณฑ์การยื่นของ มมส. — {{ degreeLabel }}
           </div>
           <div class="criteria-list">
             <div class="criteria-row">
               <span class="criteria-label">ต้องการ Quartile</span>
               <span class="criteria-value" [class.ok]="criteriaQuartileOk" [class.bad]="!criteriaQuartileOk">
-                ≤ {{ requiredQuartile }} {{ criteriaQuartileOk ? '✓' : '✗' }} (พบ {{ r.quartile }})
+                ≤ {{ requiredQuartile }} @if (criteriaQuartileOk) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> } (พบ {{ r.quartile }})
               </span>
             </div>
             <div class="criteria-row">
@@ -678,7 +637,7 @@
               <span class="criteria-value"
                 [class.ok]="r.status === 'Active'"
                 [class.bad]="r.status !== 'Active'">
-                {{ r.status }} {{ r.status === 'Active' ? '✓' : '✗' }}
+                {{ r.status }} @if (r.status === 'Active') { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
               </span>
             </div>
             <div class="criteria-row">
@@ -686,7 +645,7 @@
               <span class="criteria-value"
                 [class.ok]="r.status === 'Active'"
                 [class.bad]="r.status !== 'Active'">
-                {{ r.status === 'Active' ? 'ผ่าน ✓' : 'ไม่ผ่าน ✗ (Discontinued)' }}
+                @if (r.status === 'Active') { ผ่าน <i class="ti ti-check"></i> } @else { ไม่ผ่าน <i class="ti ti-x"></i> (Discontinued) }
               </span>
             </div>
             <div class="criteria-row">
@@ -694,7 +653,7 @@
               <span class="criteria-value"
                 [class.ok]="!r.isUnwanted"
                 [class.bad]="r.isUnwanted">
-                {{ r.isUnwanted ? 'ไม่ผ่าน ✗' : 'ผ่าน ✓' }}
+                @if (r.isUnwanted) { ไม่ผ่าน <i class="ti ti-x"></i> } @else { ผ่าน <i class="ti ti-check"></i> }
               </span>
             </div>
           </div>
@@ -748,7 +707,7 @@
             </div>
           </div>
           <span class="banner-badge" [class.fail]="!tciPass">
-            {{ tciPass ? '✓ ผ่านเกณฑ์' : '✗ ไม่ผ่านเกณฑ์' }}
+            @if (tciPass) { <i class="ti ti-check"></i> ผ่านเกณฑ์ } @else { <i class="ti ti-x"></i> ไม่ผ่านเกณฑ์ }
           </span>
         </div>
 
@@ -776,7 +735,7 @@
               {{ t.inactive ? 'Inactive' : 'Active' }}
             </span>
             <span class="badge-unwanted" [class.ok]="!t.isUnwanted">
-              @if (t.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { ✓ ไม่ติด MSU Unwanted }
+              @if (t.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { <i class="ti ti-check"></i> ไม่ติด MSU Unwanted }
             </span>
             <span class="badge-date"><i class="ti ti-calendar"></i> ตรวจสอบ: {{ t.checkDate }}</span>
           </div>
@@ -853,7 +812,7 @@
           <!-- สรุปเกณฑ์ -->
           <div class="criteria-box" [class.fail]="!tciPass">
             <div class="criteria-title">
-              {{ tciPass ? '✓' : '✗' }} สรุปเกณฑ์การยื่นของ มมส. — {{ degreeLabel }}
+              @if (tciPass) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> } สรุปเกณฑ์การยื่นของ มมส. — {{ degreeLabel }}
             </div>
             <div class="criteria-list">
               <div class="criteria-row">
@@ -862,26 +821,26 @@
                   [class.ok]="degree === 'doctoral' ? t.tier === 1 : t.tier <= 2"
                   [class.bad]="degree === 'doctoral' ? t.tier !== 1 : t.tier > 2">
                   ≤ กลุ่ม {{ degree === 'doctoral' ? '1' : '2' }}
-                  {{ (degree === 'doctoral' ? t.tier === 1 : t.tier <= 2) ? '✓' : '✗' }}
+                  @if (degree === 'doctoral' ? t.tier === 1 : t.tier <= 2) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
                   (พบ กลุ่ม {{ t.tier }})
                 </span>
               </div>
               <div class="criteria-row">
                 <span class="criteria-label">สถานะ TCI</span>
                 <span class="criteria-value" [class.ok]="!t.inactive" [class.bad]="t.inactive">
-                  {{ t.inactive ? 'Inactive ✗' : 'Active ✓' }}
+                  @if (t.inactive) { Inactive <i class="ti ti-x"></i> } @else { Active <i class="ti ti-check"></i> }
                 </span>
               </div>
               <div class="criteria-row">
                 <span class="criteria-label">เกณฑ์ที่รองรับ TCI</span>
-                <span class="criteria-value ok">ผ่าน ✓</span>
+                <span class="criteria-value ok">ผ่าน <i class="ti ti-check"></i></span>
               </div>
               <div class="criteria-row">
                 <span class="criteria-label">ไม่ติด MSU Unwanted</span>
                 <span class="criteria-value"
                   [class.ok]="!t.isUnwanted"
                   [class.bad]="t.isUnwanted">
-                  {{ t.isUnwanted ? 'ไม่ผ่าน ✗' : 'ผ่าน ✓' }}
+                  @if (t.isUnwanted) { ไม่ผ่าน <i class="ti ti-x"></i> } @else { ผ่าน <i class="ti ti-check"></i> }
                 </span>
               </div>
             </div>

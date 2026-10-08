@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, OnInit, inject, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -9,6 +9,8 @@ import { T3HistoryAdvisor, Item as T3Item } from '../../../../model/res/t3_histo
 import { PreT3HistoryAdvisor, Item as PreT3Item } from '../../../../model/res/pre-t3_history_advisor';
 import { GetDeteilsT3Res, Data as T3Detail } from '../../../../model/res/get_deteils_T3_res';
 import { PreT3DetailsRes, Data as PreT3Detail } from '../../../../model/res/Pre-T3_details_res';
+import { downloadBlob } from '../../../../file-download';
+import { fetchAllPages } from '../../../../paged-fetch';
 
 type TypeFilter    = 'all' | 'pre-t3' | 't3';
 type StatusFilter  = 'all' | 'approved' | 'rejected';
@@ -30,8 +32,9 @@ interface HistoryCard {
   pubStatus:      string;
   isDiscontinued: boolean;
   submittedDate:  string;
-  advisorStatus:  AdvisorStatus;
+  advisorStatus:  AdvisorStatus;   // ผลของอาจารย์หลักเสมอ (X16: อาจารย์หลักตัดสินคนเดียว)
   advisorRemark:  string | null;
+  isCoAdvisor:    boolean;         // คนที่ login เป็นอาจารย์ร่วมของคำร้องนี้ → แสดงป้ายผลจากอาจารย์ที่ปรึกษาหลัก
   actionDate:     string | null;
   updatedAt:      Date;
 }
@@ -87,8 +90,8 @@ export class History implements OnInit {
   detailDataT3    = signal<T3Detail | null>(null);
   detailDataPreT3 = signal<PreT3Detail | null>(null);
 
-  fileLoading: Record<string, boolean> = {};
-  fileViewing: Record<string, boolean> = {};
+  fileLoading = signal<Record<string, boolean>>({});
+  fileViewing = signal<Record<string, boolean>>({});
 
   filtered = computed(() => {
     const type   = this.typeFilter();
@@ -145,9 +148,9 @@ export class History implements OnInit {
   loadHistory(): void {
     this.isLoading.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
-    const t3$    = this.http.get<T3HistoryAdvisor>(`${this.constants.API_ENDPOINT}/t3/history?page=1&limit=20`, { headers })
+    const t3$    = fetchAllPages<T3HistoryAdvisor>(this.http, `${this.constants.API_ENDPOINT}/t3/history`, headers)
                        .pipe(catchError(() => of(null)));
-    const preT3$ = this.http.get<PreT3HistoryAdvisor>(`${this.constants.API_ENDPOINT}/pre-t3/history?page=1&limit=20`, { headers })
+    const preT3$ = fetchAllPages<PreT3HistoryAdvisor>(this.http, `${this.constants.API_ENDPOINT}/pre-t3/history`, headers)
                        .pipe(catchError(() => of(null)));
 
     forkJoin([t3$, preT3$]).subscribe(([t3Res, preT3Res]) => {
@@ -186,6 +189,7 @@ export class History implements OnInit {
       submittedDate: this.formatDate(d.created_at),
       advisorStatus,
       advisorRemark: d.advisor_approval.remark,
+      isCoAdvisor:   d.my_role === 'Co_1' || d.my_role === 'Co_2',
       actionDate:    d.advisor_approval.approved_at ? this.formatDate(d.advisor_approval.approved_at) : null,
       updatedAt:     new Date(d.updated_at as unknown as string),
     };
@@ -219,6 +223,7 @@ export class History implements OnInit {
       submittedDate: this.formatDate(d.created_at),
       advisorStatus,
       advisorRemark: d.advisor_approval.remark,
+      isCoAdvisor:   d.my_role === 'Co_1' || d.my_role === 'Co_2',
       actionDate:    d.advisor_approval.approved_at ? this.formatDate(d.advisor_approval.approved_at) : null,
       updatedAt:     new Date(d.updated_at as unknown as string),
     };
@@ -228,8 +233,8 @@ export class History implements OnInit {
     this.selectedCard.set(card);
     this.detailDataT3.set(null);
     this.detailDataPreT3.set(null);
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = 'hidden';
 
     this.isDetailLoading.set(true);
@@ -258,8 +263,8 @@ export class History implements OnInit {
     this.selectedCard.set(null);
     this.detailDataT3.set(null);
     this.detailDataPreT3.set(null);
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = '';
   }
 
@@ -271,28 +276,23 @@ export class History implements OnInit {
     window.print();
   }
 
-  private fetchFile(t3Id: number, fileKey: string, stateMap: Record<string, boolean>, onBlob: (blob: Blob) => void): void {
-    if (stateMap[fileKey]) return;
-    stateMap[fileKey] = true;
+  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void): void {
+    if (state()[fileKey]) return;
+    state.update(m => ({ ...m, [fileKey]: true }));
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get(`${this.constants.API_ENDPOINT}/upload/t3/${t3Id}/files/${fileKey}`,
            { headers, responseType: 'blob' })
       .pipe(catchError(() => of(null)))
       .subscribe(blob => {
-        stateMap[fileKey] = false;
+        state.update(m => ({ ...m, [fileKey]: false }));
         if (blob) onBlob(blob);
       });
   }
 
   downloadFile(t3Id: number, fileKey: string): void {
     this.fetchFile(t3Id, fileKey, this.fileLoading, blob => {
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href     = url;
-      a.download = `${fileKey}_T3-${t3Id}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${fileKey}_T3-${t3Id}`);   // F13: ใส่นามสกุลไฟล์ + revoke URL หลังเริ่มดาวน์โหลด
     });
   }
 
@@ -320,7 +320,7 @@ export class History implements OnInit {
 
   statusLabel(card: HistoryCard): string {
     if (card.advisorStatus === 'Approved') return 'อนุมัติแล้ว';
-    if (card.advisorStatus === 'Rejected') return '❌ ไม่อนุมัติ';
+    if (card.advisorStatus === 'Rejected') return 'ไม่อนุมัติ';
     return '○ รอดำเนินการ';
   }
 

@@ -13,28 +13,16 @@
   <div class="mu-tabs">
     <button class="mu-tab" [class.mu-tab--active]="activeTab() === 'student'" (click)="setTab('student')">
       นิสิต
-      @if (!isLoading()) {
-        <span class="mu-tab-count">{{ allStudents().length }}</span>
-      }
     </button>
     <button class="mu-tab" [class.mu-tab--active]="activeTab() === 'advisor'" (click)="setTab('advisor')">
       อาจารย์
-      @if (!isLoading()) {
-        <span class="mu-tab-count">{{ allAdvisors().length }}</span>
-      }
     </button>
     <button class="mu-tab" [class.mu-tab--active]="activeTab() === 'staff'" (click)="setTab('staff')">
       <i class="ti ti-user"></i> Staff
-      @if (!isLoading()) {
-        <span class="mu-tab-count">{{ allStaff().length }}</span>
-      }
     </button>
     @if (canSeeAdminTab) {
       <button class="mu-tab mu-tab--admin" [class.mu-tab--active]="activeTab() === 'admin'" (click)="setTab('admin')">
         <i class="ti ti-shield-lock"></i> Admin
-        @if (!isLoadingAdmins()) {
-          <span class="mu-tab-count">{{ allAdmins().length }}</span>
-        }
       </button>
     }
   </div>
@@ -47,9 +35,6 @@
         <button class="btn-import-csv" (click)="openImportModal()">Import CSV</button>
       } @else if (activeTab() === 'advisor') {
         <button class="btn-add-user btn-add-user--gold" (click)="openAddAdvisorModal()">+ เพิ่มอาจารย์</button>
-        <button class="btn-import-csv" (click)="openImportModal()">Import CSV</button>
-      } @else if (activeTab() === 'staff') {
-        <button class="btn-add-user btn-add-user--gold" (click)="openAddStaffModal()">+ เพิ่ม Staff</button>
         <button class="btn-import-csv" (click)="openImportModal()">Import CSV</button>
       } @else if (activeTab() === 'admin' && isSuperAdmin) {
         <button class="btn-add-user btn-add-user--navy" (click)="openAddAdminModal()">+ เพิ่ม Admin</button>
@@ -75,17 +60,17 @@
           <button class="mu-dropdown__opt" [class.mu-dropdown__opt--active]="statusFilter() === 'all'"
                   (click)="selectStatus('all')">
             <span class="mu-dd-dot mu-dd-dot--all"></span> สถานะทั้งหมด
-            @if (statusFilter() === 'all') { <span class="mu-dd-check">✓</span> }
+            @if (statusFilter() === 'all') { <span class="mu-dd-check"><i class="ti ti-check"></i></span> }
           </button>
           <button class="mu-dropdown__opt" [class.mu-dropdown__opt--active]="statusFilter() === 'Active'"
                   (click)="selectStatus('Active')">
             <span class="mu-dd-dot mu-dd-dot--active"></span> Active
-            @if (statusFilter() === 'Active') { <span class="mu-dd-check">✓</span> }
+            @if (statusFilter() === 'Active') { <span class="mu-dd-check"><i class="ti ti-check"></i></span> }
           </button>
           <button class="mu-dropdown__opt" [class.mu-dropdown__opt--active]="statusFilter() === 'Suspended'"
                   (click)="selectStatus('Suspended')">
             <span class="mu-dd-dot mu-dd-dot--suspended"></span> ถูกล็อค
-            @if (statusFilter() === 'Suspended') { <span class="mu-dd-check">✓</span> }
+            @if (statusFilter() === 'Suspended') { <span class="mu-dd-check"><i class="ti ti-check"></i></span> }
           </button>
         </div>
       }
@@ -97,10 +82,26 @@
         type="text"
         [placeholder]="activeTab() === 'student' ? 'ค้นหาชื่อ, รหัสนิสิต...' : activeTab() === 'admin' ? 'ค้นหาชื่อ, username...' : 'ค้นหาชื่อ, อีเมล...'"
         [ngModel]="searchText()"
-        (ngModelChange)="searchText.set($event)"
+        (ngModelChange)="onSearchChange($event)"
       />
     </div>
   </div>
+
+  <!-- ═══ SUMMARY: จำนวนของแท็บที่เปิดอยู่ (ย้ายมาจาก badge บนแท็บ) ═══ -->
+  @let sum = resultSummary;
+  @if (sum) {
+    <div class="mu-summary">
+      <span class="mu-summary__icon"><i class="ti {{ sum.icon }}"></i></span>
+      <span class="mu-summary__text">
+        {{ sum.label }}ทั้งหมด <strong class="mu-summary__num">{{ sum.total }}</strong> {{ sum.unit }}
+      </span>
+      @if (sum.filtered) {
+        <span class="mu-summary__chip">
+          <i class="ti ti-filter"></i> ตามตัวกรอง พบ <strong>{{ sum.found }}</strong> รายการ
+        </span>
+      }
+    </div>
+  }
 
   <!-- ═══ LOADING ═══ -->
   @if (isLoading()) {
@@ -120,7 +121,6 @@
         <div class="mu-th">รหัส / อีเมล</div>
         <div class="mu-th">ประเภท</div>
         <div class="mu-th">สถานะ</div>
-        <div class="mu-th">เข้าใช้ล่าสุด</div>
         <div class="mu-th mu-th--actions">จัดการ</div>
       </div>
       @if (filteredStudents().length === 0) {
@@ -150,7 +150,6 @@
               @if (u.account_status === 'Active') { ● Active } @else { <i class="ti ti-ban"></i> Suspended }
             </span>
           </div>
-          <div class="mu-td mu-td--date">{{ formatDate(u.last_login_at) }}</div>
           <div class="mu-td mu-td--actions">
             <button class="mu-row-btn mu-row-btn--edit" (click)="openEditModal(u)">
               <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
@@ -188,7 +187,6 @@
         <div class="mu-th">อีเมล</div>
         <div class="mu-th">ประเภท</div>
         <div class="mu-th">สถานะ</div>
-        <div class="mu-th">เข้าใช้ล่าสุด</div>
         <div class="mu-th mu-th--actions">จัดการ</div>
       </div>
       @if (filteredAdvisors().length === 0) {
@@ -216,7 +214,6 @@
               @if (u.account_status === 'Active') { ● Active } @else { <i class="ti ti-ban"></i> Suspended }
             </span>
           </div>
-          <div class="mu-td mu-td--date">{{ formatDate(u.last_login_at) }}</div>
           <div class="mu-td mu-td--actions">
             <button class="mu-row-btn mu-row-btn--edit" (click)="openEditModal(u)">
               <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
@@ -251,7 +248,6 @@
         <div class="mu-th">อีเมล</div>
         <div class="mu-th">ประเภท</div>
         <div class="mu-th">สถานะ</div>
-        <div class="mu-th">เข้าใช้ล่าสุด</div>
         <div class="mu-th mu-th--actions">จัดการ</div>
       </div>
       @if (filteredStaff().length === 0) {
@@ -279,7 +275,6 @@
               @else { <i class="ti ti-ban"></i> Suspended }
             </span>
           </div>
-          <div class="mu-td mu-td--date">{{ formatDate(u.last_login_at) }}</div>
           <div class="mu-td mu-td--actions">
             <button class="mu-row-btn mu-row-btn--edit" (click)="openEditModal(u)">
               <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไขข้อมูล</span>
@@ -324,7 +319,6 @@
           <div class="mu-th">อีเมล MSU</div>
           <div class="mu-th">Role</div>
           <div class="mu-th">สถานะ</div>
-          <div class="mu-th">เข้าใช้ล่าสุด</div>
           @if (isSuperAdmin) {
             <div class="mu-th mu-th--actions">จัดการ</div>
           }
@@ -357,7 +351,6 @@
                 @if (a.account_status === 'Active') { ● Active } @else { <i class="ti ti-ban"></i> Suspended }
               </span>
             </div>
-            <div class="mu-td mu-td--date">{{ formatDate(a.last_login_at) }}</div>
             @if (isSuperAdmin) {
               <div class="mu-td mu-td--actions">
                 <button class="mu-row-btn mu-row-btn--edit" (click)="openEditAdminModal(a)">
@@ -378,6 +371,11 @@
                     <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
                   }
                 </button>
+                @if (canDeleteAdmin(a)) {
+                  <button class="mu-row-btn mu-row-btn--delete" (click)="openDeleteAdmin(a)">
+                    <i class="ti ti-trash"></i> <span class="mu-row-btn__label">ลบ</span>
+                  </button>
+                }
               </div>
             }
           </div>
@@ -386,8 +384,8 @@
     }
   }
 
-  <!-- ═══ PAGINATION ═══ -->
-  @if (!isLoading() && totalPages() > 1) {
+  <!-- ═══ PAGINATION ═══ (แสดงเมื่อเกิน 20 รายการ / แท็บ Admin โหลดครบในหน้าเดียว ไม่ต้องแบ่งหน้า) -->
+  @if (!isLoading() && activeTab() !== 'admin' && totalPages() > 1) {
     <div class="mu-pagination">
       <span class="mu-page-info">ทั้งหมด {{ totalItems() }} รายการ</span>
       <div class="mu-page-btns">
@@ -413,7 +411,7 @@
      EDIT USER MODAL
 ════════════════════════════════════════════════════════════ -->
 @if (editModal(); as u) {
-  <div class="mu-modal-overlay" (click)="closeEditModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal" (click)="$event.stopPropagation()">
 
       <!-- Gradient accent bar -->
@@ -428,7 +426,7 @@
             <div class="mu-edit-modal__sub">{{ fullName(u) }} · {{ studentId(u) }}</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeEditModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeEditModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <!-- Body -->
@@ -438,12 +436,7 @@
         <div class="mu-edit-grid mu-edit-grid--3">
           <div class="mu-edit-field">
             <label class="mu-edit-label">คำนำหน้า</label>
-            <select class="mu-edit-input" [(ngModel)]="editForm.prefix">
-              <option value="">— ไม่ระบุ —</option>
-              @for (p of prefixOptions; track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="editForm.prefix" [options]="prefixOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">ชื่อ <span class="mu-req">*</span></label>
@@ -472,34 +465,15 @@
         <div class="mu-edit-grid mu-edit-grid--3">
           <div class="mu-edit-field">
             <label class="mu-edit-label">ระดับการศึกษา</label>
-            <select class="mu-edit-input" [(ngModel)]="editForm.degree_level">
-              <option value="">— ไม่ระบุ —</option>
-              @for (opt of degreeLevelOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="editForm.degree_level" [options]="degreeLevelOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">ปีหลักสูตร</label>
-            <select class="mu-edit-input" [(ngModel)]="editForm.curriculum_year">
-              <option value="">— ไม่ระบุ —</option>
-              @for (y of curriculumYearOptions; track y) {
-                <option [value]="y">{{ y }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="editForm.curriculum_year" [options]="curriculumYearOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">รหัสหลักสูตร</label>
-            <select class="mu-edit-input" [(ngModel)]="editForm.study_plan_code">
-              <option value="">— ไม่ระบุ —</option>
-              @for (grp of studyPlanOptions; track grp.group) {
-                <optgroup [label]="grp.group">
-                  @for (v of grp.values; track v) {
-                    <option [value]="v">{{ v }}</option>
-                  }
-                </optgroup>
-              }
-            </select>
+            <app-select [(ngModel)]="editForm.study_plan_code" [groups]="studyPlanOptions" />
           </div>
         </div>
 
@@ -530,7 +504,7 @@
      ADD STUDENT MODAL
 ════════════════════════════════════════════════════════════ -->
 @if (addStudentModal()) {
-  <div class="mu-modal-overlay" (click)="closeAddStudentModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal" (click)="$event.stopPropagation()">
 
       <!-- Gradient accent bar -->
@@ -545,7 +519,7 @@
             <div class="mu-edit-modal__sub">กรอกข้อมูลนิสิตที่ต้องการเพิ่มเข้าระบบ</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeAddStudentModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeAddStudentModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <!-- Body -->
@@ -555,12 +529,7 @@
         <div class="mu-edit-grid mu-edit-grid--3">
           <div class="mu-edit-field">
             <label class="mu-edit-label">คำนำหน้า</label>
-            <select class="mu-edit-input" [(ngModel)]="addStudentForm.prefix">
-              <option value="">— ไม่ระบุ —</option>
-              @for (p of prefixOptions; track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="addStudentForm.prefix" [options]="prefixOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">ชื่อ <span class="mu-req">*</span></label>
@@ -592,34 +561,15 @@
         <div class="mu-edit-grid mu-edit-grid--3">
           <div class="mu-edit-field">
             <label class="mu-edit-label">ระดับการศึกษา</label>
-            <select class="mu-edit-input" [(ngModel)]="addStudentForm.degree_level">
-              <option value="">— ไม่ระบุ —</option>
-              @for (opt of degreeLevelOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="addStudentForm.degree_level" [options]="degreeLevelOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">ปีหลักสูตร</label>
-            <select class="mu-edit-input" [(ngModel)]="addStudentForm.curriculum_year">
-              <option value="">— ไม่ระบุ —</option>
-              @for (y of curriculumYearOptions; track y) {
-                <option [value]="y">{{ y }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="addStudentForm.curriculum_year" [options]="curriculumYearOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">รหัสหลักสูตร</label>
-            <select class="mu-edit-input" [(ngModel)]="addStudentForm.study_plan_code">
-              <option value="">— ไม่ระบุ —</option>
-              @for (grp of studyPlanOptions; track grp.group) {
-                <optgroup [label]="grp.group">
-                  @for (v of grp.values; track v) {
-                    <option [value]="v">{{ v }}</option>
-                  }
-                </optgroup>
-              }
-            </select>
+            <app-select [(ngModel)]="addStudentForm.study_plan_code" [groups]="studyPlanOptions" />
           </div>
         </div>
 
@@ -650,7 +600,7 @@
      IMPORT CSV MODAL
 ════════════════════════════════════════════════════════════ -->
 @if (importModal()) {
-  <div class="mu-modal-overlay" (click)="closeImportModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal mu-edit-modal--narrow" (click)="$event.stopPropagation()">
 
       <div class="mu-edit-modal__accent"></div>
@@ -663,7 +613,7 @@
             <div class="mu-edit-modal__sub">POST /manage/users/import · form-data</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeImportModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeImportModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="mu-edit-modal__body">
@@ -717,7 +667,7 @@
      ADD ADVISOR MODAL
 ════════════════════════════════════════════════════════════ -->
 @if (addAdvisorModal()) {
-  <div class="mu-modal-overlay" (click)="closeAddAdvisorModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal" (click)="$event.stopPropagation()">
 
       <div class="mu-edit-modal__accent"></div>
@@ -730,7 +680,7 @@
             <div class="mu-edit-modal__sub">กรอกข้อมูลอาจารย์ที่ต้องการเพิ่มเข้าระบบ</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeAddAdvisorModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeAddAdvisorModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="mu-edit-modal__body">
@@ -739,12 +689,7 @@
         <div class="mu-edit-grid mu-edit-grid--3">
           <div class="mu-edit-field">
             <label class="mu-edit-label">คำนำหน้า</label>
-            <select class="mu-edit-input" [(ngModel)]="addAdvisorForm.prefix">
-              <option value="">— ไม่ระบุ —</option>
-              @for (p of advisorPrefixOptions; track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
+            <app-select [(ngModel)]="addAdvisorForm.prefix" [options]="advisorPrefixOptions" />
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">ชื่อ <span class="mu-req">*</span></label>
@@ -800,95 +745,10 @@
 }
 
 <!-- ════════════════════════════════════════════════════════════
-     ADD STAFF MODAL
-════════════════════════════════════════════════════════════ -->
-@if (addStaffModal()) {
-  <div class="mu-modal-overlay" (click)="closeAddStaffModal()">
-    <div class="mu-edit-modal" (click)="$event.stopPropagation()">
-
-      <div class="mu-edit-modal__accent"></div>
-
-      <div class="mu-edit-modal__header">
-        <div class="mu-edit-modal__header-left">
-          <div class="mu-edit-modal__avatar mu-edit-modal__avatar--staff"><i class="ti ti-user"></i></div>
-          <div>
-            <div class="mu-edit-modal__title">เพิ่ม Staff ใหม่</div>
-            <div class="mu-edit-modal__sub">กรอกข้อมูล Staff ที่ต้องการเพิ่มเข้าระบบ</div>
-          </div>
-        </div>
-        <button class="mu-edit-modal__close" (click)="closeAddStaffModal()">✕</button>
-      </div>
-
-      <div class="mu-edit-modal__body">
-
-        <!-- Row 1: prefix, first_name, last_name -->
-        <div class="mu-edit-grid mu-edit-grid--3">
-          <div class="mu-edit-field">
-            <label class="mu-edit-label">คำนำหน้า</label>
-            <select class="mu-edit-input" [(ngModel)]="addStaffForm.prefix">
-              <option value="">— ไม่ระบุ —</option>
-              @for (p of prefixOptions; track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
-          </div>
-          <div class="mu-edit-field">
-            <label class="mu-edit-label">ชื่อ <span class="mu-req">*</span></label>
-            <input class="mu-edit-input" type="text" placeholder="ชื่อจริง"
-                   [(ngModel)]="addStaffForm.first_name" />
-          </div>
-          <div class="mu-edit-field">
-            <label class="mu-edit-label">นามสกุล <span class="mu-req">*</span></label>
-            <input class="mu-edit-input" type="text" placeholder="นามสกุล"
-                   [(ngModel)]="addStaffForm.last_name" />
-          </div>
-        </div>
-
-        <!-- Row 2: msu_mail, phone -->
-        <div class="mu-edit-grid mu-edit-grid--2">
-          <div class="mu-edit-field">
-            <label class="mu-edit-label">อีเมล MSU <span class="mu-req">*</span></label>
-            <input class="mu-edit-input" type="email" placeholder="xxxxxxxx@msu.ac.th"
-                   [(ngModel)]="addStaffForm.msu_mail" />
-          </div>
-          <div class="mu-edit-field">
-            <label class="mu-edit-label">เบอร์โทรศัพท์</label>
-            <input class="mu-edit-input" type="tel" placeholder="0812345678"
-                   [(ngModel)]="addStaffForm.phone" />
-          </div>
-        </div>
-
-        <div class="mu-advisor-role-note">
-          <span class="mu-type-badge mu-type-badge--staff">Staff</span>
-          <span>role จะถูกกำหนดเป็น <strong>Staff</strong> โดยอัตโนมัติ</span>
-        </div>
-
-        @if (staffSaveResult(); as r) {
-          <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
-            @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
-          </div>
-        }
-
-      </div>
-
-      <div class="mu-edit-modal__footer">
-        <button class="mu-btn-cancel" (click)="closeAddStaffModal()" [disabled]="isStaffSaving()">ยกเลิก</button>
-        <button class="mu-btn-save" (click)="submitAddStaff()"
-                [disabled]="isStaffSaving() || !addStaffForm.first_name.trim() || !addStaffForm.last_name.trim() || !addStaffForm.msu_mail.trim()">
-          @if (isStaffSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
-          @else                 { <i class="ti ti-user-plus"></i> เพิ่ม Staff }
-        </button>
-      </div>
-
-    </div>
-  </div>
-}
-
-<!-- ════════════════════════════════════════════════════════════
      ADD ADMIN MODAL (SuperAdmin only)
 ════════════════════════════════════════════════════════════ -->
 @if (addAdminModal()) {
-  <div class="mu-modal-overlay" (click)="closeAddAdminModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal" (click)="$event.stopPropagation()">
 
       <div class="mu-edit-modal__accent mu-edit-modal__accent--navy"></div>
@@ -901,7 +761,7 @@
             <div class="mu-edit-modal__sub">บัญชี Admin ใช้ username/password (ไม่ใช่ Google)</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeAddAdminModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeAddAdminModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="mu-edit-modal__body">
@@ -965,7 +825,7 @@
      EDIT ADMIN MODAL (SuperAdmin only)
 ════════════════════════════════════════════════════════════ -->
 @if (editAdminModal(); as a) {
-  <div class="mu-modal-overlay" (click)="closeEditAdminModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal" (click)="$event.stopPropagation()">
 
       <div class="mu-edit-modal__accent mu-edit-modal__accent--navy"></div>
@@ -978,7 +838,7 @@
             <div class="mu-edit-modal__sub">{{ adminFullName(a) }} · @{{ a.username }}</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeEditAdminModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeEditAdminModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="mu-edit-modal__body">
@@ -1023,7 +883,7 @@
      ASSIGN ADVISOR MODAL
 ════════════════════════════════════════════════════════════ -->
 @if (assignAdvisorModal(); as u) {
-  <div class="mu-modal-overlay" (click)="closeAssignAdvisorModal()">
+  <div class="mu-modal-overlay">
     <div class="mu-edit-modal" (click)="$event.stopPropagation()">
 
       <div class="mu-edit-modal__accent"></div>
@@ -1036,7 +896,7 @@
             <div class="mu-edit-modal__sub">{{ fullName(u) }} · {{ studentId(u) }}</div>
           </div>
         </div>
-        <button class="mu-edit-modal__close" (click)="closeAssignAdvisorModal()">✕</button>
+        <button class="mu-edit-modal__close" (click)="closeAssignAdvisorModal()"><i class="ti ti-x"></i></button>
       </div>
 
       <div class="mu-edit-modal__body">
@@ -1092,6 +952,38 @@
         </button>
       </div>
 
+    </div>
+  </div>
+}
+
+<!-- ════════════════════════════════════════════════════════════
+     DELETE ADMIN CONFIRM (SuperAdmin only)
+════════════════════════════════════════════════════════════ -->
+@if (deleteAdminTarget(); as a) {
+  <div class="mu-modal-overlay">
+    <div class="mu-edit-modal mu-delete-modal" (click)="$event.stopPropagation()">
+      <div class="mu-edit-modal__accent mu-delete-modal__accent"></div>
+
+      <div class="mu-delete-modal__body">
+        <div class="mu-delete-modal__icon"><i class="ti ti-trash"></i></div>
+        <div class="mu-delete-modal__title">ลบบัญชี Admin?</div>
+        <div class="mu-delete-modal__name">{{ adminFullName(a) }} · &#64;{{ a.username }}</div>
+        <div class="mu-delete-modal__warn">
+          <i class="ti ti-alert-triangle"></i>
+          บัญชีนี้จะเข้าสู่ระบบไม่ได้อีก การลบไม่สามารถย้อนกลับได้ — ถ้าต้องการหยุดใช้งานชั่วคราว ให้ใช้ "ระงับ" แทน
+        </div>
+        @if (deleteAdminError()) {
+          <div class="mu-save-banner mu-save-banner--err"><i class="ti ti-alert-triangle"></i> {{ deleteAdminError() }}</div>
+        }
+      </div>
+
+      <div class="mu-edit-modal__footer">
+        <button class="mu-btn-cancel" (click)="closeDeleteAdmin()" [disabled]="isDeletingAdmin()">ยกเลิก</button>
+        <button class="mu-btn-save mu-btn-save--danger" (click)="confirmDeleteAdmin()" [disabled]="isDeletingAdmin()">
+          @if (isDeletingAdmin()) { <span class="mu-btn-spinner"></span> กำลังลบ... }
+          @else { <i class="ti ti-trash"></i> ยืนยันลบ }
+        </button>
+      </div>
     </div>
   </div>
 }

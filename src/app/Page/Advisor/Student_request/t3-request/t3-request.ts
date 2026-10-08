@@ -1,4 +1,4 @@
-import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { Component, signal, computed, OnInit, inject, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,8 @@ import { GetRequestT3Res, Datum } from '../../../../model/res/get_request_T3_res
 import { GetDeteilsT3Res, Data as T3Detail } from '../../../../model/res/get_deteils_T3_res';
 import { T3ApprovedReq } from '../../../../model/req/T3_approved_req';
 import { T3RejectReq } from '../../../../model/req/T3_reject_req';
+import { apiFailure, failMsg } from '../../../../server-status.service';
+import { downloadBlob } from '../../../../file-download';
 
 type StatusType = 'pending' | 'approved' | 'rejected';
 type FilterType  = 'all' | 'pending' | 'approved' | 'rejected';
@@ -44,6 +46,7 @@ interface T3Item {
   submittedDate: string;
   daysAgo:       number;
   status:        StatusType;
+  canReview:     boolean;   // X16: เฉพาะอาจารย์หลักที่ยังไม่ได้ตัดสิน
   approvedDate?: string;
   advisorRemark: string | null;
 }
@@ -72,8 +75,8 @@ export class T3Request implements OnInit {
   showConfirm      = signal(false);
   remark           = '';
 
-  fileLoading:  Record<string, boolean> = {};
-  fileViewing:  Record<string, boolean> = {};
+  fileLoading = signal<Record<string, boolean>>({});
+  fileViewing = signal<Record<string, boolean>>({});
 
   requests = signal<T3Item[]>([]);
 
@@ -137,6 +140,7 @@ export class T3Request implements OnInit {
       submittedDate: createdAt.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }),
       daysAgo,
       status,
+      canReview:     d.can_review === true,
       approvedDate:  approvedAt,
       advisorRemark: d.advisor_approval?.remark ?? null,
     };
@@ -177,33 +181,28 @@ export class T3Request implements OnInit {
   closeDetail(): void {
     this.selectedRequest.set(null);
     this.detailData.set(null);
-    this.fileLoading = {};
-    this.fileViewing = {};
+    this.fileLoading.set({});
+    this.fileViewing.set({});
     document.body.style.overflow = '';
   }
 
-  private fetchFile(t3Id: number, fileKey: string, stateMap: Record<string, boolean>, onBlob: (blob: Blob) => void): void {
-    if (stateMap[fileKey]) return;
-    stateMap[fileKey] = true;
+  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void): void {
+    if (state()[fileKey]) return;
+    state.update(m => ({ ...m, [fileKey]: true }));
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get(`${this.constants.API_ENDPOINT}/upload/t3/${t3Id}/files/${fileKey}`,
            { headers, responseType: 'blob' })
       .pipe(catchError(() => of(null)))
       .subscribe(blob => {
-        stateMap[fileKey] = false;
+        state.update(m => ({ ...m, [fileKey]: false }));
         if (blob) onBlob(blob);
       });
   }
 
   downloadFile(t3Id: number, fileKey: string): void {
     this.fetchFile(t3Id, fileKey, this.fileLoading, blob => {
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href    = url;
-      a.download = `${fileKey}_T3-${t3Id}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `${fileKey}_T3-${t3Id}`);   // F13: ใส่นามสกุลไฟล์ + revoke URL หลังเริ่มดาวน์โหลด
     });
   }
 
@@ -223,7 +222,11 @@ export class T3Request implements OnInit {
     return true;
   }
 
+  // ลงนามไม่ผ่าน (เช่น นิสิตยกเลิกคำร้องไปแล้ว) → แสดงเหตุผลใน dialog แทนการปิดเงียบ
+  decisionError = signal('');
+
   openConfirm(): void {
+    this.decisionError.set('');
     if (!this.canSubmit) return;
     this.showConfirm.set(true);
   }
@@ -245,17 +248,24 @@ export class T3Request implements OnInit {
 
     this.isSubmitting.set(true);
     this.http.patch(url, body, { headers })
-      .pipe(catchError(err => { console.error('submitDecision error', err); return of(null); }))
+      .pipe(catchError(err => {
+        console.error('[submitDecision]', err?.status, err?.error);
+        return of(apiFailure(err));
+      }))
       .subscribe(res => {
         this.isSubmitting.set(false);
+        if ((res as { success?: boolean } | null)?.success === false) {
+          // ไม่ปิด dialog — อาจารย์ต้องรู้ว่าลงนามไม่สำเร็จและเพราะอะไร
+          this.decisionError.set(failMsg(res, 'ลงนามไม่สำเร็จ กรุณาลองใหม่'));
+          return;
+        }
         this.showConfirm.set(false);
-        if (res === null) return;
         const newStatus = this.decision() as 'approved' | 'rejected';
         const approvedDate = newStatus === 'approved'
           ? new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
           : undefined;
         this.requests.update(list =>
-          list.map(r => r.id === req.id ? { ...r, status: newStatus, approvedDate } : r)
+          list.map(r => r.id === req.id ? { ...r, status: newStatus, approvedDate, canReview: false } : r)
         );
         this.closeDetail();
       });

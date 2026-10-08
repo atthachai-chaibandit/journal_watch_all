@@ -30,18 +30,19 @@ export interface User {
     curriculum_year: null | string;
     study_plan_code: null | string;
     created_at:      Date;
-    last_login_at:   Date | null;
     advisors:        Advisors;
 }
 
 export enum AccountStatus {
     Active = "Active",
     Suspended = "Suspended",
+    Pending = "Pending",
 }
 
 export interface Advisors {
     Major?: Co1;
     Co_1?:  Co1;
+    Co_2?:  Co1;
 }
 
 export interface Co1 {

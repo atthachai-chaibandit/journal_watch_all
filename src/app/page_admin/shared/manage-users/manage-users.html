@@ -363,6 +363,7 @@
                 <button class="mu-row-btn mu-row-btn--edit" (click)="openEditAdminModal(a)">
                   <i class="ti ti-pencil"></i> <span class="mu-row-btn__label">แก้ไข</span>
                 </button>
+                @if (canSuspendAdmin(a)) {
                 <button class="mu-row-btn"
                         [class.mu-row-btn--suspend]="a.account_status === 'Active'"
                         [class.mu-row-btn--activate]="a.account_status === 'Suspended'"
@@ -378,6 +379,7 @@
                     <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
                   }
                 </button>
+                }
                 @if (canDeleteAdmin(a)) {
                   <button class="mu-row-btn mu-row-btn--delete" (click)="openDeleteAdmin(a)">
                     <i class="ti ti-trash"></i> <span class="mu-row-btn__label">ลบ</span>
@@ -839,8 +841,11 @@
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">Password <span class="mu-req">*</span></label>
-            <input class="mu-edit-input" type="password" placeholder="รหัสผ่าน"
-                   [(ngModel)]="addAdminForm.password" />
+            <input class="mu-edit-input" [type]="showAddAdminPassword() ? 'text' : 'password'" placeholder="รหัสผ่าน"
+                   autocomplete="new-password" [(ngModel)]="addAdminForm.password" />
+            <label class="mu-show-pw">
+              <input type="checkbox" [checked]="showAddAdminPassword()" (change)="showAddAdminPassword.set(!showAddAdminPassword())" /> แสดงรหัสผ่าน
+            </label>
             @if (addAdminPasswordError) {
               <span class="mu-field-error">{{ addAdminPasswordError }}</span>
             }
@@ -908,9 +913,12 @@
         @if (editAdminEmailChanged) {
           <div class="mu-edit-field">
             <label class="mu-edit-label">รหัสผ่านของคุณ <span class="mu-req">*</span></label>
-            <input class="mu-edit-input" type="password" autocomplete="current-password"
+            <input class="mu-edit-input" [type]="showEditAdminPassword() ? 'text' : 'password'" autocomplete="current-password"
                    placeholder="ยืนยันตัวตนก่อนเปลี่ยนอีเมล (ใช้รับ OTP)"
                    [(ngModel)]="editAdminPassword" />
+            <label class="mu-show-pw">
+              <input type="checkbox" [checked]="showEditAdminPassword()" (change)="showEditAdminPassword.set(!showEditAdminPassword())" /> แสดงรหัสผ่าน
+            </label>
           </div>
         }
 

@@ -498,7 +498,16 @@ export class ManageUsers implements OnInit {
     this.suspendConfirm.set({ name: this.fullName(u), run: () => this.suspendUser(u, true), reject: true });
   }
 
+  /**
+   * ห้ามระงับบัญชีตัวเอง (ระงับแล้วถูกตัด session เข้ากลับมาไม่ได้)
+   * และห้ามระงับ SuperAdmin (ถ้าเหลือคนเดียวจะไม่มีใครปลดล็อคให้ได้) — กฎเดียวกับปุ่มลบ
+   */
+  canSuspendAdmin(a: Admin): boolean {
+    return this.canDeleteAdmin(a);
+  }
+
   askSuspendAdmin(a: Admin): void {
+    if (!this.canSuspendAdmin(a)) return;
     if (a.account_status !== 'Active') { this.suspendAdmin(a); return; }
     this.suspendConfirm.set({ name: this.adminFullName(a), run: () => this.suspendAdmin(a) });
   }
@@ -638,9 +647,14 @@ export class ManageUsers implements OnInit {
   addAdminResult   = signal<{ ok: boolean; msg: string } | null>(null);
   addAdminForm: PostAddAdminReq = { username: '', password: '', first_name: '', last_name: '', msu_mail: '' };
 
+  // ติ๊ก "แสดงรหัสผ่าน" ในฟอร์มเพิ่ม Admin / ยืนยันรหัสตอนเปลี่ยนอีเมล — เปิด modal ใหม่ซ่อนกลับเสมอ
+  showAddAdminPassword  = signal(false);
+  showEditAdminPassword = signal(false);
+
   openAddAdminModal(): void {
     this.flushModalClose();
     this.addAdminForm = { username: '', password: '', first_name: '', last_name: '', msu_mail: '' };
+    this.showAddAdminPassword.set(false);
     this.addAdminResult.set(null);
     this.addAdminModal.set(true);
     document.body.style.overflow = 'hidden';
@@ -695,6 +709,7 @@ export class ManageUsers implements OnInit {
     this.flushModalClose();
     this.editAdminForm = { first_name: a.first_name, last_name: a.last_name, msu_mail: a.msu_mail };
     this.editAdminPassword = '';
+    this.showEditAdminPassword.set(false);
     this.editAdminResult.set(null);
     this.editAdminModal.set(a);
     document.body.style.overflow = 'hidden';

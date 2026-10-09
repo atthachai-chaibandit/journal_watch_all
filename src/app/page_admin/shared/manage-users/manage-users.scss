@@ -1152,3 +1152,17 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 3fr;
   font-weight: 600;
   color: $red;
 }
+
+// ติ๊ก "แสดงรหัสผ่าน" ใต้ช่องรหัสผ่าน
+.mu-show-pw {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: $muted;
+  cursor: pointer;
+  user-select: none;
+
+  input { width: 15px; height: 15px; margin: 0; accent-color: $navy; cursor: pointer; }
+}

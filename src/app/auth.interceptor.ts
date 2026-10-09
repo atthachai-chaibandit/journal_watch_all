@@ -4,14 +4,14 @@ import {
   HttpEvent, HttpErrorResponse,
 } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, filter, switchMap, take } from 'rxjs/operators';
+import { catchError, filter, switchMap, take, timeout } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { ErrorNotificationService, SERVER_ERROR_MESSAGE } from './error-notification.service';
 import { Constants } from './comfig/constants';
 import { SERVER_DOWN_MESSAGE } from './server-status.service';
 
-const AUTH_FLOW_URL = /\/auth\/(login|verify-otp|resend-otp|google|refresh|logout|register-staff|forgot-password|reset-password)/;
+const AUTH_FLOW_URL = /\/auth\/(login|verify-otp|resend-otp|google|refresh|logout|register-staff|forgot-password|reset-password)\b/;
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -42,8 +42,11 @@ export class AuthInterceptor implements HttpInterceptor {
         // ไม่ใช่ token หมดอายุ — เดิมถ้ามี token เก่าค้าง จะไป refresh แล้ว throw Error ที่ไม่มี message
         // หน้า login เลยขึ้น "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" ทั้งที่ข้อความจริงจาก backend หายไป
         // (/auth/me ยังต้อง refresh ตามปกติ จึงไม่ข้ามทั้ง /auth/)
-        if (err.status === 401 && !AUTH_FLOW_URL.test(req.url) && this.auth.isLoggedIn) {
-          return this.handle401(req, next);
+        if (err.status === 401 && !AUTH_FLOW_URL.test(req.url)) {
+          if (this.auth.isLoggedIn) return this.handle401(req, next);
+          // session ถูกล้างไปแล้ว (เช่นตอนเปิดแอป refresh ไม่ผ่าน) แต่ผู้ใช้ยังค้างอยู่หน้าเดิม
+          // แล้วกดอะไรที่เรียก API ด้วย token เก่า → พาไปหน้า login แทนการ error เงียบๆ
+          if (req.headers.has('Authorization')) this.redirectToLogin();
         }
         const globalMsg = this.globalErrorMessage(err);
         if (globalMsg) this.errorNotification.show(globalMsg);
@@ -71,6 +74,8 @@ export class AuthInterceptor implements HttpInterceptor {
     return this.refreshSubject.pipe(
       filter(token => token !== null), // ข้ามค่า null ที่เคลียร์ไว้ตอนเริ่ม refresh
       take(1),                          // รับ token ใหม่แค่ค่าแรกพอ แล้วเลิกฟัง
+      // ตาข่ายกันค้าง: ถ้ารอ token ใหม่เกิน 20 วิ (ไม่ว่าเพราะอะไร) ให้ request นี้ error ไป หน้าจะได้หยุดหมุน
+      timeout({ first: 20_000 }),
       switchMap(token => next.handle(this.attachToken(req, token!))), // ยิง request เดิมซ้ำด้วย token ใหม่
     );
   }
@@ -94,9 +99,7 @@ export class AuthInterceptor implements HttpInterceptor {
         }
         // refresh token ใช้ไม่ได้จริง (backend ตอบ 401) → แจ้งทุก request ที่รอให้ error แล้ว logout ไปหน้า login
         this.failWaiters(new Error('Session expired'));
-        const loginUrl = this.auth.loginUrl;   // X29: admin กลับหน้า login ของ admin
-        this.auth.logout();
-        this.router.navigateByUrl(loginUrl);
+        this.redirectToLogin();
       },
       // X28: ล้มชั่วคราว (เน็ตหลุด / 429 / 5xx) — ไม่ logout ปล่อย error ให้หน้าจอแสดง 401 ครั้งหน้าลองใหม่ได้
       error: err => {
@@ -104,6 +107,17 @@ export class AuthInterceptor implements HttpInterceptor {
         this.failWaiters(err);
       },
     });
+  }
+
+  /**
+   * logout แล้วพาไปหน้า login ที่ถูกต้อง — admin ไป /login-admin (X29)
+   * เช็คจาก URL ปัจจุบันด้วย เพราะถ้า session ถูกล้างไปก่อนแล้ว ข้อมูล role ที่ใช้ดูว่าเป็น admin หายไปแล้ว
+   */
+  private redirectToLogin(): void {
+    const onAdminPage = /^\/(admin|super-admin)(\/|$)/.test(this.router.url);
+    const loginUrl = this.auth.isAdmin || onAdminPage ? '/login-admin' : '/login';
+    if (this.auth.isLoggedIn || this.auth.token) this.auth.logout();
+    if (!this.router.url.startsWith(loginUrl)) this.router.navigateByUrl(loginUrl);
   }
 
   /** F2: แจ้ง request ที่รอ token ให้ error (subject ที่ error แล้วใช้ต่อไม่ได้ → สร้างใหม่ไว้รอบหน้า) */

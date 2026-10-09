@@ -2578,3 +2578,11 @@ $blue:   #1A5FAB;
 
   i { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
 }
+
+/* เกณฑ์ · ค่าจริงของวารสาร ✓/✗ (แถว Quartile / TCI กลุ่ม) */
+.criteria-value {
+  .crit-part { white-space: nowrap; }
+  .crit-sep  { margin: 0 6px; color: #9CA3AF; font-weight: 400; }
+  strong     { font-weight: 800; }
+  i          { margin-left: 4px; }
+}

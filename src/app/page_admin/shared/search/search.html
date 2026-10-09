@@ -635,9 +635,13 @@
           </div>
           <div class="criteria-list">
             <div class="criteria-row">
-              <span class="criteria-label">ต้องการ Quartile</span>
+              <span class="criteria-label">Quartile</span>
               <span class="criteria-value" [class.ok]="criteriaQuartileOk" [class.bad]="!criteriaQuartileOk">
-                ≤ {{ requiredQuartile }} @if (criteriaQuartileOk) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> } (พบ {{ r.quartile }})
+                <!-- แยก "เกณฑ์" กับ "ค่าจริงของวารสาร" ให้ชัด — เดิม "≤ Q2 ✓ (พบ Q1)" อ่านแล้วไม่รู้ว่าตัวไหนเป็นของวารสาร -->
+                <span class="crit-part">เกณฑ์ {{ requiredQuartile }} ขึ้นไป</span>
+                <span class="crit-sep">·</span>
+                <span class="crit-part">วารสารนี้ <strong>{{ r.quartile || '—' }}</strong></span>
+                @if (criteriaQuartileOk) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
               </span>
             </div>
             <div class="criteria-row">
@@ -824,13 +828,14 @@
             </div>
             <div class="criteria-list">
               <div class="criteria-row">
-                <span class="criteria-label">ต้องการ TCI Tier</span>
+                <span class="criteria-label">TCI กลุ่ม</span>
                 <span class="criteria-value"
                   [class.ok]="degree === 'doctoral' ? t.tier === 1 : t.tier <= 2"
                   [class.bad]="degree === 'doctoral' ? t.tier !== 1 : t.tier > 2">
-                  ≤ กลุ่ม {{ degree === 'doctoral' ? '1' : '2' }}
+                  <span class="crit-part">เกณฑ์ {{ degree === 'doctoral' ? 'กลุ่ม 1 เท่านั้น' : 'กลุ่ม 1–2' }}</span>
+                  <span class="crit-sep">·</span>
+                  <span class="crit-part">วารสารนี้ <strong>กลุ่ม {{ t.tier }}</strong></span>
                   @if (degree === 'doctoral' ? t.tier === 1 : t.tier <= 2) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
-                  (พบ กลุ่ม {{ t.tier }})
                 </span>
               </div>
               <div class="criteria-row">

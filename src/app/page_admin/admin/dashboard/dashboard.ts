@@ -1,7 +1,7 @@
 import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { AuthService } from '../../../auth.service';
+import { AuthService, readStoredAdmin } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
 import { GetStatsRes, Data } from '../../../model_admin/res/get_stats_res';
 
@@ -16,7 +16,7 @@ export class Dashboard implements OnInit {
   private auth      = inject(AuthService);
   private constants = inject(Constants);
 
-  private rawUser = JSON.parse(localStorage.getItem('user') ?? '{}');
+  private rawUser = (readStoredAdmin() ?? {});
   userName = (`${this.rawUser?.firstName ?? ''} ${this.rawUser?.lastName ?? ''}`).trim()
              || (this.rawUser?.username ?? 'Admin');
   userInitials = ((this.rawUser?.firstName?.charAt(0) ?? '') + (this.rawUser?.lastName?.charAt(0) ?? '')).toUpperCase() || 'A';

@@ -11,8 +11,8 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
-    // เปิดแอปมาแล้ว token เก่าหมดอายุ → ล้าง session ก่อน router ทำงาน จะได้ไปหน้า login แทน dashboard
-    provideAppInitializer(() => inject(AuthService).dropExpiredSession()),
+    // เปิดแอปมาแล้ว token เก่าหมดอายุ → ลอง refresh ก่อน router ทำงาน (ไม่ได้จริงค่อย logout ไปหน้า login)
+    provideAppInitializer(() => inject(AuthService).restoreSession()),
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     importProvidersFrom(OAuthModule.forRoot()),

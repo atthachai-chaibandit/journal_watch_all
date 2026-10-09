@@ -9,6 +9,7 @@ import { Constants } from '../../../../comfig/constants';
 import { GetProfileRes, Advisor } from '../../../../model/res/get_profile_res';
 import { SendPreT3Req } from '../../../../model/req/Send_Pre-T3_req';
 import { apiFailure, failMsg } from '../../../../server-status.service';
+import { PRE_T3_CHECKLIST_TITLES } from '../../../../pre-t3-checklist';
 
 interface ChecklistItem {
   id: number;
@@ -76,7 +77,6 @@ export class PreT3 implements OnInit {
   advisorOverride = signal('');
   coAdvisor1      = signal('');
   coAdvisor2      = signal('');
-  remarkNote      = signal('');
 
   /* ── มาจากหน้าค้นหา ── */
   fromSearch = signal(false);
@@ -125,7 +125,7 @@ export class PreT3 implements OnInit {
     return [
       {
         id: 1, canToggle: true,
-        title: 'ตรวจสอบความถูกต้องของชื่อของวารสาร',
+        title: PRE_T3_CHECKLIST_TITLES['item1'],
         detail: name
           ? `ตรวจสอบว่า "${name}" ตรงกับชื่อในฐานข้อมูลจริง แล้วคลิกยืนยัน`
           : 'กรอกชื่อวารสารก่อน',
@@ -133,13 +133,13 @@ export class PreT3 implements OnInit {
       },
       {
         id: 2, canToggle: true,
-        title: 'วารสารมีเว็บไซต์หลัก ตรงฐานข้อมูล MSU',
+        title: PRE_T3_CHECKLIST_TITLES['item2'],
         detail: url ? `เปิด URL แล้วตรวจสอบ: ${url}` : 'กรอก URL วารสารก่อน แล้วคลิกเปิดดูเพื่อยืนยัน',
         status: ms(2),
       },
       {
         id: 3, canToggle: true,
-        title: 'กำหนดออกเผยแพร่อย่างสม่ำเสมอ',
+        title: PRE_T3_CHECKLIST_TITLES['item3'],
         detail: fromS
           ? 'วารสารที่อยู่ใน Scopus/TCI ต้องผ่านเกณฑ์นี้ก่อน Index'
           : 'ตรวจสอบประวัติการเผยแพร่ที่เว็บไซต์วารสาร',
@@ -147,7 +147,7 @@ export class PreT3 implements OnInit {
       },
       {
         id: 4, canToggle: true,
-        title: 'ระบุสำนักพิมพ์ วัตถุประสงค์ ขอบเขตชัดเจน',
+        title: PRE_T3_CHECKLIST_TITLES['item4'],
         detail: fromS
           ? 'วารสารที่อยู่ใน Scopus/TCI ต้องมี Aims & Scope ครบก่อน Index'
           : 'ตรวจสอบ Aims & Scope และสำนักพิมพ์ที่เว็บไซต์วารสาร',
@@ -155,7 +155,7 @@ export class PreT3 implements OnInit {
       },
       {
         id: 5, canToggle: true,
-        title: 'มีสมาชิกคณะกรรมการจากหลายประเทศ',
+        title: PRE_T3_CHECKLIST_TITLES['item5'],
         detail: fromS
           ? 'วารสารที่อยู่ใน Scopus/TCI ต้องผ่านเกณฑ์ Editorial Board นานาชาติก่อน Index'
           : 'ตรวจสอบ Editorial Board ที่เว็บไซต์วารสาร',
@@ -163,7 +163,7 @@ export class PreT3 implements OnInit {
       },
       {
         id: 6, canToggle: true,
-        title: 'มีระบบ Peer Review ที่เหมาะสม',
+        title: PRE_T3_CHECKLIST_TITLES['item6'],
         detail: fromS
           ? 'วารสารที่อยู่ใน Scopus/TCI ต้องมีระบบ Peer Review ที่ผ่านเกณฑ์ก่อน Index'
           : 'ตรวจสอบ Author Guidelines ที่เว็บไซต์วารสาร',
@@ -171,7 +171,7 @@ export class PreT3 implements OnInit {
       },
       {
         id: 7, canToggle: true,
-        title: 'รูปแบบบทความวารสารมาตรฐานสม่ำเสมอ',
+        title: PRE_T3_CHECKLIST_TITLES['item7'],
         detail: fromS
           ? 'วารสารที่อยู่ใน Scopus/TCI ต้องมีมาตรฐานรูปแบบบทความที่สม่ำเสมอก่อน Index'
           : 'ตรวจสอบตัวอย่างบทความในวารสาร',
@@ -179,7 +179,7 @@ export class PreT3 implements OnInit {
       },
       {
         id: 8, canToggle: true,
-        title: 'ไม่เป็น Hijacked Journal',
+        title: PRE_T3_CHECKLIST_TITLES['item8'],
         detail: fromS
           ? (disc ? 'วารสารนี้ถูกระงับ (Discontinued)' : 'ไม่พบใน Hijacked / Discontinued list')
           : 'ตรวจสอบกับ Beall\'s List และ Hijacked Journal Database',
@@ -187,7 +187,7 @@ export class PreT3 implements OnInit {
       },
       {
         id: 9, canToggle: true,
-        title: 'ยืนยันปรากฏฐานข้อมูล และ วันที่ขึ้น',
+        title: PRE_T3_CHECKLIST_TITLES['item9'],
         detail: (db && q) ? `ฐานข้อมูล: ${db} · Quartile: ${q}` : 'ยังไม่ได้ระบุฐานข้อมูลหรือ Quartile',
         status: ms(9),
       },
@@ -211,6 +211,7 @@ export class PreT3 implements OnInit {
 
   canSubmit = computed(() =>
     this.checklist().every(c => c.status === 'pass') &&
+    !!this.journalName().trim() &&   // X47: เดิมชื่อวารสารว่างก็กดยื่นได้ แล้วได้ 400 INVALID_JOURNAL
     !!this.issn() &&
     !!this.database() &&
     this.hasTitle() &&
@@ -270,7 +271,8 @@ export class PreT3 implements OnInit {
   }
 
   openConfirm(): void {
-    if (!this.canSubmit() || this.isSubmitting()) return;
+    // N1: หลังยื่นสำเร็จจะรอ 1.5 วิ ก่อนเปลี่ยนหน้า — กันกดยื่นซ้ำในช่วงนั้น (backend ตอบ 409 PRE_T3_DUPLICATE)
+    if (!this.canSubmit() || this.isSubmitting() || this.submitResult() === 'success') return;
     this.resubmitAck.set(false);
     this.showConfirm.set(true);
     document.body.style.overflow = 'hidden';
@@ -284,7 +286,7 @@ export class PreT3 implements OnInit {
   submit(): void {
     if (this.resubmitInfo() && !this.resubmitAck()) return;   // ยื่นซ้ำต้องยืนยันก่อน
     this.closeConfirm();
-    if (!this.canSubmit() || this.isSubmitting()) return;
+    if (!this.canSubmit() || this.isSubmitting() || this.submitResult() === 'success') return;
     this.isSubmitting.set(true);
     this.submitResult.set(null);
 
@@ -306,8 +308,7 @@ export class PreT3 implements OnInit {
         title_th: this.titleTh(),
       },
       checklist_data: checklistData,
-      // F4: เดิมช่องหมายเหตุไม่ถูกส่งไปเลย
-      ...(this.remarkNote().trim() ? { remark: this.remarkNote().trim() } : {}),
+      // X33: เอาช่องหมายเหตุออกแล้ว — backend ไม่มีคอลัมน์เก็บ ข้อความที่นิสิตพิมพ์หายไปโดยไม่มีใครเห็น
     };
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });

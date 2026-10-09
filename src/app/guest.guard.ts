@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from './auth.service';
+import { AuthService, readStoredAdmin } from './auth.service';
 
 // ใช้กับหน้า /login, /login-admin, /req-otp — ถ้า login อยู่แล้วไม่ต้องเห็นหน้า login อีก ส่งไป dashboard ตาม role แทน
 // ('' และ '**' redirect มาที่ /login อยู่แล้ว เลยครอบคลุม http://localhost:4200/ ด้วย)
@@ -10,7 +10,7 @@ export const guestGuard: CanActivateFn = () => {
 
   // ฝั่ง admin เก็บโปรไฟล์ไว้ใน key 'user' แยกจากฝั่งนิสิต/อาจารย์/เจ้าหน้าที่ (auth_user)
   try {
-    const admin = JSON.parse(localStorage.getItem('user') ?? 'null');
+    const admin = readStoredAdmin();
     if (localStorage.getItem('auth_token') && admin?.role === 'SuperAdmin') return router.parseUrl('/super-admin/dashboard');
     if (localStorage.getItem('auth_token') && admin?.role === 'Admin')      return router.parseUrl('/admin/dashboard');
   } catch {}

@@ -66,6 +66,7 @@ $gray:   #9CA3AF;
   &--all      { background: #E0F2FE; color: #0369A1; }
   &--approved { background: $green-l; color: $green; }
   &--rejected { background: $red-l;   color: $red; }
+  &--cancelled { background: #F1F5F9; color: #64748B; }   // N13
 }
 
 /* ── FILTER ── */

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Constants } from '../../../comfig/constants';
 import { VerifyOtpRes } from '../../../model_admin/res/verify-otp_res';
+import { AuthService } from '../../../auth.service';
 
 @Component({
   selector: 'app-req-otp',
@@ -29,6 +30,7 @@ export class ReqOTP implements AfterViewInit, OnDestroy {
     private http: HttpClient,
     private router: Router,
     private constants: Constants,
+    private authService: AuthService,
   ) {
     // เข้าหน้านี้ตรงๆ โดยไม่ได้ผ่าน login (ไม่มี otpToken) → กลับไปหน้า login
     if (!localStorage.getItem('otp_token')) {
@@ -125,10 +127,9 @@ export class ReqOTP implements AfterViewInit, OnDestroy {
       headers: { Authorization: `Bearer ${token}` },
     }).subscribe({
       next: (res) => {
-        localStorage.removeItem('otp_token');
-        localStorage.setItem('auth_token', res.data.accessToken);
-        localStorage.setItem('auth_refresh_token', res.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+        // X29: ผ่าน AuthService ให้ isLoggedIn เป็น true ทันที — interceptor จะ refresh token ให้เมื่อหมดอายุ
+        // (เดิมเขียน localStorage เอง ต้อง reload ก่อน ไม่งั้นหลัง 60 นาทีจะเจอแต่ error ทุกหน้า)
+        this.authService.setAdminSession(res.data.accessToken, res.data.user);
 
         const role = res.data.user.role;
         if (role === 'SuperAdmin') {
@@ -136,8 +137,8 @@ export class ReqOTP implements AfterViewInit, OnDestroy {
         } else if (role === 'Admin') {
           this.router.navigate(['/admin/dashboard']);
         } else {
-          // F15: ลบให้ครบทุก key ของ session นี้
-          ['auth_token', 'auth_refresh_token', 'user'].forEach(k => localStorage.removeItem(k));
+          // F15: ล้าง session นี้ให้หมด (ฝั่ง client + revoke ที่ backend)
+          this.authService.logout();
           this.errorMsg.set('ไม่มีสิทธิ์เข้าถึงระบบนี้');
         }
         this.loading.set(false);
@@ -173,6 +174,8 @@ export class ReqOTP implements AfterViewInit, OnDestroy {
       },
       error: (err) => {
         if (this.handleOtpTokenGone(err)) return;
+        // B15: backend มี cooldown ขอ OTP ซ้ำ 60 วิ ต่อผู้ใช้ — นับถอยหลังตามเวลาที่ backend บอก
+        if (err?.error?.code === 'OTP_COOLDOWN') this.startCooldown(Number(err.error.retryAfter) || 60);
         this.errorMsg.set(err?.status === 429
           ? this.rateLimitMsg(err, 'ขอรหัสบ่อยเกินไป')
           : (err?.error?.message || 'ไม่สามารถส่งรหัสได้ในขณะนี้'));

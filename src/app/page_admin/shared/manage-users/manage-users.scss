@@ -1143,3 +1143,12 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 3fr;
 
   i { font-size: 15px; margin-top: 2px; flex-shrink: 0; }
 }
+
+// N11: username ไม่ตรงรูปแบบที่ backend รับ
+.mu-field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $red;
+}

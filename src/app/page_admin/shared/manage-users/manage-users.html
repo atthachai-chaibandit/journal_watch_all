@@ -159,7 +159,7 @@
                     [class.mu-row-btn--activate]="u.account_status === 'Suspended'"
                     [class.mu-row-btn--loading]="suspendingId() === u.user_id"
                     [disabled]="suspendingId() !== null"
-                    (click)="suspendUser(u)">
+                    (click)="askSuspendUser(u)">
               @if (suspendingId() === u.user_id) {
                 <span class="mu-row-spin"></span>
                 <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
@@ -223,7 +223,7 @@
                     [class.mu-row-btn--activate]="u.account_status === 'Suspended'"
                     [class.mu-row-btn--loading]="suspendingId() === u.user_id"
                     [disabled]="suspendingId() !== null"
-                    (click)="suspendUser(u)">
+                    (click)="askSuspendUser(u)">
               @if (suspendingId() === u.user_id) {
                 <span class="mu-row-spin"></span>
                 <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
@@ -285,7 +285,7 @@
                     [class.mu-row-btn--activate]="u.account_status === 'Suspended'"
                     [class.mu-row-btn--loading]="suspendingId() === u.user_id"
                     [disabled]="suspendingId() !== null"
-                    (click)="suspendUser(u)">
+                    (click)="askSuspendUser(u)">
               @if (suspendingId() === u.user_id) {
                 <span class="mu-row-spin"></span>
                 <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
@@ -297,6 +297,13 @@
                 <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
               }
             </button>
+            @if (u.account_status === 'Pending') {
+              <button class="mu-row-btn mu-row-btn--suspend"
+                      [disabled]="suspendingId() !== null"
+                      (click)="askRejectUser(u)">
+                <i class="ti ti-user-x"></i> <span class="mu-row-btn__label">ปฏิเสธ</span>
+              </button>
+            }
           </div>
         </div>
       }
@@ -361,7 +368,7 @@
                         [class.mu-row-btn--activate]="a.account_status === 'Suspended'"
                         [class.mu-row-btn--loading]="suspendingAdminId() === a.user_id"
                         [disabled]="suspendingAdminId() !== null"
-                        (click)="suspendAdmin(a)">
+                        (click)="askSuspendAdmin(a)">
                   @if (suspendingAdminId() === a.user_id) {
                     <span class="mu-row-spin"></span>
                     <span class="mu-row-btn__label">กำลังดำเนินการ...</span>
@@ -399,6 +406,34 @@
   }
 
 </div>
+
+<!-- ═══ SUSPEND CONFIRM (F27) ═══ -->
+@if (suspendConfirm(); as c) {
+  <div class="mu-modal-overlay">
+    <div class="mu-edit-modal mu-delete-modal" (click)="$event.stopPropagation()">
+      <div class="mu-edit-modal__accent mu-delete-modal__accent"></div>
+      <div class="mu-delete-modal__body">
+        <div class="mu-delete-modal__icon"><i [class]="c.reject ? 'ti ti-user-x' : 'ti ti-lock'"></i></div>
+        <div class="mu-delete-modal__title">{{ c.reject ? 'ปฏิเสธการสมัครนี้?' : 'ระงับบัญชีนี้?' }}</div>
+        <div class="mu-delete-modal__name">{{ c.name }}</div>
+        <div class="mu-delete-modal__warn">
+          <i class="ti ti-alert-triangle"></i>
+          @if (c.reject) {
+            บัญชีนี้จะเข้าสู่ระบบไม่ได้ และสมัครซ้ำด้วยอีเมลเดิมไม่ได้ (ย้ายไปอยู่กลุ่ม "ถูกล็อค" — ถ้าปฏิเสธผิด กด "เปิดใช้งาน" ได้ภายหลัง)
+          } @else {
+            ผู้ใช้จะเข้าสู่ระบบไม่ได้จนกว่าจะเปิดใช้งานอีกครั้ง (กด "เปิดใช้งาน" ได้ภายหลัง)
+          }
+        </div>
+      </div>
+      <div class="mu-edit-modal__footer">
+        <button class="mu-btn-cancel" (click)="suspendConfirm.set(null)">ยกเลิก</button>
+        <button class="mu-btn-save mu-btn-save--danger" (click)="confirmSuspend()">
+          <i [class]="c.reject ? 'ti ti-user-x' : 'ti ti-lock'"></i> {{ c.reject ? 'ยืนยันปฏิเสธ' : 'ยืนยันระงับ' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- ═══ SUSPEND TOAST ═══ -->
 @if (suspendResult(); as r) {
@@ -490,7 +525,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeEditModal()" [disabled]="isEditSaving()">ยกเลิก</button>
         <button class="mu-btn-save" (click)="submitEdit()"
-                [disabled]="isEditSaving() || !editForm.first_name.trim() || !editForm.last_name.trim()">
+                [disabled]="isEditSaving() || !!editSaveResult()?.ok || !editForm.first_name.trim() || !editForm.last_name.trim()">
           @if (isEditSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
           @else                { <i class="ti ti-device-floppy"></i> บันทึกข้อมูล }
         </button>
@@ -586,7 +621,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeAddStudentModal()" [disabled]="isAddSaving()">ยกเลิก</button>
         <button class="mu-btn-save" (click)="submitAddStudent()"
-                [disabled]="isAddSaving() || !addStudentForm.first_name.trim() || !addStudentForm.last_name.trim() || !addStudentForm.msu_mail.trim()">
+                [disabled]="isAddSaving() || !!addSaveResult()?.ok || !addStudentForm.first_name.trim() || !addStudentForm.last_name.trim() || !addStudentForm.msu_mail.trim()">
           @if (isAddSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
           @else                { <i class="ti ti-user-plus"></i> เพิ่มนิสิต }
         </button>
@@ -647,13 +682,18 @@
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
             @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
           </div>
+          @if (r.errors?.length) {
+            <ul class="import-errors">
+              @for (e of r.errors; track $index) { <li>{{ e }}</li> }
+            </ul>
+          }
         }
 
       </div>
 
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeImportModal()" [disabled]="isImporting()">ยกเลิก</button>
-        <button class="mu-btn-save" (click)="submitImport()" [disabled]="isImporting() || !selectedFile">
+        <button class="mu-btn-save" (click)="submitImport()" [disabled]="isImporting() || !!importResult()?.ok || !selectedFile">
           @if (isImporting()) { <span class="mu-btn-spinner"></span> กำลังนำเข้า... }
           @else               { <i class="ti ti-upload"></i> นำเข้าข้อมูล }
         </button>
@@ -734,7 +774,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeAddAdvisorModal()" [disabled]="isAdvisorSaving()">ยกเลิก</button>
         <button class="mu-btn-save mu-btn-save--advisor" (click)="submitAddAdvisor()"
-                [disabled]="isAdvisorSaving() || !addAdvisorForm.first_name.trim() || !addAdvisorForm.last_name.trim() || !addAdvisorForm.msu_mail.trim()">
+                [disabled]="isAdvisorSaving() || !!advisorSaveResult()?.ok || !addAdvisorForm.first_name.trim() || !addAdvisorForm.last_name.trim() || !addAdvisorForm.msu_mail.trim()">
           @if (isAdvisorSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
           @else                   { <i class="ti ti-user-plus"></i> เพิ่มอาจารย์ }
         </button>
@@ -793,11 +833,17 @@
             <label class="mu-edit-label">Username <span class="mu-req">*</span></label>
             <input class="mu-edit-input" type="text" placeholder="username สำหรับ Login"
                    [(ngModel)]="addAdminForm.username" />
+            @if (addAdminUsernameInvalid) {
+              <span class="mu-field-error">4–50 ตัวอักษร ใช้ได้เฉพาะ a-z, A-Z, 0-9 และ _ . -</span>
+            }
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">Password <span class="mu-req">*</span></label>
             <input class="mu-edit-input" type="password" placeholder="รหัสผ่าน"
                    [(ngModel)]="addAdminForm.password" />
+            @if (addAdminPasswordError) {
+              <span class="mu-field-error">{{ addAdminPasswordError }}</span>
+            }
           </div>
         </div>
 
@@ -811,7 +857,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeAddAdminModal()" [disabled]="isAddAdminSaving()">ยกเลิก</button>
         <button class="mu-btn-save mu-btn-save--navy" (click)="submitAddAdmin()"
-                [disabled]="isAddAdminSaving() || !addAdminForm.first_name.trim() || !addAdminForm.last_name.trim() || !addAdminForm.msu_mail.trim() || !addAdminForm.username.trim() || !addAdminForm.password.trim()">
+                [disabled]="isAddAdminSaving() || !!addAdminResult()?.ok || !addAdminForm.first_name.trim() || !addAdminForm.last_name.trim() || !addAdminForm.msu_mail.trim() || !addAdminForm.username.trim() || addAdminUsernameInvalid || !addAdminForm.password.trim() || !!addAdminPasswordError">
           @if (isAddAdminSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
           @else                    { <i class="ti ti-shield-lock"></i> เพิ่ม Admin }
         </button>
@@ -859,6 +905,15 @@
           <input class="mu-edit-input" type="email" [(ngModel)]="editAdminForm.msu_mail" />
         </div>
 
+        @if (editAdminEmailChanged) {
+          <div class="mu-edit-field">
+            <label class="mu-edit-label">รหัสผ่านของคุณ <span class="mu-req">*</span></label>
+            <input class="mu-edit-input" type="password" autocomplete="current-password"
+                   placeholder="ยืนยันตัวตนก่อนเปลี่ยนอีเมล (ใช้รับ OTP)"
+                   [(ngModel)]="editAdminPassword" />
+          </div>
+        }
+
         @if (editAdminResult(); as r) {
           <div [class]="r.ok ? 'mu-save-banner mu-save-banner--ok' : 'mu-save-banner mu-save-banner--err'">
             @if (r.ok) { <i class="ti ti-circle-check"></i> } @else { <i class="ti ti-alert-triangle"></i> } {{ r.msg }}
@@ -869,7 +924,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeEditAdminModal()" [disabled]="isEditAdminSaving()">ยกเลิก</button>
         <button class="mu-btn-save mu-btn-save--navy" (click)="submitEditAdmin()"
-                [disabled]="isEditAdminSaving() || !editAdminForm.first_name.trim() || !editAdminForm.last_name.trim()">
+                [disabled]="isEditAdminSaving() || !!editAdminResult()?.ok || !editAdminForm.first_name.trim() || !editAdminForm.last_name.trim() || (editAdminEmailChanged && !editAdminPassword)">
           @if (isEditAdminSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
           @else                     { <i class="ti ti-device-floppy"></i> บันทึกข้อมูล }
         </button>
@@ -946,7 +1001,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeAssignAdvisorModal()" [disabled]="isAssignSaving()">ยกเลิก</button>
         <button class="mu-btn-save" (click)="submitAssignAdvisor()"
-                [disabled]="isAssignSaving() || !assignAdvisorForm.advisor_major_mail.trim()">
+                [disabled]="isAssignSaving() || !!assignAdvisorResult()?.ok || !assignAdvisorForm.advisor_major_mail.trim()">
           @if (isAssignSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
           @else                  { <i class="ti ti-device-floppy"></i> บันทึกที่ปรึกษา }
         </button>

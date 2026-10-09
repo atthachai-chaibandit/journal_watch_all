@@ -37,7 +37,14 @@
         <div class="empty-text">กำลังโหลดข้อมูล...</div>
       </div>
     }
-    @if (filtered().length === 0 && !isLoading()) {
+    @if (loadError() && !isLoading()) {
+      <div class="empty-state empty-state--error">
+        <div class="empty-icon"><i class="ti ti-cloud-off"></i></div>
+        <div class="empty-text">{{ loadError() }}</div>
+        <button type="button" class="btn-retry" (click)="loadRequests()"><i class="ti ti-refresh"></i> ลองใหม่</button>
+      </div>
+    }
+    @if (filtered().length === 0 && !isLoading() && !loadError()) {
       <div class="empty-state">
         <div class="empty-icon"><i class="ti ti-inbox"></i></div>
         <div class="empty-text">ไม่มีคำร้อง Pre-T3 ในขณะนี้</div>
@@ -53,7 +60,7 @@
             <div class="student-id">{{ req.studentId }}</div>
             <div class="article-title-row">
               <span class="article-label">ชื่อบทความ:</span>
-              <span class="article-title">{{ req.journalName }}</span>
+              <span class="article-title">{{ req.articleTitle || '—' }}</span>
             </div>
             <div class="journal-row">
               <span class="issn">{{ req.issn }}</span>
@@ -211,7 +218,7 @@
             </div>
             <div class="detail-field detail-field--wide">
               <div class="detail-label">URL วารสาร</div>
-              <div class="detail-value"><a [href]="req.journalUrl" target="_blank" class="url-link">{{ req.journalUrl }}</a></div>
+              <div class="detail-value">@if (isHttpUrl(req.journalUrl)) { <a [href]="req.journalUrl" target="_blank" rel="noopener noreferrer" class="url-link">{{ req.journalUrl }}</a> } @else { {{ req.journalUrl }} }</div>
             </div>
           </div>
         </div>

@@ -86,8 +86,10 @@
 
       @if (isLoading()) {
         <div class="pre-t3-empty"><i class="ti ti-hourglass"></i> กำลังโหลดข้อมูล...</div>
+      } @else if (preT3LoadError()) {
+        <div class="pre-t3-empty"><i class="ti ti-cloud-off"></i> โหลดรายการ Pre-T3 ไม่สำเร็จ — กรุณารีเฟรชหน้าแล้วลองใหม่</div>
       } @else if (preT3List.length === 0) {
-        <div class="pre-t3-empty"><i class="ti ti-inbox"></i> ยังไม่มี Pre-T3 ที่อนุมัติแล้ว — กรุณายื่น Pre-T3 และรอการอนุมัติก่อน</div>
+        <div class="pre-t3-empty"><i class="ti ti-inbox"></i> ยังไม่มี Pre-T3 ที่อนุมัติแล้วและยังไม่ได้ยื่น T3 — กรุณายื่น Pre-T3 และรอการอนุมัติก่อน</div>
       } @else {
         <div class="pre-t3-list">
           @for (item of preT3List; track item.id) {
@@ -220,6 +222,9 @@
               <span class="jt-weight-chip">weight {{ weightLabel }}</span>
             </div>
             <div class="jt-locked-note"><i class="ti ti-lock"></i> เลือกให้อัตโนมัติจากฐานข้อมูลของ Pre-T3 ที่เลือก</div>
+            @if (tierInvalid) {
+              <div class="jt-locked-note jt-locked-note--error"><i class="ti ti-alert-triangle"></i> Pre-T3 นี้ไม่ได้ระบุกลุ่ม TCI (1 หรือ 2) — ยื่น T3 ไม่ได้ กรุณายื่น Pre-T3 ใหม่</div>
+            }
           } @else {
             <div class="jt-locked jt-locked--empty">
               <span class="jt-option-hint">เลือก Pre-T3 ด้านบนก่อน ระบบจะกำหนดประเภทให้อัตโนมัติ</span>

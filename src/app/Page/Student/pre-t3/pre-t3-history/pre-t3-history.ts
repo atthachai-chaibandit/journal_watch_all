@@ -9,6 +9,7 @@ import { AuthService } from '../../../../auth.service';
 import { Constants } from '../../../../comfig/constants';
 import { GetMyPreT3Res, Datum } from '../../../../model/res/get_my_Pre-T3_res';
 import { GetProfileRes, Data as ProfileData } from '../../../../model/res/get_profile_res';
+import { apiFailure, failMsg } from '../../../../server-status.service';
 
 type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -152,6 +153,9 @@ export class PreT3History implements OnInit {
     this.loadData(true);
   }
 
+  // F24: โหลดรายการล้มเหลว ≠ ไม่มีรายการ — เดิม error ทุกแบบแสดงเป็น "ยังไม่มีคำร้อง"
+  loadError = signal('');
+
   private loadData(isRefresh = false): void {
     if (isRefresh) {
       this.isRefreshing.set(true);
@@ -160,15 +164,19 @@ export class PreT3History implements OnInit {
     }
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
+    let failure: unknown = null;
     forkJoin({
       myList:  this.http.get<GetMyPreT3Res>(`${this.constants.API_ENDPOINT}/pre-t3/my`, { headers })
-                        .pipe(catchError(() => of(null))),
+                        .pipe(catchError(err => { failure = err; return of(null); })),
       profile: this.http.get<GetProfileRes>(`${this.constants.API_ENDPOINT}/user/profile`, { headers })
                         .pipe(catchError(() => of(null))),
     }).subscribe(({ myList, profile }) => {
       const prof = profile?.success ? profile.data : null;
       if (myList?.success) {
         this.buildData(myList.data, prof);
+        this.loadError.set('');
+      } else {
+        this.loadError.set(failMsg(failure ? apiFailure(failure) : myList, 'โหลดรายการคำร้องไม่สำเร็จ กรุณาลองใหม่'));
       }
       this.isLoading.set(false);
       this.isRefreshing.set(false);
@@ -308,14 +316,17 @@ export class PreT3History implements OnInit {
 
     const s1: Step = { icon: 'ti ti-check', label: 'ยื่นคำร้องสำเร็จ', sub: '● เสร็จแล้ว', date: createdDate, status: 'done' };
 
+    // F25: "เสร็จแล้ว" เฉพาะขั้นที่อนุมัติจริง — เดิมทุกอย่างที่ไม่ใช่ Rejected ถือว่าผ่าน
+    // คำร้องที่นิสิตยกเลิกตอนอาจารย์ยังไม่พิจารณา (Pending) เลยขึ้นว่าอาจารย์/ที่ประชุมอนุมัติแล้ว
     let s2: Step;
-    if (adv === 'Rejected') s2 = { icon: 'ti ti-x', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ', date: advisorDate, status: 'active' };
-    else                    s2 = { icon: 'ti ti-check', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว', date: advisorDate, status: 'done' };
+    if (adv === 'Rejected')      s2 = { icon: 'ti ti-x',     label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ',        date: advisorDate, status: 'active' };
+    else if (adv === 'Approved') s2 = { icon: 'ti ti-check', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',        date: advisorDate, status: 'done' };
+    else                         s2 = { icon: '2',           label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '○ ไม่ถึงขั้นตอนนี้', date: '-',         status: 'pending' };
 
     let s3: Step;
-    if (adv === 'Rejected') s3 = { icon: '3', label: 'รอผลจากที่ประชุม', sub: '○ ไม่ถึงขั้นตอนนี้', date: '-', status: 'pending' };
-    else if (fac === 'Rejected') s3 = { icon: 'ti ti-x', label: 'รอผลจากที่ประชุม', sub: '● ไม่อนุมัติ', date: '-', status: 'active' };
-    else s3 = { icon: 'ti ti-check', label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว', date: '-', status: 'done' };
+    if (fac === 'Rejected')      s3 = { icon: 'ti ti-x',     label: 'รอผลจากที่ประชุม', sub: '● ไม่อนุมัติ',        date: '-', status: 'active' };
+    else if (fac === 'Approved') s3 = { icon: 'ti ti-check', label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',        date: '-', status: 'done' };
+    else                         s3 = { icon: '3',           label: 'รอผลจากที่ประชุม', sub: '○ ไม่ถึงขั้นตอนนี้', date: '-', status: 'pending' };
 
     const s4: Step = over === 'Approved'    ? { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '● เสร็จแล้ว',        date: '-', status: 'done'    }
                    : over === 'Cancelled'  ? { icon: 'ti ti-ban', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '○ ยกเลิกคำร้องแล้ว', date: '-', status: 'pending' }

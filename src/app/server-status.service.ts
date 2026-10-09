@@ -5,7 +5,8 @@ import { Constants } from './comfig/constants';
 
 export const SERVER_DOWN_MESSAGE = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ในขณะนี้ กรุณาลองใหม่ภายหลัง';
 
-export interface ApiFailure { success: false; message: string; }
+/** errors: รายการข้อผิดพลาดรายแถวจาก backend (เช่น import CSV: ["Row 3: ..."]) — X35 */
+export interface ApiFailure { success: false; message: string; errors?: string[]; }
 
 /**
  * ใช้ใน catchError ของ request ที่เป็นการกระทำของผู้ใช้ (POST/PATCH/DELETE) แทน of(null)
@@ -15,7 +16,9 @@ export interface ApiFailure { success: false; message: string; }
 export function apiFailure(err: unknown): ApiFailure {
   const e = err as HttpErrorResponse;
   const msg = e?.error?.message;
-  if (typeof msg === 'string' && msg.trim()) return { success: false, message: msg };
+  const rows = e?.error?.errors;
+  const errors = Array.isArray(rows) ? rows.filter((r: unknown): r is string => typeof r === 'string') : undefined;
+  if (typeof msg === 'string' && msg.trim()) return { success: false, message: msg, ...(errors?.length ? { errors } : {}) };
   if (!e?.status)       return { success: false, message: SERVER_DOWN_MESSAGE };   // status 0 = ต่อไม่ได้
   if (e.status >= 500)  return { success: false, message: `เซิร์ฟเวอร์ขัดข้อง (HTTP ${e.status}) กรุณาลองใหม่อีกครั้ง` };
   return { success: false, message: '' };

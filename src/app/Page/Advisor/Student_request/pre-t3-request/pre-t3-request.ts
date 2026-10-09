@@ -11,6 +11,8 @@ import { PreT3DetailsRes, Data as PreT3Detail } from '../../../../model/res/Pre-
 import { PreT3ApprovedReq } from '../../../../model/req/Pre-T3_approved_req';
 import { PreT3RejectReq } from '../../../../model/req/Pre-T3_reject_req';
 import { apiFailure, failMsg } from '../../../../server-status.service';
+import { PRE_T3_CHECKLIST_TITLES as CHECKLIST_TITLES } from '../../../../pre-t3-checklist';
+import { isHttpUrl } from '../../../../safe-url';
 
 type StatusType = 'pending' | 'approved' | 'rejected';
 type FilterType  = 'all' | 'pending' | 'approved' | 'rejected';
@@ -28,6 +30,7 @@ interface PreT3Item {
   studentId:     string;
   email:         string;
   journalName:   string;
+  articleTitle:  string;
   issn:          string;
   database:      string;
   quartile:      string;
@@ -45,17 +48,6 @@ interface PreT3Item {
   checklist:     ChecklistItem[];
 }
 
-const CHECKLIST_TITLES: Record<string, string> = {
-  item1: 'มาตรฐานวารสารนานาชาติที่มีคุณภาพตามเกณฑ์',
-  item2: 'วารสารมีโปรไฟล์หน้าเว็บที่อ้างอิงในฐานข้อมูล MSU',
-  item3: 'กำหนดออกเผยแพร่อย่างสม่ำเสมอ (Continuous Publication)',
-  item4: 'กำหนดการกลั่นกรอง (Systematic review) ของวารสาร',
-  item5: 'มีคณะกรรมการวิชาการวารสารระดับนานาชาติ (International Editorial Board)',
-  item6: 'มีระบบ Peer Review ที่ชัดเจน',
-  item7: 'ปฏิบัติตามจรรยาบรรณมาตรฐานสากล',
-  item8: 'ไม่ใช่ Hijacked Journal',
-  item9: 'อ้างอิงฐานข้อมูลของ Scopus / TCI จะใช้ได้',
-};
 
 @Component({
   selector: 'app-pre-t3-request',
@@ -65,6 +57,7 @@ const CHECKLIST_TITLES: Record<string, string> = {
   styleUrl: './pre-t3-request.scss',
 })
 export class PreT3Request implements OnInit {
+  readonly isHttpUrl = isHttpUrl;
   private http      = inject(HttpClient);
   private auth      = inject(AuthService);
   private constants = inject(Constants);
@@ -94,16 +87,22 @@ export class PreT3Request implements OnInit {
     }, 0);
   }
 
+  // F24: โหลดรายการล้มเหลว ≠ ไม่มีรายการ — เดิม error ทุกแบบแสดงเป็น "ยังไม่มีคำร้อง"
+  loadError = signal('');
+
   loadRequests(): void {
     this.isLoading.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get<GetPreT3RequestRes>(`${this.constants.API_ENDPOINT}/pre-t3/pending`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => of(apiFailure(err))))
       .subscribe(res => {
         this.isLoading.set(false);
-        if (res?.success) {
+        if (res.success && 'data' in res) {
           this.requests.set(res.data.map(d => this.mapDatum(d)));
+          this.loadError.set('');
+        } else {
+          this.loadError.set(failMsg(res, 'โหลดรายการคำร้องไม่สำเร็จ กรุณาลองใหม่'));
         }
       });
   }
@@ -136,6 +135,9 @@ export class PreT3Request implements OnInit {
       studentId,
       email:         d.student_email,
       journalName:   snap.journal_name,
+      // X43: เดิมการ์ดเอาชื่อวารสารมาแสดงเป็น "ชื่อบทความ"
+      articleTitle:  (d as { article_info?: { title_th?: string | null; title_en?: string | null } }).article_info?.title_th
+                  || (d as { article_info?: { title_en?: string | null } }).article_info?.title_en || '',
       issn:          snap.issn,
       database:      snap.indexed_database,
       quartile:      snap.quartile_or_tier,
@@ -226,11 +228,10 @@ export class PreT3Request implements OnInit {
 
     const url = `${this.constants.API_ENDPOINT}/pre-t3/${req.id}/advisor-review`;
     const body: PreT3ApprovedReq | PreT3RejectReq = this.decision() === 'approved'
-      ? { action: 'approve' }
-      : { action: 'reject', remark: this.remark };
+      // X42: เดิมตอนอนุมัติไม่ส่งหมายเหตุ ข้อความที่อาจารย์พิมพ์หายไป (backend รับและบันทึกได้)
+      ? { action: 'approve', ...(this.remark.trim() ? { remark: this.remark.trim() } : {}) }
+      : { action: 'reject', remark: this.remark.trim() };
 
-    console.log('[submitDecision] URL  :', url);
-    console.log('[submitDecision] Body :', body);
 
     this.isSubmitting.set(true);
     this.http.patch(url, body, { headers })
@@ -239,7 +240,6 @@ export class PreT3Request implements OnInit {
         return of(apiFailure(err));
       }))
       .subscribe(res => {
-        console.log('[submitDecision] Response:', res);
         this.isSubmitting.set(false);
         if ((res as { success?: boolean } | null)?.success === false) {
           // ไม่ปิด dialog — อาจารย์ต้องรู้ว่าลงนามไม่สำเร็จและเพราะอะไร

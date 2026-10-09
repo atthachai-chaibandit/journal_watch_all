@@ -117,7 +117,12 @@ export class SendT3 implements OnInit {
                         .pipe(catchError(() => of(null))),
       preT3:   this.http.get<GetPreT3RequestRes>(`${this.constants.API_ENDPOINT}/pre-t3/my`, { headers })
                         .pipe(catchError(() => of(null))),
-    }).subscribe(({ profile, preT3 }) => {
+      // N2: ใช้ดูว่า Pre-T3 ใบไหนมี T3 ที่รอ/อนุมัติแล้ว — backend ตอบ 409 T3_ALREADY_EXISTS ถ้ายื่นซ้ำ
+      // ซ่อนไปตั้งแต่ตอนเลือกดีกว่าให้กรอกฟอร์มครบแล้วค่อยโดนปฏิเสธ (โหลดไม่ได้ก็ไม่กรอง ปล่อยให้ backend กัน)
+      myT3:    this.http.get<{ success: boolean; data: { pre_t3_id: number; overall_status: string }[] }>(
+                          `${this.constants.API_ENDPOINT}/t3/my`, { headers })
+                        .pipe(catchError(() => of(null))),
+    }).subscribe(({ profile, preT3, myT3 }) => {
       if (profile?.success) {
         const d = profile.data;
         const name = `${d.prefix ?? ''}${d.firstName} ${d.lastName}`.trim();
@@ -135,11 +140,18 @@ export class SendT3 implements OnInit {
         this.authMail.set(d.msuMail);
         this._profileInfo = { studentName: name, studentId: sid, degree: deg, advisorName: adv };
       }
+      const usedPreT3 = new Set(
+        (myT3?.success ? myT3.data : [])
+          .filter(t => t.overall_status === 'Pending' || t.overall_status === 'Approved')
+          .map(t => t.pre_t3_id));
       if (preT3?.success) {
         this.preT3List = preT3.data
-          .filter(d => d.overall_status === 'Approved')
+          .filter(d => d.overall_status === 'Approved' && !usedPreT3.has(d.pre_t3_id))
           .map(d => this.mapToPreT3Item(d));
         this.selectedPreT3 = this.preT3List[0]?.id ?? '';
+      } else {
+        // N3: โหลดไม่ได้ ≠ ไม่มี Pre-T3 ที่อนุมัติ
+        this.preT3LoadError.set(true);
       }
       this.isLoading.set(false);
     });
@@ -167,6 +179,7 @@ export class SendT3 implements OnInit {
 
   // ── Section 2: Pre-T3 selection ───────────────────
   isLoading      = signal(true);
+  preT3LoadError = signal(false);
   selectedPreT3  = '';
   preT3List: PreT3Item[] = [];
 
@@ -360,13 +373,21 @@ export class SendT3 implements OnInit {
 
   private get isInternational(): boolean { return /นานาชาติ/.test(this.journalType); }
 
-  // ค่าน้ำหนักคำนวณที่ backend (WEIGHT_BY_TYPE) — ตรงนี้แค่แสดงให้ตรงกัน:
-  // นานาชาติ = 1.0, ระดับชาติ ดูกลุ่ม TCI จาก Pre-T3 (กลุ่ม 1 = 0.8, อื่นๆ = 0.6)
+  // ค่าน้ำหนักคำนวณที่ backend จาก Pre-T3 (B31) — ตรงนี้แค่แสดงให้ตรงกัน:
+  // Scopus = 1.0 · TCI กลุ่ม 1 = 0.8 · TCI กลุ่ม 2 = 0.6 · TCI อ่านกลุ่มไม่ได้ = backend ตอบ 400 INVALID_TIER
+  private get tciTier(): string | undefined {
+    return (this.selectedPreT3Data?.quartile ?? '').match(/\d+/)?.[0];
+  }
+
+  /** A3: Pre-T3 เป็น TCI แต่ไม่ระบุกลุ่ม 1/2 — ยื่น T3 ไม่ได้ (backend ตอบ INVALID_TIER) */
+  get tierInvalid(): boolean {
+    return !!this.journalType && !this.isInternational && this.tciTier !== '1' && this.tciTier !== '2';
+  }
+
   get weightLabel(): string {
-    if (!this.journalType) return '—';
+    if (!this.journalType || this.tierInvalid) return '—';
     if (this.isInternational) return '1.0';
-    const tier = (this.selectedPreT3Data?.quartile ?? '').match(/\d+/)?.[0];
-    return tier === '1' ? '0.8' : '0.6';
+    return this.tciTier === '1' ? '0.8' : '0.6';
   }
   pubStatus    = 'accepted';
   volume       = '';
@@ -445,6 +466,11 @@ export class SendT3 implements OnInit {
 
   openConfirm(): void {
     if (!this.selectedPreT3 || this.isSubmitting() || this.submitSuccess()) return;
+
+    if (this.tierInvalid) {
+      this.submitError.set('Pre-T3 ที่เลือกไม่ได้ระบุกลุ่ม TCI (กลุ่ม 1 หรือ 2) จึงคำนวณค่าน้ำหนักไม่ได้ — กรุณายื่น Pre-T3 ใหม่โดยระบุกลุ่มให้ถูกต้อง');
+      return;
+    }
 
     // backend ไม่บังคับ impact_factor เมื่อ has_impact_score = true → FE บังคับเอง
     if (this.hasImpactScore && this.toNumberOrNull(this.impactFactor) === null) {
@@ -585,6 +611,7 @@ export class SendT3 implements OnInit {
       if (file.size > this.MAX_FILE_BYTES) {
         this.submitError.set(`ไฟล์ ${file.name} ใหญ่เกิน 10MB`);
         input.value = '';
+        this.files[key] = null;   // N10: ไม่เก็บไฟล์เก่าไว้ส่งเงียบๆ ในขณะที่ช่องแสดงว่าว่าง
         return;
       }
       this.files[key] = file;

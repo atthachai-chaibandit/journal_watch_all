@@ -8,6 +8,15 @@
     </div>
   }
 
+  <!-- N15: โหลดไม่สำเร็จ — เดิมหน้าว่างเปล่า ไม่บอกอะไรเลย -->
+  @if (!isLoading() && loadError()) {
+    <div class="loading-card loading-card--error">
+      <div class="loading-error-icon"><i class="ti ti-cloud-off"></i></div>
+      <div class="loading-text">{{ loadError() }}</div>
+      <button type="button" class="btn-retry" (click)="loadProfile()"><i class="ti ti-refresh"></i> ลองใหม่</button>
+    </div>
+  }
+
   @if (!isLoading() && me(); as d) {
 
     <!-- ══ การ์ดเดียวรวมทุกส่วน พื้นหลังขาวทั้งใบ ══ -->

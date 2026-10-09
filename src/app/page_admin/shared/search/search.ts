@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, shareReplay, switchMap } from 'rxjs/operators';
-import { AuthService } from '../../../auth.service';
+import { AuthService, readStoredAdmin } from '../../../auth.service';
 import { renderTurnstile, resetTurnstile, removeTurnstile } from '../../../turnstile';
 import { Constants } from '../../../comfig/constants';
 import { ScrapeScopusRes, Data } from '../../../model/res/Scrape_Scopus_res';
@@ -104,6 +104,8 @@ export class Search implements OnInit, OnDestroy {
   tciResult    = signal<TciJournalResult | null>(null);
   errorMessage = signal('');
   tciError     = signal('');
+  /** X37: เช็ครายการ MSU Unwanted ไม่สำเร็จ — ห้ามสรุปว่า "ไม่ติด" / "ผ่านเกณฑ์" */
+  unwantedUnknown = signal(false);
   activeDb     = signal<ActiveDb>('scopus');
 
   // ── DEGREE DROPDOWN ──
@@ -209,8 +211,18 @@ export class Search implements OnInit, OnDestroy {
     this.doSearch();
   }
 
+  /**
+   * N18: การค้นหาแต่ละครั้งมีเลขลำดับ + ISSN ของตัวเอง — กด Enter ซ้ำระหว่างกำลังค้น (ปุ่มกดไม่ได้แต่ Enter ยังได้)
+   * ผลของการค้นหาเก่าที่กลับมาทีหลังต้องไม่ทับผลใหม่ ไม่งั้นหน้าจอโชว์ผลวารสาร A ขณะที่ช่องค้นหาเป็น B
+   * (และ fallback ไป scraping / ยิงซ้ำหลัง CAPTCHA ใช้ ISSN ตอนกดค้นหา ไม่ใช่ที่พิมพ์ค้างในช่องภายหลัง)
+   */
+  private searchSeq    = 0;
+  private searchedIssn = '';
+
   doSearch(): void {
     if (!this.issn.trim()) return;
+    this.searchSeq++;
+    this.searchedIssn = this.issn.trim();
     this.isLoading.set(true);
     this.isRetrying.set(false);
     this.hasSearched.set(false);
@@ -218,6 +230,7 @@ export class Search implements OnInit, OnDestroy {
     this.tciResult.set(null);
     this.errorMessage.set('');
     this.tciError.set('');
+    this.unwantedUnknown.set(false);
 
     // เริ่มค้นหาด้วย API เสมอ — runSearch() จะสลับไป Web Scraping ให้เองถ้า API ติด limit
     this.method = 'api';
@@ -243,7 +256,7 @@ export class Search implements OnInit, OnDestroy {
     const status = err?.status as number | undefined;
     const thaiMsg = (err?.error?.message as string | undefined) ?? '';
 
-    if (code === 'SCRAPER_BUSY')
+    if (code === 'SCRAPER_BUSY' || code === 'SCRAPER_USER_BUSY')
       return thaiMsg || 'ระบบค้นหาไม่ว่างในขณะนี้ (มีผู้ใช้งานจำนวนมาก) กรุณารอประมาณ 10 วินาทีแล้วลองใหม่';
     if (code === 'RATE_LIMIT') {
       const wait = Number(err?.headers?.get?.('Retry-After'));
@@ -259,9 +272,10 @@ export class Search implements OnInit, OnDestroy {
   }
 
   private runSearch(method: FetchMethod, captchaToken?: string): void {
+    const seq = this.searchSeq;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
-    const issn = encodeURIComponent(this.issn.trim());
-    const issnDashed = encodeURIComponent(this.toDashedIssn(this.issn.trim()));
+    const issn = encodeURIComponent(this.searchedIssn);
+    const issnDashed = encodeURIComponent(this.toDashedIssn(this.searchedIssn));
 
     const scopusUrl = method === 'api'
       ? `${this.constants.API_ENDPOINT}/journal/scopus?issn=${issn}`
@@ -288,6 +302,7 @@ export class Search implements OnInit, OnDestroy {
       unwanted: afterScopus(withRawError(this.http.get<CheckMsuUnwantedRes>(
         `${this.constants.API_ENDPOINT}/unwanted-journals/check/${issnDashed}`, { headers }))),
     }).subscribe(({ scopus, tci, unwanted }) => {
+      if (seq !== this.searchSeq) return;   // N18: มีการค้นหาใหม่กว่าแล้ว — ทิ้งผลเก่า
       const scopusErr   = (scopus as any)?.__httpError;
       const tciErr      = (tci as any)?.__httpError;
       const unwantedErr = (unwanted as any)?.__httpError;
@@ -315,21 +330,21 @@ export class Search implements OnInit, OnDestroy {
       const scopusRes = scopusErr ? null : (scopus as ScrapeScopusRes | null);
       const tciRes    = tciErr    ? null : (tci as ScrapeTCIRes | null);
 
-      console.log('[Scopus res]', scopusRes);
-      console.log('[TCI res]', tciRes);
-      console.log('[Unwanted res]', unwanted);
 
       const unwantedRes = unwantedErr ? null : (unwanted as CheckMsuUnwantedRes | null);
       const isUnwanted  = unwantedRes?.success ? unwantedRes.data.isUnwanted : false;
+      // X37: เดิมเช็คไม่สำเร็จ (5xx/เน็ตหลุด) = ถือว่าไม่ติด → วารสารต้องห้ามขึ้นว่าผ่านเกณฑ์
+      const unwantedUnknown = !unwantedRes?.success;
+      this.unwantedUnknown.set(unwantedUnknown);
 
       if (scopusRes?.success && scopusRes.data && (scopusRes.data as any).journal_name) {
-        this.result.set(this.mapResult(scopusRes.data as unknown as Data, isUnwanted));
+        this.result.set(this.mapResult(scopusRes.data as unknown as Data, isUnwanted, unwantedUnknown));
       } else {
         this.errorMessage.set(scopusErr ? this.searchErrorMessage(scopusErr, 'Scopus') : 'ไม่พบข้อมูลวารสารใน Scopus');
       }
 
       if (tciRes?.success && tciRes.data && (tciRes.data as any).journal_name) {
-        this.tciResult.set(this.mapTciResult(tciRes.data as unknown as TciData, isUnwanted));
+        this.tciResult.set(this.mapTciResult(tciRes.data as unknown as TciData, isUnwanted, unwantedUnknown));
       } else {
         this.tciError.set(tciErr ? this.searchErrorMessage(tciErr, 'TCI') : 'ไม่พบข้อมูลวารสารใน TCI');
       }
@@ -355,7 +370,7 @@ export class Search implements OnInit, OnDestroy {
     }, 50);
   }
 
-  private mapResult(data: Data, isUnwanted: boolean): JournalResult {
+  private mapResult(data: Data, isUnwanted: boolean, unwantedUnknown = false): JournalResult {
     const extra     = data as any;
     const quartile  = data.scopus_best_quartile ?? '';
     const isActive  = !data.scopus_discontinued;
@@ -367,8 +382,8 @@ export class Search implements OnInit, OnDestroy {
     const quartileYear  = qEntry?.year  ?? '';
 
     const qNum = parseInt(quartile.replace('Q', '')) || 99;
-    const passForDoctoral = qNum <= 2 && isActive && !isUnwanted && !isPredatory;
-    const passForMaster   = qNum <= 3 && isActive && !isUnwanted && !isPredatory;
+    const passForDoctoral = qNum <= 2 && isActive && !isUnwanted && !isPredatory && !unwantedUnknown;
+    const passForMaster   = qNum <= 3 && isActive && !isUnwanted && !isPredatory && !unwantedUnknown;
 
     let caseNum    = 1;
     let caseColor  = '#1A5FAB';
@@ -410,6 +425,11 @@ export class Search implements OnInit, OnDestroy {
       caseLabel = 'วารสาร Scopus หยุดตีพิมพ์แล้ว (Discontinued)';
       bannerIcon = 'ti ti-alert-triangle';
       bannerDesc = `วารสารนี้ได้รับการจัดอยู่ใน Scopus Quartile ${quartile} แต่มีสถานะ Discontinued ณ ปีปัจจุบัน ไม่สามารถนำไปยื่น Pre-T3 / T3 ได้`;
+    } else if (unwantedUnknown) {
+      caseColor  = '#C07800';
+      caseLabel  = 'ยังสรุปผลไม่ได้ — ตรวจสอบรายการ MSU Unwanted ไม่สำเร็จ';
+      bannerIcon = 'ti ti-alert-triangle';
+      bannerDesc = `วารสารนี้อยู่ใน Scopus Quartile ${quartile} แต่ระบบตรวจสอบรายการวารสารต้องห้าม (MSU Unwanted) ไม่สำเร็จ จึงยังยืนยันไม่ได้ว่านำไปยื่น Pre-T3 / T3 ได้ กรุณาค้นหาใหม่อีกครั้ง`;
     } else if (passForDoctoral) {
       
       caseColor  = '#1A5FAB';
@@ -469,11 +489,11 @@ export class Search implements OnInit, OnDestroy {
     };
   }
 
-  private mapTciResult(data: TciData, isUnwanted: boolean): TciJournalResult {
+  private mapTciResult(data: TciData, isUnwanted: boolean, unwantedUnknown = false): TciJournalResult {
     const tier     = data.tci_tier ?? 99;
     const inactive = data.tci_inactive ?? false;
-    const passForDoctoral = tier === 1 && !inactive && !isUnwanted;
-    const passForMaster   = tier <= 2 && !inactive && !isUnwanted;
+    const passForDoctoral = tier === 1 && !inactive && !isUnwanted && !unwantedUnknown;
+    const passForMaster   = tier <= 2 && !inactive && !isUnwanted && !unwantedUnknown;
     const now = new Date();
     return {
       journal:        data.journal_name,
@@ -519,7 +539,7 @@ export class Search implements OnInit, OnDestroy {
 
   get isStudent(): boolean {
     const role = this.auth.user?.role
-      ?? (JSON.parse(localStorage.getItem('user') ?? 'null') as any)?.role;
+      ?? (readStoredAdmin() as any)?.role;
     return role?.toLowerCase() === 'student';
   }
 

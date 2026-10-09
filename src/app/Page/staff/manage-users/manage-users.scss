@@ -1057,3 +1057,48 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 3fr;
 
   i { font-size: 14px; }
 }
+
+// ─── CONFIRM MODAL (F27 — สไตล์เดียวกับหน้า admin) ─────────────────
+.mu-btn-save.mu-btn-save--danger { background: $red; }
+
+.mu-delete-modal { max-width: 440px; }
+.mu-delete-modal__accent { background: linear-gradient(90deg, $red, #E57368); }
+
+.mu-delete-modal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 26px 10px;
+  text-align: center;
+}
+
+.mu-delete-modal__icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba($red, .1);
+  color: $red;
+  font-size: 24px;
+}
+
+.mu-delete-modal__title { font-size: 17px; font-weight: 800; color: $navy; }
+.mu-delete-modal__name  { font-size: 13px; color: $muted; }
+
+.mu-delete-modal__warn {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba($red, .06);
+  color: #962D2D;
+  font-size: 12.5px;
+  line-height: 1.55;
+  text-align: left;
+
+  i { font-size: 15px; margin-top: 2px; flex-shrink: 0; }
+}

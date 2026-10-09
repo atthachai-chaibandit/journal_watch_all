@@ -8,8 +8,10 @@ import { catchError, filter, switchMap, take } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { ErrorNotificationService, SERVER_ERROR_MESSAGE } from './error-notification.service';
+import { Constants } from './comfig/constants';
+import { SERVER_DOWN_MESSAGE } from './server-status.service';
 
-const AUTH_FLOW_URL = /\/auth\/(login|verify-otp|resend-otp|google|refresh|register-staff|forgot-password|reset-password)/;
+const AUTH_FLOW_URL = /\/auth\/(login|verify-otp|resend-otp|google|refresh|logout|register-staff|forgot-password|reset-password)/;
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -22,9 +24,16 @@ export class AuthInterceptor implements HttpInterceptor {
     private auth: AuthService,
     private router: Router,
     private errorNotification: ErrorNotificationService,
+    private constants: Constants,
   ) {}
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    // X27: API อยู่คนละ origin กับหน้าเว็บ (api.farmlnwza007.online vs journal.farmlnwza007.online)
+    // cookie refresh token (httpOnly, path=/api/v3/auth) จะถูกเก็บ/ส่งข้าม origin ก็ต่อเมื่อเปิด withCredentials
+    // จำกัดเฉพาะ /auth/* — request อื่นใช้ Bearer token อยู่แล้ว ไม่ต้องพก cookie
+    if (req.url.startsWith(`${this.constants.API_ENDPOINT}/auth/`)) {
+      req = req.clone({ withCredentials: true });
+    }
     return next.handle(req).pipe(
       catchError((err: HttpErrorResponse) => {
         // ไม่ refresh ถ้า error มาจาก endpoint /auth/refresh เอง (ป้องกัน loop)
@@ -36,9 +45,8 @@ export class AuthInterceptor implements HttpInterceptor {
         if (err.status === 401 && !AUTH_FLOW_URL.test(req.url) && this.auth.isLoggedIn) {
           return this.handle401(req, next);
         }
-        if (err.status === 500) {
-          this.errorNotification.show(SERVER_ERROR_MESSAGE);
-        }
+        const globalMsg = this.globalErrorMessage(err);
+        if (globalMsg) this.errorNotification.show(globalMsg);
         return throwError(() => err);
       }),
     );
@@ -49,38 +57,74 @@ export class AuthInterceptor implements HttpInterceptor {
     next: HttpHandler,
   ): Observable<HttpEvent<unknown>> {
 
-    if (!this.isRefreshing) {
-      // เป็น request แรกที่เจอ token หมดอายุ → รับหน้าที่ไป refresh เอง
-      // (request อื่นที่ 401 พร้อมกันจะไม่เข้ามาในบล็อกนี้ซ้ำ เพราะ isRefreshing = true แล้ว)
-      this.isRefreshing = true;
-      this.refreshSubject.next(null); // เคลียร์กระดานประกาศ บอกทุกคนว่า "ยังไม่มี token ใหม่ รอก่อน"
-
-      return this.auth.refreshAccessToken().pipe(
-        switchMap(token => {
-          this.isRefreshing = false;
-          if (token) {
-            this.refreshSubject.next(token);              // ประกาศ token ใหม่ให้คนที่รออยู่รู้
-            return next.handle(this.attachToken(req, token)); // ยิง request เดิมซ้ำด้วย token ใหม่
-          }
-          // refresh ล้มเหลว (refresh token ก็หมดอายุด้วย) → logout แล้ว redirect ไปหน้า login จริงๆ
-          // F2: แจ้ง request ที่รอ token ใหม่อยู่ให้ error ด้วย — เดิม subject ไม่เคย error/complete
-          // request พวกนั้น (เช่น forkJoin ใน send-t3/history) จึงค้างตลอด แล้วสร้าง subject ใหม่ไว้รอบหน้า
-          this.refreshSubject.error(new Error('Session expired'));
-          this.refreshSubject = new BehaviorSubject<string | null>(null);
-          this.auth.logout();
-          this.router.navigateByUrl('/login');
-          return throwError(() => new Error('Session expired'));
-        }),
-      );
+    // X28: อีกแท็บ refresh ไปแล้ว (token ใน localStorage ไม่ใช่ตัวที่ request นี้แนบไป และยังไม่หมดอายุ)
+    // → ยิงซ้ำด้วยตัวนั้นเลย ไม่ต้อง refresh ซ้ำ (refresh token rotate ทุกครั้ง ยิงซ้อนกันเสี่ยงหลุดทั้งคู่)
+    const sent    = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+    const current = this.auth.token;
+    if (!this.isRefreshing && current && current !== sent && !AuthService.isJwtExpired(current)) {
+      return next.handle(this.attachToken(req, current));
     }
 
-    // มีคนอื่นกำลัง refresh อยู่แล้ว (isRefreshing = true) ไม่ต้อง refresh ซ้ำ
-    // แค่ รอฟัง จนกว่า refreshSubject จะประกาศ token ใหม่ออกมา (ไม่ใช่ null ที่ตั้งไว้ตอนแรก)
+    // เริ่ม refresh ถ้ายังไม่มีใครทำอยู่ — ทุก request (รวมตัวที่เริ่ม) รอ token ใหม่ผ่าน refreshSubject เหมือนกันหมด
+    if (!this.isRefreshing) this.startRefresh();
+
     return this.refreshSubject.pipe(
       filter(token => token !== null), // ข้ามค่า null ที่เคลียร์ไว้ตอนเริ่ม refresh
       take(1),                          // รับ token ใหม่แค่ค่าแรกพอ แล้วเลิกฟัง
-      switchMap(token => next.handle(this.attachToken(req, token!))), // ยิง request เดิมซ้ำเหมือนกัน
+      switchMap(token => next.handle(this.attachToken(req, token!))), // ยิง request เดิมซ้ำด้วย token ใหม่
     );
+  }
+
+  /**
+   * ขอ token ใหม่ด้วย subscription ของตัวเอง ไม่ผูกกับ request ใด request หนึ่ง
+   * เดิม refresh วิ่งอยู่ใน pipe ของ request แรกที่เจอ 401 — ถ้า request นั้นถูกยกเลิกกลางทาง
+   * (เปลี่ยนหน้า / component ถูกทำลาย / switchMap ของผู้เรียก) refresh ถูกยกเลิกไปด้วย
+   * แต่ request อื่นที่รอ token อยู่ไม่เคยได้รับแจ้ง → ค้างตลอด (หน้าหมุน "กำลังโหลด..." ไม่จบ)
+   */
+  private startRefresh(): void {
+    this.isRefreshing = true;
+    this.refreshSubject.next(null); // เคลียร์กระดานประกาศ บอกทุกคนว่า "ยังไม่มี token ใหม่ รอก่อน"
+
+    this.auth.refreshAccessToken().subscribe({
+      next: token => {
+        this.isRefreshing = false;
+        if (token) {
+          this.refreshSubject.next(token);   // ประกาศ token ใหม่ — ทุก request ที่รออยู่ยิงซ้ำ
+          return;
+        }
+        // refresh token ใช้ไม่ได้จริง (backend ตอบ 401) → แจ้งทุก request ที่รอให้ error แล้ว logout ไปหน้า login
+        this.failWaiters(new Error('Session expired'));
+        const loginUrl = this.auth.loginUrl;   // X29: admin กลับหน้า login ของ admin
+        this.auth.logout();
+        this.router.navigateByUrl(loginUrl);
+      },
+      // X28: ล้มชั่วคราว (เน็ตหลุด / 429 / 5xx) — ไม่ logout ปล่อย error ให้หน้าจอแสดง 401 ครั้งหน้าลองใหม่ได้
+      error: err => {
+        this.isRefreshing = false;
+        this.failWaiters(err);
+      },
+    });
+  }
+
+  /** F2: แจ้ง request ที่รอ token ให้ error (subject ที่ error แล้วใช้ต่อไม่ได้ → สร้างใหม่ไว้รอบหน้า) */
+  private failWaiters(err: unknown): void {
+    this.refreshSubject.error(err);
+    this.refreshSubject = new BehaviorSubject<string | null>(null);
+  }
+
+  /**
+   * F32: error ที่ควรแจ้งทั้งแอป (เดิมแจ้งแค่ 500 — เน็ตหลุด/gateway ล่ม/โดน rate limit เงียบหมด)
+   * 503/429 ที่ backend ใส่ code มา (เช่น SCOPUS_QUOTA_EXCEEDED, CAPTCHA_UNAVAILABLE, RATE_LIMIT)
+   * หน้านั้นจัดการเองอยู่แล้ว (สลับไป scraping / เปิด CAPTCHA / บอกเวลารอ) — ไม่แจ้งซ้ำ
+   */
+  private globalErrorMessage(err: HttpErrorResponse): string | null {
+    const hasCode = typeof err.error?.code === 'string';
+    if (err.status === 0)                       return SERVER_DOWN_MESSAGE;
+    if (err.status === 500)                     return SERVER_ERROR_MESSAGE;
+    if (err.status === 502 || err.status === 504) return 'เซิร์ฟเวอร์ไม่ตอบสนองชั่วคราว กรุณาลองใหม่อีกครั้ง';
+    if (err.status === 503 && !hasCode)         return 'ระบบปิดปรับปรุงหรือไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่ภายหลัง';
+    if (err.status === 429 && !hasCode)         return 'มีการใช้งานบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่';
+    return null;
   }
 
   // HttpRequest แก้ไขตรงๆ ไม่ได้ (immutable) ต้อง clone แล้วแนบ header ใหม่เข้าไปแทน

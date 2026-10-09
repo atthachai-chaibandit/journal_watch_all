@@ -215,13 +215,6 @@
             </div>
           </div>
 
-          <div class="field-row">
-            <div class="field-group field-group--full">
-              <label class="field-label">หมายเหตุ/เพิ่มเติม <span class="badge-optional">ถ้ามี</span></label>
-              <textarea class="field-textarea" [ngModel]="remarkNote()" (ngModelChange)="remarkNote.set($event)"
-                        placeholder="ระบุเหตุผลเพิ่มเติมที่ไม่ปรากฏในโปรแกรมการพิจารณา..." rows="3"></textarea>
-            </div>
-          </div>
         </div>
 
         <!-- ACTION BAR -->
@@ -236,7 +229,7 @@
             <button class="btn-back" (click)="goBack()">← กลับไปค้นหา</button>
             <button class="btn-submit"
                     (click)="openConfirm()"
-                    [disabled]="!canSubmit() || isSubmitting()">
+                    [disabled]="!canSubmit() || isSubmitting() || submitResult() === 'success'">
               @if (isSubmitting()) {
                 <span class="submit-spinner"></span> กำลังยื่น...
               } @else {

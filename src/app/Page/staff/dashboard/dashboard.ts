@@ -42,6 +42,8 @@ export class Dashboard implements OnInit {
   greeting   = this.getGreeting();
 
   isLoading     = signal(true);
+  // N3: API ล่ม → ตัวเลขทั้งหมดเป็น 0 เงียบๆ ดูเหมือนไม่มีคำร้อง — แจ้งให้รู้
+  loadError     = signal(false);
   pendingPreT3  = signal(0);
   pendingT3     = signal(0);
   approvedTotal = signal(0);
@@ -70,6 +72,7 @@ export class Dashboard implements OnInit {
 
     forkJoin([profile$, preT3Pending$, t3Pending$, preT3Hist$, t3Hist$]).subscribe(
       ([profileRes, preT3PendRes, t3PendRes, preT3HistRes, t3HistRes]) => {
+        this.loadError.set(!preT3PendRes?.success || !t3PendRes?.success || !preT3HistRes?.success || !t3HistRes?.success);
         if (profileRes?.success) {
           const d       = profileRes.data;
           this.staffName  = `${d.prefix ?? ''} ${d.firstName} ${d.lastName}`.trim();
@@ -84,12 +87,12 @@ export class Dashboard implements OnInit {
         (preT3HistRes?.success ? preT3HistRes.data.items : []).forEach(d => {
           const s = d.overall_status?.toLowerCase() ?? '';
           if (s.includes('approv')) approved++;
-          else if (s.includes('reject') || s.includes('cancel')) rejected++;
+          else if (s.includes('reject')) rejected++;   // N7: ยกเลิกโดยนิสิต ≠ ไม่อนุมัติ
         });
         (t3HistRes?.success ? t3HistRes.data.items : []).forEach(d => {
           const s = d.overall_status?.toLowerCase() ?? '';
           if (s.includes('approv')) approved++;
-          else if (s.includes('reject') || s.includes('cancel')) rejected++;
+          else if (s.includes('reject')) rejected++;   // N7: ยกเลิกโดยนิสิต ≠ ไม่อนุมัติ
         });
         this.approvedTotal.set(approved);
         this.rejectedTotal.set(rejected);

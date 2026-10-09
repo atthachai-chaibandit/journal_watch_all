@@ -190,6 +190,14 @@
     </div>
   }
 
+  <!-- X37: เช็ครายการต้องห้ามไม่สำเร็จ -->
+  @if (hasSearched() && unwantedUnknown()) {
+    <div class="unwanted-unknown" role="alert">
+      <i class="ti ti-alert-triangle"></i>
+      <span>ตรวจสอบรายการวารสารต้องห้าม (MSU Unwanted) ไม่สำเร็จ — ผลด้านล่างยังสรุปไม่ได้ว่าผ่านเกณฑ์ กรุณาค้นหาใหม่อีกครั้ง</span>
+    </div>
+  }
+
   <!-- DB TOGGLE (post-search) -->
   @if (hasSearched()) {
     <div class="db-toggle-row">
@@ -314,9 +322,9 @@
                     </tr>
                     <tr>
                       <td>MSU Unwanted</td>
-                      <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted">{{ r.isUnwanted ? 'พบ' : 'ไม่พบ' }}</td>
+                      <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted && !unwantedUnknown()">{{ unwantedUnknown() ? 'ตรวจสอบไม่ได้' : r.isUnwanted ? 'พบ' : 'ไม่พบ' }}</td>
                       <td class="td-ok">ไม่พบ</td>
-                      <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted">@if (r.isUnwanted) { <i class="ti ti-x"></i> ติด } @else { <i class="ti ti-check"></i> ไม่ติด }</td>
+                      <td [class.td-bad]="r.isUnwanted" [class.td-ok]="!r.isUnwanted && !unwantedUnknown()">@if (unwantedUnknown()) { <i class="ti ti-help"></i> ตรวจสอบไม่ได้ } @else if (r.isUnwanted) { <i class="ti ti-x"></i> ติด } @else { <i class="ti ti-check"></i> ไม่ติด }</td>
                     </tr>
                   </tbody>
                 </table>
@@ -378,7 +386,7 @@
               <div class="conflict-summary-row">
                 <span>Beall's / MSU Unwanted</span>
                 <span [class.ok]="!r.isUnwanted && !r.isPredatory" [class.bad]="r.isUnwanted || r.isPredatory">
-                  @if (r.isUnwanted || r.isPredatory) { พบ <i class="ti ti-x"></i> } @else { ไม่พบ <i class="ti ti-check"></i> }
+                  @if (unwantedUnknown() && !r.isPredatory) { ตรวจสอบไม่ได้ <i class="ti ti-help"></i> } @else if (r.isUnwanted || r.isPredatory) { พบ <i class="ti ti-x"></i> } @else { ไม่พบ <i class="ti ti-check"></i> }
                 </span>
               </div>
               <div class="conflict-summary-row">
@@ -518,8 +526,8 @@
           <span class="badge-status" [class.active]="r.status === 'Active'">
             {{ r.status }}
           </span>
-          <span class="badge-unwanted" [class.ok]="!r.isUnwanted">
-            @if (r.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { <i class="ti ti-check"></i> ไม่ติด MSU Unwanted }
+          <span class="badge-unwanted" [class.ok]="!r.isUnwanted && !unwantedUnknown()">
+            @if (unwantedUnknown()) { <i class="ti ti-help"></i> ตรวจสอบ MSU Unwanted ไม่ได้ } @else if (r.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { <i class="ti ti-check"></i> ไม่ติด MSU Unwanted }
           </span>
           <span class="badge-date"><i class="ti ti-calendar"></i> ตรวจสอบ: {{ r.checkDate }}</span>
         </div>
@@ -651,9 +659,9 @@
             <div class="criteria-row">
               <span class="criteria-label">ไม่ติด MSU Unwanted</span>
               <span class="criteria-value"
-                [class.ok]="!r.isUnwanted"
+                [class.ok]="!r.isUnwanted && !unwantedUnknown()"
                 [class.bad]="r.isUnwanted">
-                @if (r.isUnwanted) { ไม่ผ่าน <i class="ti ti-x"></i> } @else { ผ่าน <i class="ti ti-check"></i> }
+                @if (unwantedUnknown()) { ตรวจสอบไม่ได้ <i class="ti ti-help"></i> } @else if (r.isUnwanted) { ไม่ผ่าน <i class="ti ti-x"></i> } @else { ผ่าน <i class="ti ti-check"></i> }
               </span>
             </div>
           </div>
@@ -734,8 +742,8 @@
             <span class="badge-status" [class.active]="!t.inactive">
               {{ t.inactive ? 'Inactive' : 'Active' }}
             </span>
-            <span class="badge-unwanted" [class.ok]="!t.isUnwanted">
-              @if (t.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { <i class="ti ti-check"></i> ไม่ติด MSU Unwanted }
+            <span class="badge-unwanted" [class.ok]="!t.isUnwanted && !unwantedUnknown()">
+              @if (unwantedUnknown()) { <i class="ti ti-help"></i> ตรวจสอบ MSU Unwanted ไม่ได้ } @else if (t.isUnwanted) { <i class="ti ti-ban"></i> ติด MSU Unwanted } @else { <i class="ti ti-check"></i> ไม่ติด MSU Unwanted }
             </span>
             <span class="badge-date"><i class="ti ti-calendar"></i> ตรวจสอบ: {{ t.checkDate }}</span>
           </div>
@@ -802,7 +810,7 @@
                 <div class="base-label">เว็บไซต์</div>
                 <div class="base-value">
                   @if (t.website) {
-                    <a [href]="t.website" target="_blank" class="base-link">{{ t.website }}</a>
+                    <a [href]="t.website" target="_blank" rel="noopener noreferrer" class="base-link">{{ t.website }}</a>
                   } @else { — }
                 </div>
               </div>
@@ -838,9 +846,9 @@
               <div class="criteria-row">
                 <span class="criteria-label">ไม่ติด MSU Unwanted</span>
                 <span class="criteria-value"
-                  [class.ok]="!t.isUnwanted"
+                  [class.ok]="!t.isUnwanted && !unwantedUnknown()"
                   [class.bad]="t.isUnwanted">
-                  @if (t.isUnwanted) { ไม่ผ่าน <i class="ti ti-x"></i> } @else { ผ่าน <i class="ti ti-check"></i> }
+                  @if (unwantedUnknown()) { ตรวจสอบไม่ได้ <i class="ti ti-help"></i> } @else if (t.isUnwanted) { ไม่ผ่าน <i class="ti ti-x"></i> } @else { ผ่าน <i class="ti ti-check"></i> }
                 </span>
               </div>
             </div>

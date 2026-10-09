@@ -9,6 +9,8 @@ import { AuthService } from '../../../../auth.service';
 import { Constants } from '../../../../comfig/constants';
 import { GetT3Res, Datum } from '../../../../model/res/get_T3_res';
 import { GetMyT3Res, Data as T3Detail } from '../../../../model/res/get_my_T3_res';
+import { normalizePubStatus, pubTypeLabel } from '../../../../t3-labels';
+import { apiFailure, failMsg } from '../../../../server-status.service';
 
 type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -108,14 +110,20 @@ export class T3History implements OnInit {
   refresh(): void {
     if (this.isRefreshing()) return;
     this.isRefreshing.set(true);
+    // F22: ล้าง cache รายละเอียด ไม่งั้นเปิด modal ซ้ำจะเห็นสถานะเก่า (เช่นอาจารย์อนุมัติไปแล้วแต่ยังขึ้นรอ)
+    this.details = {};
     this.loadData(true);
   }
 
+  // N3: โหลดไม่สำเร็จ ≠ ไม่มีรายการ — เดิม error ทุกแบบแสดงเป็นรายการว่าง
+  loadError = signal('');
+
   private loadData(isRefresh = false): void {
+    let failure: unknown = null;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http.get<GetT3Res>(`${this.constants.API_ENDPOINT}/t3/my`, { headers })
       .pipe(
-        catchError(() => of(null)),
+        catchError(err => { failure = err; return of(null); }),
         // finalize ทำงานเสมอ แม้ map ข้อมูลแล้ว throw — กัน spinner ค้าง
         finalize(() => {
           this.isLoading.set(false);
@@ -123,6 +131,7 @@ export class T3History implements OnInit {
         }),
       )
       .subscribe(res => {
+        this.loadError.set(res?.success ? '' : failMsg(failure ? apiFailure(failure) : res, 'โหลดรายการไม่สำเร็จ กรุณาลองใหม่'));
         if (res?.success) {
           this.cards = res.data
             .map(d => this.mapToCard(d))
@@ -152,8 +161,8 @@ export class T3History implements OnInit {
       titleEn:       d.paper_and_research_details.title_english,
       issn:          d.issn || d.journal_snapshot.issn,
       database:      d.publication_details.specified_database,
-      pubType:       d.publication_details.type,
-      pubStatus:     d.publication_details.status,
+      pubType:       pubTypeLabel(d.publication_details.type),
+      pubStatus:     normalizePubStatus(d.publication_details.status),
       status,
       submittedDate:     this.formatDateShort(d.created_at),
       submittedDateTime: this.formatDateCompact(d.created_at),
@@ -254,8 +263,8 @@ export class T3History implements OnInit {
       journalName:   d.journal_snapshot.journal_name,
       issn:          d.issn || d.journal_snapshot.issn,
       database:      d.publication_details.specified_database,
-      pubType:       d.publication_details.type,
-      pubStatus:     d.publication_details.status,
+      pubType:       pubTypeLabel(d.publication_details.type),
+      pubStatus:     normalizePubStatus(d.publication_details.status),
       volume:        d.publication_details.volume,
       issue:         d.publication_details.issue,
       publishYear:   d.publication_details.publish_year,

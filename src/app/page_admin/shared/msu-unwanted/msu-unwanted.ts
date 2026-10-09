@@ -4,13 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
-import { AuthService } from '../../../auth.service';
+import { AuthService, readStoredAdmin } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
 import { MSUUnwantedRes, Journal } from '../../../model/res/MSU_Unwanted_res';
 import { ImportMsuUnwantedRes } from '../../../model/res/import_msu_Unwanted_res';
 import { apiFailure, failMsg } from '../../../server-status.service';
 
-interface ActionResult { ok: boolean; msg: string; }
+interface ActionResult { ok: boolean; msg: string; errors?: string[]; }
 
 @Component({
   selector: 'app-msu-unwanted',
@@ -26,7 +26,7 @@ export class MsuUnwanted implements OnInit {
 
   get canManage(): boolean {
     const role = this.auth.user?.role
-      ?? (JSON.parse(localStorage.getItem('user') ?? 'null') as any)?.role;
+      ?? (readStoredAdmin() as any)?.role;
     return role === 'Admin' || role === 'SuperAdmin';
   }
 
@@ -76,6 +76,9 @@ export class MsuUnwanted implements OnInit {
     this.loadData();
   }
 
+  /** N20: คำที่กดค้นหาล่าสุด — เปลี่ยนหน้าใช้คำนี้ ไม่ใช่ข้อความที่พิมพ์ค้างในช่องแต่ยังไม่ได้กดค้นหา */
+  private appliedSearch = '';
+
   loadData(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -85,7 +88,7 @@ export class MsuUnwanted implements OnInit {
       .set('page',  String(this.currentPage()))
       .set('limit', String(this.itemsPerPage));
 
-    const q = this.normalizeSearch(this.searchQuery().trim());
+    const q = this.normalizeSearch(this.appliedSearch);
     if (q) params = params.set('search', q);
 
     this.http
@@ -93,6 +96,12 @@ export class MsuUnwanted implements OnInit {
       .subscribe({
         next: (res) => {
           if (res.success) {
+            // N19: ลบรายการสุดท้ายของหน้าสุดท้ายแล้วหน้านั้นว่าง → ถอยไปหน้าก่อนหน้าแทนการโชว์ "ไม่พบข้อมูล"
+            if (!res.data.journals.length && this.currentPage() > 1) {
+              this.currentPage.set(Math.max(1, Math.min(this.currentPage() - 1, res.data.pagination.totalPages || 1)));
+              this.loadData();
+              return;
+            }
             this.journals.set(res.data.journals);
             this.totalItems.set(res.data.pagination.total);
             this.totalPagesCount.set(res.data.pagination.totalPages);
@@ -108,10 +117,15 @@ export class MsuUnwanted implements OnInit {
       });
   }
 
-  search(): void { this.currentPage.set(1); this.loadData(); }
+  search(): void {
+    this.appliedSearch = this.searchQuery().trim();
+    this.currentPage.set(1);
+    this.loadData();
+  }
 
   refresh(): void {
     this.searchQuery.set('');
+    this.appliedSearch = '';
     this.currentPage.set(1);
     this.loadData();
   }
@@ -158,7 +172,8 @@ export class MsuUnwanted implements OnInit {
 
   // ── Add Single ────────────────────────────────────────────────────
   openAddModal(): void {
-    this.addForm = { journal_name: '', issn: '', publisher: '', note: '', recorded_date: '' };
+    // X36: backend บังคับ recorded_date — เติมวันนี้ให้เป็นค่าเริ่มต้น (แก้เป็นวันอื่นได้)
+    this.addForm = { journal_name: '', issn: '', publisher: '', note: '', recorded_date: this.todayInput() };
     this.addFile = null;
     this.addResult.set(null);
     this.addModal.set(true);
@@ -175,7 +190,7 @@ export class MsuUnwanted implements OnInit {
   }
 
   submitAdd(): void {
-    if (!this.addForm.journal_name.trim()) return;
+    if (!this.addForm.journal_name.trim() || !this.addForm.recorded_date) return;
     this.isAdding.set(true);
     this.addResult.set(null);
 
@@ -239,7 +254,8 @@ export class MsuUnwanted implements OnInit {
           this.loadData();
           setTimeout(() => this.closeCsvModal(), 1600);
         } else {
-          this.importResult.set({ ok: false, msg: failMsg(res) });
+          // X35: แสดงทุกแถวที่ผิด (import เป็น all-or-nothing — แก้ไฟล์แล้วอัปโหลดใหม่ทั้งไฟล์)
+          this.importResult.set({ ok: false, msg: failMsg(res), errors: (res as { errors?: string[] }).errors });
         }
       });
   }
@@ -250,6 +266,13 @@ export class MsuUnwanted implements OnInit {
   /** DATE จาก backend → 'YYYY-MM-DD' สำหรับ <input type="date">
    *  ห้ามใช้ toISOString(): ได้วันที่แบบ UTC — "2026-10-04T17:00Z" (= 5 ต.ค. เวลาไทย) จะกลายเป็น 4 ต.ค.
    *  และวันที่ถอยไป 1 วันทุกครั้งที่บันทึก (X26) */
+  /** วันนี้ตามเวลาท้องถิ่นในรูป 'YYYY-MM-DD' (ไม่ใช้ toISOString — ได้วันแบบ UTC ช่วงเช้ามืดจะได้เมื่อวาน) */
+  private todayInput(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
   private toDateInput(v: unknown): string {
     if (!v) return '';
     const str = String(v);
@@ -289,7 +312,7 @@ export class MsuUnwanted implements OnInit {
 
   submitEdit(): void {
     const j = this.editModal();
-    if (!j || !this.editForm.journal_name.trim()) return;
+    if (!j || !this.editForm.journal_name.trim() || !this.editForm.recorded_date) return;
     this.isEditing.set(true);
     this.editResult.set(null);
 

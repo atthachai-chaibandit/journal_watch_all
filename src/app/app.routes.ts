@@ -17,7 +17,8 @@ import { Profile } from './Page/Student/profile/profile';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login, canActivate: [guestGuard] },
-  { path: 'register', component: RegisterStaff },
+  // N9: คนที่ login อยู่แล้วไม่ต้องเห็นหน้าสมัคร staff (เหมือนหน้า login อื่นๆ)
+  { path: 'register', component: RegisterStaff, canActivate: [guestGuard] },
   { path: 'about', component: AboutJournalWatch },
   { path: 'manual', component: Manual },
   { path: 'contact', component: Contact },
@@ -66,11 +67,6 @@ export const routes: Routes = [
     canActivate: [adminGuard],
   },
   {
-    path: 'admin/backup-restore',
-    loadComponent: () => import('./page_admin/shared/backup-restore/backup-restore').then(m => m.BackupRestore),
-    canActivate: [adminGuard],
-  },
-  {
     path: 'admin/reports',
     loadComponent: () => import('./page_admin/shared/reports/reports').then(m => m.Reports),
     canActivate: [adminGuard],
@@ -110,11 +106,6 @@ export const routes: Routes = [
   {
     path: 'super-admin/manage-users',
     loadComponent: () => import('./page_admin/shared/manage-users/manage-users').then(m => m.ManageUsers),
-    canActivate: [superAdminGuard],
-  },
-  {
-    path: 'super-admin/backup-restore',
-    loadComponent: () => import('./page_admin/shared/backup-restore/backup-restore').then(m => m.BackupRestore),
     canActivate: [superAdminGuard],
   },
   {

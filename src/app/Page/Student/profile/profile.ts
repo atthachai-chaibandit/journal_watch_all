@@ -30,7 +30,20 @@ export class Profile implements OnInit {
   saveError  = signal('');
   me         = signal<ProfileData | null>(null);
 
-  toggleEdit(): void { this.isEditing.update(v => !v); }
+  /**
+   * N12: กด "ยกเลิก" ต้องคืนค่าเดิม — เดิมแค่สลับโหมด ค่าที่พิมพ์ค้างอยู่
+   * เปิดแก้ไขรอบหน้าจะเห็นค่าที่ไม่ได้บันทึก และถูกบันทึกไปด้วยถ้ากดบันทึกทีหลัง
+   */
+  toggleEdit(): void {
+    if (this.isEditing()) {
+      const m = this.me();
+      this.phone.set(m?.phone ?? '');
+      this.facebookId.set(m?.facebookId ?? '');
+      this.lineId.set(m?.lineId ?? '');
+      this.saveResult.set(null);
+    }
+    this.isEditing.update(v => !v);
+  }
 
   /* ── Editable fields ── */
   phone      = signal('');
@@ -59,13 +72,26 @@ export class Profile implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadProfile();
+  }
+
+  // N15: โหลดไม่สำเร็จ ≠ ไม่มีข้อมูล — แสดงข้อความ + ปุ่มลองใหม่ แทนหน้าว่าง
+  loadError = signal('');
+
+  loadProfile(): void {
+    this.isLoading.set(true);
+    this.loadError.set('');
+    let failure: unknown = null;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get<GetProfileRes>(`${this.constants.API_ENDPOINT}/user/profile`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => { failure = err; return of(null); }))
       .subscribe(res => {
         this.isLoading.set(false);
-        if (!res?.success) return;
+        if (!res?.success) {
+          this.loadError.set(failMsg(failure ? apiFailure(failure) : res, 'โหลดข้อมูลโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่'));
+          return;
+        }
         this.me.set(res.data);
         this.phone.set(res.data.phone ?? '');
         this.facebookId.set(res.data.facebookId ?? '');
@@ -91,6 +117,8 @@ export class Profile implements OnInit {
         this.isSaving.set(false);
         const ok = (res as { success?: boolean } | null)?.success !== false;
         this.saveResult.set(ok ? 'success' : 'error');
+        // F21: อัปเดตข้อมูลที่แสดงในโหมดดูด้วย — เดิมยังโชว์ค่าก่อนแก้จนกว่าจะ reload หน้า
+        if (ok) this.me.update(m => m && { ...m, phone: body.phone, facebookId: body.facebook_id, lineId: body.line_id });
         if (ok) setTimeout(() => { this.saveResult.set(null); this.isEditing.set(false); }, 1500);
         else this.saveError.set(failMsg(res));
       });

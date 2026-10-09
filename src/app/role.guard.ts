@@ -14,6 +14,11 @@ export const roleGuard = (...roles: string[]): CanActivateFn => () => {
 
   const role = auth.user?.role?.toLowerCase();
   if (!auth.isLoggedIn || !role) return router.parseUrl('/login');
+  // X40: role ที่ไม่มีหน้ารองรับ (เช่น Program_Chair) — เดิม homeUrl = /dashboard แล้ว guard เด้งวนไม่จบ
+  if (!AuthService.KNOWN_ROLES.includes(role)) {
+    auth.logout();
+    return router.parseUrl('/login');
+  }
   if (roles.some(r => r.toLowerCase() === role)) return true;
   return router.parseUrl(auth.homeUrl);
 };

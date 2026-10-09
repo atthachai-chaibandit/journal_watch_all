@@ -11,6 +11,8 @@ import { GetDeteilsT3Res, Data as T3Detail } from '../../../../model/res/get_det
 import { StaffActionReq } from '../../../../model/req/staff_action_req';
 import { StaffActionRejectReq } from '../../../../model/req/staff_action_reject_req';
 import { downloadBlob } from '../../../../file-download';
+import { normalizePubStatus, pubTypeLabel, innovationTypeLabel } from '../../../../t3-labels';
+import { apiFailure, failMsg } from '../../../../server-status.service';
 
 type StatusType = 'pending' | 'approved' | 'rejected';
 type FilterType  = 'all' | 'pending' | 'approved' | 'rejected';
@@ -66,6 +68,7 @@ interface T3Item {
   styleUrl: './t3-request.scss',
 })
 export class T3Request implements OnInit {
+  readonly innovationLabel = innovationTypeLabel;
   private http      = inject(HttpClient);
   private auth      = inject(AuthService);
   private constants = inject(Constants);
@@ -106,14 +109,19 @@ export class T3Request implements OnInit {
     }, 0);
   }
 
+  // N3: โหลดไม่สำเร็จ ≠ ไม่มีรายการ — เดิม error ทุกแบบแสดงเป็นรายการว่าง
+  loadError = signal('');
+
   loadCards(): void {
     this.isLoading.set(true);
+    let failure: unknown = null;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get<GetRequestT3Res>(`${this.constants.API_ENDPOINT}/t3/pending`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => { failure = err; return of(null); }))
       .subscribe(res => {
         this.isLoading.set(false);
+        this.loadError.set(res?.success ? '' : failMsg(failure ? apiFailure(failure) : res, 'โหลดรายการไม่สำเร็จ กรุณาลองใหม่'));
         if (res?.success) {
           this.requests.set(res.data.map((d, i) => this.mapDatum(d, i)));
         }
@@ -161,8 +169,8 @@ export class T3Request implements OnInit {
       journalName:   d.journal_snapshot.journal_name,
       issn:          d.journal_snapshot.issn,
       database:      d.publication_details.specified_database,
-      pubType:       d.publication_details.type,
-      pubStatus:     d.publication_details.status,
+      pubType:       pubTypeLabel(d.publication_details.type),
+      pubStatus:     normalizePubStatus(d.publication_details.status),
       titleThai:     d.paper_and_research_details.title_thai,
       titleEn:       d.paper_and_research_details.title_english,
       firstAuthor:   d.paper_and_research_details.first_author,
@@ -223,17 +231,33 @@ export class T3Request implements OnInit {
   }
 
   // ── File handling ─────────────────────────────────────
-  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void): void {
+  // X32: T3 เก่าบางใบสร้างไว้โดยไม่มีไฟล์ (ก่อน backend บังคับแนบ) — ปิดปุ่มของไฟล์ที่ไม่มี
+  fileError = signal('');
+
+  hasFile(key: string): boolean {
+    const files = this.detailData()?.journal_evidence_files as Record<string, string | null> | null | undefined;
+    return !files || !!files[`${key}_path`];   // ยังโหลดรายละเอียดไม่เสร็จ = ยังไม่รู้ ให้กดได้
+  }
+
+  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void, onFail?: () => void): void {
     if (state()[fileKey]) return;
+    this.fileError.set('');
     state.update(m => ({ ...m, [fileKey]: true }));
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get(`${this.constants.API_ENDPOINT}/upload/t3/${t3Id}/files/${fileKey}`,
            { headers, responseType: 'blob' })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => {
+        // X32: เดิมล้มแล้วเงียบ (กดแล้วไม่มีอะไรเกิดขึ้น)
+        this.fileError.set(err?.status === 404
+          ? 'ไม่พบไฟล์นี้ในระบบ — ผู้ยื่นอาจไม่ได้แนบไฟล์นี้ไว้'
+          : 'เปิดไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        return of(null);
+      }))
       .subscribe(blob => {
         state.update(m => ({ ...m, [fileKey]: false }));
         if (blob) onBlob(blob);
+        else onFail?.();
       });
   }
 
@@ -244,11 +268,14 @@ export class T3Request implements OnInit {
   }
 
   viewFile(t3Id: number, fileKey: string): void {
+    if (this.fileViewing()[fileKey]) return;
+    // F23: เปิดแท็บเปล่าก่อนแบบ sync (ยังอยู่ใน click event) — ถ้าเปิดหลังโหลดไฟล์เสร็จ เบราว์เซอร์จะบล็อกเป็น popup
+    const tab = window.open('', '_blank');
     this.fetchFile(t3Id, fileKey, this.fileViewing, blob => {
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    });
+      if (tab) tab.location.href = url; else window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }, () => tab?.close());
   }
 
   // ── Decision ──────────────────────────────────────────
@@ -277,8 +304,8 @@ export class T3Request implements OnInit {
 
     const url  = `${this.constants.API_ENDPOINT}/t3/${req.t3Id}/faculty-review`;
     const body: StaffActionReq | StaffActionRejectReq = this.decision() === 'approved'
-      ? { action: 'approve', meeting_no: this.meetingNo, meeting_date: this.meetingDate }   // ค่าจาก date picker เป็น "YYYY-MM-DD" อยู่แล้ว ส่งตรงได้
-      : { action: 'reject',  remark: this.remark };
+      ? { action: 'approve', meeting_no: this.meetingNo.trim(), meeting_date: this.meetingDate }   // ค่าจาก date picker เป็น "YYYY-MM-DD" อยู่แล้ว ส่งตรงได้
+      : { action: 'reject',  remark: this.remark.trim() };   // N8
 
     this.isSubmitting.set(true);
     let errorMsg = '';

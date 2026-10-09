@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
-import { AuthService } from '../../../auth.service';
+import { AuthService, ADMIN_PROFILE_UPDATED } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
 import { GetMyProfileRes, Data } from '../../../model_admin/res/get_my_profile_res';
 import { PatchMyProfileReq } from '../../../model_admin/req/patch_my_profile_req';
@@ -156,12 +156,15 @@ export class Profile implements OnInit {
       next: () => {
         this.saveResult.set('success');
         this.isSaving.set(false);
+        if (nameChanged) window.dispatchEvent(new Event(ADMIN_PROFILE_UPDATED));   // N14
         setTimeout(() => {
           this.isEditing.set(false);
           this.loadProfile();
         }, 800);
       },
       error: (err) => {
+        // อีกเส้นอาจบันทึกชื่อสำเร็จไปแล้ว — ให้ sidebar โหลดชื่อจริงล่าสุดด้วย (N14)
+        if (nameChanged) window.dispatchEvent(new Event(ADMIN_PROFILE_UPDATED));
         this.saveError.set(failMsg(apiFailure(err)));
         this.saveResult.set('error');
         this.isSaving.set(false);

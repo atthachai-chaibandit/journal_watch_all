@@ -1,9 +1,10 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, forkJoin, of } from 'rxjs';
-import { AuthService } from '../../../auth.service';
+import { AuthService, readStoredAdmin } from '../../../auth.service';
 import { Constants } from '../../../comfig/constants';
 import { GetManageUsersRes, User, Role, DegreeLevel, AccountStatus } from '../../../model_admin/res/get_manage_users_res';
 import type { PatchManageUsersReq } from '../../../model/req/patch_manage_users_req';
@@ -15,6 +16,7 @@ import type { PatchAdminReq }   from '../../../model_admin/req/patch_admin_req';
 import { GetAdminListRes, Admin } from '../../../model_admin/res/get_admin_list_res';
 import { apiFailure, failMsg } from '../../../server-status.service';
 import { AppSelect } from '../../../Components/app-select/app-select';
+import { passwordProblem } from '../../../password-policy';
 
 type TabType = 'student' | 'advisor' | 'staff' | 'admin';
 type UserTab = Exclude<TabType, 'admin'>;
@@ -37,10 +39,11 @@ export class ManageUsers implements OnInit {
   private http      = inject(HttpClient);
   private auth      = inject(AuthService);
   private constants = inject(Constants);
+  private router    = inject(Router);
 
   get isSuperAdmin(): boolean {
     return this.auth.user?.role === 'SuperAdmin'
-      || (JSON.parse(localStorage.getItem('user') ?? 'null') as any)?.role === 'SuperAdmin';
+      || (readStoredAdmin() as any)?.role === 'SuperAdmin';
   }
   get canSeeAdminTab(): boolean { return this.isSuperAdmin; }
 
@@ -131,6 +134,26 @@ export class ManageUsers implements OnInit {
     };
   }
 
+  // N5: หลังบันทึกสำเร็จ modal ปิดเองใน 1.5–2 วิ — เก็บ timer ตัวเดียวไว้ยกเลิกได้
+  // เดิมใช้ setTimeout ตรงๆ ถ้าผู้ใช้ปิดเองแล้วเปิด modal ใหม่ภายในช่วงนั้น timer เก่าจะปิด modal ที่เพิ่งเปิด
+  // ถ้าเปิด modal ใหม่ก่อนถึงเวลา → ทำงานที่ค้างทันที (ปิด modal เก่า + โหลดรายการใหม่) แล้วค่อยเปิดตัวใหม่
+  private modalCloseTimer?: ReturnType<typeof setTimeout>;
+  private pendingModalClose?: () => void;
+
+  private closeModalLater(fn: () => void, ms: number): void {
+    this.flushModalClose();
+    this.pendingModalClose = fn;
+    this.modalCloseTimer = setTimeout(() => this.flushModalClose(), ms);
+  }
+
+  private flushModalClose(): void {
+    if (this.modalCloseTimer) clearTimeout(this.modalCloseTimer);
+    const fn = this.pendingModalClose;
+    this.modalCloseTimer = undefined;
+    this.pendingModalClose = undefined;
+    fn?.();
+  }
+
   ngOnInit(): void {
     window.scrollTo({ top: 0 });
     this.loadData();
@@ -191,11 +214,9 @@ export class ManageUsers implements OnInit {
     }));
   }
 
-  // ── รายชื่อเต็มของบาง role (ไม่แบ่งหน้า) ──
-  // ใช้กับ 2 อย่างที่ต้องเห็นทุกคน ไม่ใช่แค่หน้าละ 20: datalist อาจารย์ใน modal กำหนดอาจารย์
-  // และ "ดูแลนิสิต N คน" ในแท็บอาจารย์ (backend ให้ /manage/users limit ได้ถึง 1000)
+  // ── รายชื่ออาจารย์เต็ม (ไม่แบ่งหน้า) — ใช้กับ datalist ใน modal กำหนดอาจารย์ (backend ให้ limit ได้ถึง 1000)
+  // ("ดูแลนิสิต N คน" ไม่ต้องโหลดนิสิตทั้งหมดมานับแล้ว ใช้ student_count จาก backend — X44)
   allAdvisors      = signal<User[]>([]);
-  studentsForCount = signal<User[]>([]);
 
   private fetchAllByRole(role: Role, target: { set(v: User[]): void }): void {
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
@@ -213,7 +234,6 @@ export class ManageUsers implements OnInit {
     this.loadData();
     this.loadRoleCounts();
     if (this.allAdvisors().length)      this.fetchAllByRole(Role.Supervisor, this.allAdvisors);
-    if (this.studentsForCount().length) this.fetchAllByRole(Role.Student,    this.studentsForCount);
   }
 
   setTab(t: TabType): void {
@@ -225,14 +245,16 @@ export class ManageUsers implements OnInit {
     this.currentPage.set(1);
     if (t === 'admin') this.loadAdmins();
     else this.loadData();
-    if (t === 'advisor') this.fetchAllByRole(Role.Student, this.studentsForCount);
   }
 
   loadAdmins(): void {
     this.isLoadingAdmins.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
-      .get<GetAdminListRes>(`${this.constants.API_ENDPOINT}/admin/admins`, { headers })
+      // X45: ค่าเริ่มต้นของ backend คือ 20 คนแรก — admin มีไม่กี่คน ขอทีเดียวให้ครบ (backend รับ limit สูงสุด 1000)
+      .get<GetAdminListRes>(`${this.constants.API_ENDPOINT}/admin/admins`, {
+        headers, params: new HttpParams().set('page', '1').set('limit', '1000'),
+      })
       .pipe(catchError(() => of(null)))
       .subscribe(res => {
         if (res?.success) this.allAdmins.set(res.data.admins);
@@ -261,6 +283,7 @@ export class ManageUsers implements OnInit {
   };
 
   openAddStudentModal(): void {
+    this.flushModalClose();
     this.addStudentForm = {
       role: 'Student', prefix: '', first_name: '', last_name: '',
       msu_mail: '', phone: '', degree_level: '', curriculum_year: '',
@@ -292,7 +315,7 @@ export class ManageUsers implements OnInit {
         this.isAddSaving.set(false);
         if (res?.success) {
           this.addSaveResult.set({ ok: true, msg: 'เพิ่มนิสิตเรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAddStudentModal(); this.refreshAll(); }, 1500);
+          this.closeModalLater(() => { this.closeAddStudentModal(); this.refreshAll(); }, 1500);
         } else {
           this.addSaveResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -308,6 +331,7 @@ export class ManageUsers implements OnInit {
   };
 
   openAddAdvisorModal(): void {
+    this.flushModalClose();
     this.addAdvisorForm = {
       role: 'Supervisor', prefix: '', first_name: '', last_name: '', msu_mail: '', phone: '',
     };
@@ -341,7 +365,7 @@ export class ManageUsers implements OnInit {
         this.isAdvisorSaving.set(false);
         if (res?.success) {
           this.advisorSaveResult.set({ ok: true, msg: 'เพิ่มอาจารย์เรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAddAdvisorModal(); this.refreshAll(); }, 1500);
+          this.closeModalLater(() => { this.closeAddAdvisorModal(); this.refreshAll(); }, 1500);
         } else {
           this.advisorSaveResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -357,6 +381,7 @@ export class ManageUsers implements OnInit {
   };
 
   openAssignAdvisorModal(u: User): void {
+    this.flushModalClose();
     if (!this.allAdvisors().length) this.fetchAllByRole(Role.Supervisor, this.allAdvisors);
     this.assignAdvisorForm = {
       advisor_major_mail: u.advisors?.Major?.mail ?? '',
@@ -391,7 +416,7 @@ export class ManageUsers implements OnInit {
         this.isAssignSaving.set(false);
         if (res?.success) {
           this.assignAdvisorResult.set({ ok: true, msg: 'กำหนดอาจารย์ที่ปรึกษาเรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAssignAdvisorModal(); this.loadData(); }, 1500);
+          this.closeModalLater(() => { this.closeAssignAdvisorModal(); this.loadData(); }, 1500);
         } else {
           this.assignAdvisorResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -401,10 +426,11 @@ export class ManageUsers implements OnInit {
   // ── Import CSV Modal ─────────────────────────────────────────────
   importModal   = signal(false);
   isImporting   = signal(false);
-  importResult  = signal<{ ok: boolean; msg: string } | null>(null);
+  importResult  = signal<{ ok: boolean; msg: string; errors?: string[] } | null>(null);
   selectedFile: File | null = null;
 
   openImportModal(): void {
+    this.flushModalClose();
     this.selectedFile = null;
     this.importResult.set(null);
     this.importModal.set(true);
@@ -443,9 +469,10 @@ export class ManageUsers implements OnInit {
         if (res?.success) {
           const imported = res.data?.imported ?? 0;
           this.importResult.set({ ok: true, msg: `นำเข้าสำเร็จ ${imported} รายการ` });
-          setTimeout(() => { this.closeImportModal(); this.refreshAll(); }, 2000);
+          this.closeModalLater(() => { this.closeImportModal(); this.refreshAll(); }, 2000);
         } else {
-          this.importResult.set({ ok: false, msg: failMsg(res) });
+          // X35: แสดงทุกแถวที่ผิด (import เป็น all-or-nothing — แก้ไฟล์แล้วอัปโหลดใหม่ทั้งไฟล์)
+          this.importResult.set({ ok: false, msg: failMsg(res), errors: (res as { errors?: string[] }).errors });
         }
       });
   }
@@ -454,18 +481,46 @@ export class ManageUsers implements OnInit {
   suspendingId  = signal<number | null>(null);
   suspendResult = signal<{ ok: boolean; msg: string } | null>(null);
 
-  suspendUser(u: User): void {
+  // F27: ระงับบัญชีมีผลทันที (ผู้ใช้ login ไม่ได้) — ถามยืนยันก่อน ส่วนเปิดใช้งาน/อนุมัติทำได้เลย
+  suspendConfirm = signal<{ name: string; run: () => void; reject?: boolean } | null>(null);
+
+  askSuspendUser(u: User): void {
+    if (u.account_status !== 'Active') { this.suspendUser(u); return; }
+    this.suspendConfirm.set({ name: this.fullName(u), run: () => this.suspendUser(u) });
+  }
+
+  /**
+   * X39: ปฏิเสธ staff ที่สมัครเข้ามา (Pending) — ตกลงกับ backend ใช้ /suspend (ทาง ข.)
+   * บัญชีกลายเป็น Suspended และสมัครซ้ำด้วยอีเมลเดิมไม่ได้ (กันสแปมวนกลับมา)
+   */
+  askRejectUser(u: User): void {
+    if (u.account_status !== 'Pending') return;
+    this.suspendConfirm.set({ name: this.fullName(u), run: () => this.suspendUser(u, true), reject: true });
+  }
+
+  askSuspendAdmin(a: Admin): void {
+    if (a.account_status !== 'Active') { this.suspendAdmin(a); return; }
+    this.suspendConfirm.set({ name: this.adminFullName(a), run: () => this.suspendAdmin(a) });
+  }
+
+  confirmSuspend(): void {
+    const c = this.suspendConfirm();
+    this.suspendConfirm.set(null);
+    c?.run();
+  }
+
+  suspendUser(u: User, reject = false): void {
     if (this.suspendingId() !== null) return;
     this.suspendingId.set(u.user_id);
     this.suspendResult.set(null);
 
     const isPending   = u.account_status === AccountStatus.Pending;
     const isSuspended = u.account_status === AccountStatus.Suspended;
-    const endpoint    = isPending ? 'approve' : isSuspended ? 'activate' : 'suspend';
+    const endpoint    = reject ? 'suspend' : isPending ? 'approve' : isSuspended ? 'activate' : 'suspend';
     const headers     = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
 
     this.http
-      .patch<{ success: boolean; message?: string }>(
+      .patch<{ success: boolean; message?: string; data?: { pending_approvals?: number } }>(
         `${this.constants.API_ENDPOINT}/manage/users/${u.user_id}/${endpoint}`,
         {},
         { headers }
@@ -474,15 +529,21 @@ export class ManageUsers implements OnInit {
       .subscribe(res => {
         this.suspendingId.set(null);
         if (res?.success) {
-          const msg = isPending ? `อนุมัติบัญชีเรียบร้อยแล้ว`
-                    : isSuspended ? `เปิดใช้งานบัญชีเรียบร้อยแล้ว`
-                    : `ระงับบัญชีเรียบร้อยแล้ว`;
+          let msg = reject ? `ปฏิเสธการสมัครเรียบร้อยแล้ว`
+                  : isPending ? `อนุมัติบัญชีเรียบร้อยแล้ว`
+                  : isSuspended ? `เปิดใช้งานบัญชีเรียบร้อยแล้ว`
+                  : `ระงับบัญชีเรียบร้อยแล้ว`;
+          // B32: ระงับอาจารย์ที่ยังมีคำร้องรออนุมัติ — คำร้องจะค้าง ต้องเปลี่ยนอาจารย์ที่ปรึกษาของนิสิตเอง
+          const pending = ('data' in res ? res.data?.pending_approvals : 0) ?? 0;
+          if (!isSuspended && pending > 0) {
+            msg = `ระงับบัญชีแล้ว — อาจารย์ท่านนี้ยังมีคำร้องรออนุมัติ ${pending} รายการ กรุณาเปลี่ยนอาจารย์ที่ปรึกษาของนิสิตที่เกี่ยวข้อง`;
+          }
           this.suspendResult.set({ ok: true, msg });
           this.loadData();
         } else {
           this.suspendResult.set({ ok: false, msg: `${failMsg(res)}` });
         }
-        setTimeout(() => this.suspendResult.set(null), 3000);
+        setTimeout(() => this.suspendResult.set(null), this.suspendResult()?.msg.includes('รออนุมัติ') ? 10000 : 3000);
       });
   }
 
@@ -510,6 +571,7 @@ export class ManageUsers implements OnInit {
   ];
 
   openEditModal(u: User): void {
+    this.flushModalClose();
     this.editForm = {
       prefix:          u.prefix          ?? '',
       first_name:      u.first_name      ?? '',
@@ -563,7 +625,7 @@ export class ManageUsers implements OnInit {
                 }
               : x
           ));
-          setTimeout(() => this.closeEditModal(), 1500);
+          this.closeModalLater(() => this.closeEditModal(), 1500);
         } else {
           this.editSaveResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -577,6 +639,7 @@ export class ManageUsers implements OnInit {
   addAdminForm: PostAddAdminReq = { username: '', password: '', first_name: '', last_name: '', msu_mail: '' };
 
   openAddAdminModal(): void {
+    this.flushModalClose();
     this.addAdminForm = { username: '', password: '', first_name: '', last_name: '', msu_mail: '' };
     this.addAdminResult.set(null);
     this.addAdminModal.set(true);
@@ -588,7 +651,18 @@ export class ManageUsers implements OnInit {
     document.body.style.overflow = '';
   }
 
+  /** N11 / B35: backend ใช้กฎเดียวกับหน้า login — 4–50 ตัว a-z A-Z 0-9 _ . - */
+  readonly USERNAME_PATTERN = /^[a-zA-Z0-9_.-]{4,50}$/;
+  get addAdminUsernameInvalid(): boolean {
+    const u = this.addAdminForm.username.trim();
+    return !!u && !this.USERNAME_PATTERN.test(u);
+  }
+
+  /** X48: กฎรหัสผ่านเดียวกับ backend (ผิดกฎ = 400 WEAK_PASSWORD) */
+  get addAdminPasswordError(): string { return passwordProblem(this.addAdminForm.password); }
+
   submitAddAdmin(): void {
+    if (this.addAdminUsernameInvalid || this.addAdminPasswordError) return;
     this.isAddAdminSaving.set(true);
     this.addAdminResult.set(null);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
@@ -603,7 +677,7 @@ export class ManageUsers implements OnInit {
         this.isAddAdminSaving.set(false);
         if (res?.success) {
           this.addAdminResult.set({ ok: true, msg: 'เพิ่ม Admin เรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAddAdminModal(); this.loadAdmins(); }, 1500);
+          this.closeModalLater(() => { this.closeAddAdminModal(); this.loadAdmins(); }, 1500);
         } else {
           this.addAdminResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -618,7 +692,9 @@ export class ManageUsers implements OnInit {
   editAdminForm: Required<Pick<PatchAdminReq, 'first_name' | 'last_name' | 'msu_mail'>> = { first_name: '', last_name: '', msu_mail: '' };
 
   openEditAdminModal(a: Admin): void {
+    this.flushModalClose();
     this.editAdminForm = { first_name: a.first_name, last_name: a.last_name, msu_mail: a.msu_mail };
+    this.editAdminPassword = '';
     this.editAdminResult.set(null);
     this.editAdminModal.set(a);
     document.body.style.overflow = 'hidden';
@@ -629,29 +705,52 @@ export class ManageUsers implements OnInit {
     document.body.style.overflow = '';
   }
 
+  // A5 / B34: เปลี่ยนอีเมล Admin (= ช่องทางรับ OTP) ต้องยืนยันด้วยรหัสผ่านของผู้ทำรายการ
+  editAdminPassword = '';
+
+  get editAdminEmailChanged(): boolean {
+    const a = this.editAdminModal();
+    return !!a && this.editAdminForm.msu_mail.trim().toLowerCase() !== (a.msu_mail ?? '').trim().toLowerCase();
+  }
+
   submitEditAdmin(): void {
     const a = this.editAdminModal();
     if (!a) return;
+    if (this.editAdminEmailChanged && !this.editAdminPassword) return;
     this.isEditAdminSaving.set(true);
     this.editAdminResult.set(null);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
-      .patch<{ success: boolean; message?: string }>(
+      .patch<{ success: boolean; message?: string; data?: { relogin_required?: boolean } }>(
         `${this.constants.API_ENDPOINT}/admin/admins/${a.user_id}`,
-        this.editAdminForm,
+        this.editAdminEmailChanged
+          ? { ...this.editAdminForm, current_password: this.editAdminPassword }
+          : this.editAdminForm,
         { headers }
       )
       .pipe(catchError(err => of(apiFailure(err))))
       .subscribe(res => {
         this.isEditAdminSaving.set(false);
+        this.editAdminPassword = '';
         if (res?.success) {
+          // B34: เปลี่ยนอีเมลแล้ว backend ตัดทุกเซสชันของบัญชีนั้น — ถ้าเป็นบัญชีตัวเองต้องล็อกอินใหม่
+          const me = readStoredAdmin() as { userId?: number } | null;
+          if ('data' in res && res.data?.relogin_required && me?.userId === a.user_id) {
+            this.editAdminResult.set({ ok: true, msg: 'เปลี่ยนอีเมลแล้ว — กรุณาเข้าสู่ระบบใหม่ด้วยอีเมลใหม่' });
+            setTimeout(() => {
+              this.closeEditAdminModal();
+              this.auth.logout();
+              this.router.navigateByUrl('/login-admin');
+            }, 2000);
+            return;
+          }
           this.editAdminResult.set({ ok: true, msg: 'แก้ไขข้อมูลเรียบร้อยแล้ว' });
           this.allAdmins.update(list => list.map(x =>
             x.user_id === a.user_id
               ? { ...x, first_name: this.editAdminForm.first_name, last_name: this.editAdminForm.last_name, msu_mail: this.editAdminForm.msu_mail }
               : x
           ));
-          setTimeout(() => this.closeEditAdminModal(), 1500);
+          this.closeModalLater(() => this.closeEditAdminModal(), 1500);
         } else {
           this.editAdminResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -669,7 +768,7 @@ export class ManageUsers implements OnInit {
   /** ห้ามลบ SuperAdmin และห้ามลบบัญชีตัวเอง */
   canDeleteAdmin(a: Admin): boolean {
     if (!this.isSuperAdmin || a.role === 'SuperAdmin') return false;
-    const me = JSON.parse(localStorage.getItem('user') ?? 'null') as { userId?: number } | null;
+    const me = readStoredAdmin() as { userId?: number } | null;
     return me?.userId !== a.user_id;
   }
 
@@ -771,11 +870,9 @@ export class ManageUsers implements OnInit {
     return u.advisors?.Major?.name ?? '—';
   }
 
+  /** X44: นับที่ backend (Major + Co_1 + Co_2 จาก DB ทั้งหมด) — เดิมโหลดนิสิตทั้งหมดมานับเอง */
   advisorStudentCount(u: User): number {
-    const mail = u.msu_mail;
-    return this.studentsForCount().filter(s =>
-      s.advisors?.Major?.mail === mail || s.advisors?.Co_1?.mail === mail || s.advisors?.Co_2?.mail === mail
-    ).length;
+    return u.student_count ?? 0;
   }
 
   formatDate(d: Date | string | null): string {

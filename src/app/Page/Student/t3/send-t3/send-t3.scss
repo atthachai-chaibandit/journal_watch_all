@@ -300,6 +300,8 @@ $orange: #E07000;
   color: $muted;
 
   i { font-size: 13px; }
+
+  &--error { color: #C0392B; font-weight: 600; }
 }
 
 .jt-weight-chip {

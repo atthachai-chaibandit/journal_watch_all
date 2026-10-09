@@ -117,6 +117,26 @@ export class ManageUsers implements OnInit {
     Array.from({ length: this.advisorTotalPages() }, (_, i) => i + 1)
   );
 
+  // N5: หลังบันทึกสำเร็จ modal ปิดเองใน 1.5–2 วิ — เก็บ timer ตัวเดียวไว้ยกเลิกได้
+  // เดิมใช้ setTimeout ตรงๆ ถ้าผู้ใช้ปิดเองแล้วเปิด modal ใหม่ภายในช่วงนั้น timer เก่าจะปิด modal ที่เพิ่งเปิด
+  // ถ้าเปิด modal ใหม่ก่อนถึงเวลา → ทำงานที่ค้างทันที (ปิด modal เก่า + โหลดรายการใหม่) แล้วค่อยเปิดตัวใหม่
+  private modalCloseTimer?: ReturnType<typeof setTimeout>;
+  private pendingModalClose?: () => void;
+
+  private closeModalLater(fn: () => void, ms: number): void {
+    this.flushModalClose();
+    this.pendingModalClose = fn;
+    this.modalCloseTimer = setTimeout(() => this.flushModalClose(), ms);
+  }
+
+  private flushModalClose(): void {
+    if (this.modalCloseTimer) clearTimeout(this.modalCloseTimer);
+    const fn = this.pendingModalClose;
+    this.modalCloseTimer = undefined;
+    this.pendingModalClose = undefined;
+    fn?.();
+  }
+
   ngOnInit(): void { this.loadData(); }
 
   loadData(): void {
@@ -173,6 +193,7 @@ export class ManageUsers implements OnInit {
   };
 
   openAddStudentModal(): void {
+    this.flushModalClose();
     this.addStudentForm = {
       role: 'Student', prefix: '', first_name: '', last_name: '',
       msu_mail: '', phone: '', degree_level: '', curriculum_year: '',
@@ -204,7 +225,7 @@ export class ManageUsers implements OnInit {
         this.isAddSaving.set(false);
         if (res?.success) {
           this.addSaveResult.set({ ok: true, msg: 'เพิ่มนิสิตเรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAddStudentModal(); this.loadData(); }, 1500);
+          this.closeModalLater(() => { this.closeAddStudentModal(); this.loadData(); }, 1500);
         } else {
           this.addSaveResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -220,6 +241,7 @@ export class ManageUsers implements OnInit {
   };
 
   openAddAdvisorModal(): void {
+    this.flushModalClose();
     this.addAdvisorForm = {
       role: 'Supervisor', prefix: '', first_name: '', last_name: '', msu_mail: '', phone: '',
     };
@@ -253,7 +275,7 @@ export class ManageUsers implements OnInit {
         this.isAdvisorSaving.set(false);
         if (res?.success) {
           this.advisorSaveResult.set({ ok: true, msg: 'เพิ่มอาจารย์เรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAddAdvisorModal(); this.loadData(); }, 1500);
+          this.closeModalLater(() => { this.closeAddAdvisorModal(); this.loadData(); }, 1500);
         } else {
           this.advisorSaveResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -269,6 +291,7 @@ export class ManageUsers implements OnInit {
   };
 
   openAssignAdvisorModal(u: User): void {
+    this.flushModalClose();
     this.assignAdvisorForm = {
       advisor_major_mail: u.advisors?.Major?.mail ?? '',
       advisor_co1_mail:   u.advisors?.Co_1?.mail  ?? '',
@@ -302,7 +325,7 @@ export class ManageUsers implements OnInit {
         this.isAssignSaving.set(false);
         if (res?.success) {
           this.assignAdvisorResult.set({ ok: true, msg: 'กำหนดอาจารย์ที่ปรึกษาเรียบร้อยแล้ว' });
-          setTimeout(() => { this.closeAssignAdvisorModal(); this.loadData(); }, 1500);
+          this.closeModalLater(() => { this.closeAssignAdvisorModal(); this.loadData(); }, 1500);
         } else {
           this.assignAdvisorResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -312,10 +335,11 @@ export class ManageUsers implements OnInit {
   // ── Import CSV Modal ─────────────────────────────────────────────
   importModal   = signal(false);
   isImporting   = signal(false);
-  importResult  = signal<{ ok: boolean; msg: string } | null>(null);
+  importResult  = signal<{ ok: boolean; msg: string; errors?: string[] } | null>(null);
   selectedFile: File | null = null;
 
   openImportModal(): void {
+    this.flushModalClose();
     this.selectedFile = null;
     this.importResult.set(null);
     this.importModal.set(true);
@@ -354,9 +378,10 @@ export class ManageUsers implements OnInit {
         if (res?.success) {
           const imported = res.data?.imported ?? 0;
           this.importResult.set({ ok: true, msg: `นำเข้าสำเร็จ ${imported} รายการ` });
-          setTimeout(() => { this.closeImportModal(); this.loadData(); }, 2000);
+          this.closeModalLater(() => { this.closeImportModal(); this.loadData(); }, 2000);
         } else {
-          this.importResult.set({ ok: false, msg: failMsg(res) });
+          // X35: แสดงทุกแถวที่ผิด (import เป็น all-or-nothing — แก้ไฟล์แล้วอัปโหลดใหม่ทั้งไฟล์)
+          this.importResult.set({ ok: false, msg: failMsg(res), errors: (res as { errors?: string[] }).errors });
         }
       });
   }
@@ -364,6 +389,20 @@ export class ManageUsers implements OnInit {
   // ── Suspend / Activate ───────────────────────────────────────────
   suspendingId  = signal<number | null>(null);
   suspendResult = signal<{ ok: boolean; msg: string } | null>(null);
+
+  // F27: ระงับบัญชีมีผลทันที (ผู้ใช้ login ไม่ได้) — ถามยืนยันก่อน ส่วนเปิดใช้งาน/อนุมัติทำได้เลย
+  suspendConfirm = signal<{ name: string; run: () => void } | null>(null);
+
+  askSuspendUser(u: User): void {
+    if (u.account_status !== 'Active') { this.suspendUser(u); return; }
+    this.suspendConfirm.set({ name: this.fullName(u), run: () => this.suspendUser(u) });
+  }
+
+  confirmSuspend(): void {
+    const c = this.suspendConfirm();
+    this.suspendConfirm.set(null);
+    c?.run();
+  }
 
   suspendUser(u: User): void {
     // X24: Pending ยังไม่ใช่ Active — suspend ไม่ได้ และ staff อนุมัติไม่ได้ (/approve เฉพาะ Admin)
@@ -376,7 +415,7 @@ export class ManageUsers implements OnInit {
     const headers     = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
 
     this.http
-      .patch<{ success: boolean; message?: string }>(
+      .patch<{ success: boolean; message?: string; data?: { pending_approvals?: number } }>(
         `${this.constants.API_ENDPOINT}/manage/users/${u.user_id}/${endpoint}`,
         {},
         { headers }
@@ -389,14 +428,17 @@ export class ManageUsers implements OnInit {
           this.allUsers.update(users =>
             users.map(x => x.user_id === u.user_id ? { ...x, account_status: newStatus } : x)
           );
-          this.suspendResult.set({
-            ok:  true,
-            msg: isSuspended ? `เปิดใช้งานบัญชีเรียบร้อยแล้ว` : `ระงับบัญชีเรียบร้อยแล้ว`,
-          });
+          let msg = isSuspended ? `เปิดใช้งานบัญชีเรียบร้อยแล้ว` : `ระงับบัญชีเรียบร้อยแล้ว`;
+          // B32: ระงับอาจารย์ที่ยังมีคำร้องรออนุมัติ — คำร้องจะค้าง ต้องเปลี่ยนอาจารย์ที่ปรึกษาของนิสิตเอง
+          const pending = ('data' in res ? res.data?.pending_approvals : 0) ?? 0;
+          if (!isSuspended && pending > 0) {
+            msg = `ระงับบัญชีแล้ว — อาจารย์ท่านนี้ยังมีคำร้องรออนุมัติ ${pending} รายการ กรุณาเปลี่ยนอาจารย์ที่ปรึกษาของนิสิตที่เกี่ยวข้อง`;
+          }
+          this.suspendResult.set({ ok: true, msg });
         } else {
           this.suspendResult.set({ ok: false, msg: `${failMsg(res)}` });
         }
-        setTimeout(() => this.suspendResult.set(null), 3000);
+        setTimeout(() => this.suspendResult.set(null), this.suspendResult()?.msg.includes('รออนุมัติ') ? 10000 : 3000);
       });
   }
 
@@ -424,6 +466,7 @@ export class ManageUsers implements OnInit {
   ];
 
   openEditModal(u: User): void {
+    this.flushModalClose();
     this.editForm = {
       prefix:          u.prefix          ?? '',
       first_name:      u.first_name      ?? '',
@@ -479,7 +522,7 @@ export class ManageUsers implements OnInit {
                 }
               : x
           ));
-          setTimeout(() => this.closeEditModal(), 1500);
+          this.closeModalLater(() => this.closeEditModal(), 1500);
         } else {
           this.editSaveResult.set({ ok: false, msg: failMsg(res) });
         }
@@ -509,11 +552,9 @@ export class ManageUsers implements OnInit {
     return u.advisors?.Major?.name ?? '—';
   }
 
+  /** X44: นับที่ backend (Major + Co_1 + Co_2 จาก DB ทั้งหมด) — เดิมนับเองจากนิสิตที่โหลดมาและไม่นับ Co_2 */
   advisorStudentCount(u: User): number {
-    const mail = u.msu_mail;
-    return this.allStudents().filter(s =>
-      s.advisors?.Major?.mail === mail || s.advisors?.Co_1?.mail === mail
-    ).length;
+    return u.student_count ?? 0;
   }
 
   formatDate(d: Date | string | null): string {

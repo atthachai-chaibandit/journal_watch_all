@@ -56,7 +56,7 @@ export class RegisterStaff implements OnInit {
           width: btnWidth,
         }
       );
-    });
+    }).catch(() => this.showSnack('โหลดปุ่มลงทะเบียนด้วย Google ไม่สำเร็จ กรุณารีเฟรชหน้า', 'error'));
   }
 
   private handleGoogleCallback(response: any) {

@@ -8,6 +8,15 @@
     </div>
   }
 
+  <!-- N15: โหลดไม่สำเร็จ — เดิมหน้าว่างเปล่า ไม่บอกอะไรเลย -->
+  @if (!isLoading() && loadError()) {
+    <div class="loading-card loading-card--error">
+      <div class="loading-error-icon"><i class="ti ti-cloud-off"></i></div>
+      <div class="loading-text">{{ loadError() }}</div>
+      <button type="button" class="btn-retry" (click)="loadProfile()"><i class="ti ti-refresh"></i> ลองใหม่</button>
+    </div>
+  }
+
   @if (!isLoading() && me(); as d) {
 
     <!-- ══ การ์ดเดียวรวมทุกส่วน พื้นหลังขาวทั้งใบ ══ -->
@@ -167,7 +176,8 @@
               <span class="row-val bold">{{ advisorMain.prefix ?? '' }} {{ advisorMain.firstName }} {{ advisorMain.lastName }}</span>
               <span class="advisor-mail">{{ advisorMain.msuMail }}</span>
             </div>
-            @for (co of advisorCo; track co.userId) {
+            <!-- track ตามช่อง (Co_1 / Co_2) ไม่ใช่ userId — ข้อมูลเก่าอาจมีอาจารย์คนเดียวกันอยู่ทั้งสองช่อง (NG0955) -->
+            @for (co of advisorCo; track co.advisorType) {
               <div class="row-item advisor-row">
                 <span class="advisor-pill co">ร่วม</span>
                 <span class="row-val bold">{{ co.prefix ?? '' }} {{ co.firstName }} {{ co.lastName }}</span>

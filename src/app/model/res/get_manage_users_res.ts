@@ -31,6 +31,8 @@ export interface User {
     study_plan_code: null | string;
     created_at:      Date;
     advisors:        Advisors;
+    /** X44: เฉพาะแถว Supervisor — จำนวนนิสิตที่เป็น Major + Co_1 + Co_2 (backend นับจาก DB ทั้งหมด) */
+    student_count?:  number;
 }
 
 export enum AccountStatus {

@@ -34,12 +34,23 @@ export class Profile implements OnInit {
   editForm: PatchProfileStaffReq = { phone: '', facebook_id: '', line_id: '' };
 
   ngOnInit(): void {
+    this.loadProfile();
+  }
+
+  // N15: โหลดไม่สำเร็จ ≠ ไม่มีข้อมูล — แสดงข้อความ + ปุ่มลองใหม่ แทนหน้าว่าง
+  loadError = signal('');
+
+  loadProfile(): void {
+    this.isLoading.set(true);
+    this.loadError.set('');
+    let failure: unknown = null;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get<GetProfileStaffRes>(`${this.constants.API_ENDPOINT}/user/profile`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => { failure = err; return of(null); }))
       .subscribe(res => {
         if (res?.success) this.profile.set(res.data);
+        else this.loadError.set(failMsg(failure ? apiFailure(failure) : res, 'โหลดข้อมูลโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่'));
         this.isLoading.set(false);
       });
   }

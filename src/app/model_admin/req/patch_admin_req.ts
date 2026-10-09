@@ -4,4 +4,6 @@ export interface PatchAdminReq {
     first_name?: string;
     last_name?:  string;
     msu_mail?:   string;
+    /** B34: บังคับเมื่อ msu_mail เปลี่ยน — รหัสผ่านของผู้ทำรายการ (ไม่ใช่ของบัญชีที่ถูกแก้) */
+    current_password?: string;
 }

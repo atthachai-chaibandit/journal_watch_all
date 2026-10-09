@@ -77,7 +77,14 @@
         <span class="card-arrow">›</span>
       </div>
     }
-    @if (filtered().length === 0 && !isLoading()) {
+    @if (loadError() && !isLoading()) {
+      <div class="empty-state empty-state--error">
+        <div class="empty-icon"><i class="ti ti-cloud-off"></i></div>
+        <div class="empty-text">{{ loadError() }}</div>
+        <button type="button" class="btn-retry" (click)="loadRequests()"><i class="ti ti-refresh"></i> ลองใหม่</button>
+      </div>
+    }
+    @if (filtered().length === 0 && !isLoading() && !loadError()) {
       <div class="empty-state">
         <div class="empty-icon"><i class="ti ti-inbox"></i></div>
         <div class="empty-text">ไม่มีคำร้อง T3 ในหมวดนี้</div>
@@ -211,7 +218,7 @@
               </div>
               <div class="detail-field detail-field--wide">
                 <div class="detail-label">การนำไปใช้ประโยชน์</div>
-                <div class="detail-value">{{ d.paper_and_research_details.innovation_type || '—' }}</div>
+                <div class="detail-value">{{ innovationLabel(d.paper_and_research_details.innovation_type) || '—' }}</div>
               </div>
             }
           </div>
@@ -255,6 +262,7 @@
             <span class="section-num">5</span>
             <span class="section-title">เอกสารหลักฐานประกอบ</span>
           </div>
+          @if (fileError()) { <div class="file-error"><i class="ti ti-alert-triangle"></i> {{ fileError() }}</div> }
           <div class="evidence-grid">
             @for (f of evidenceFiles; track f.key) {
               <div class="evidence-card">
@@ -262,15 +270,16 @@
                 <div class="evidence-info">
                   <div class="evidence-name">{{ f.label }}</div>
                   <div class="evidence-key mono">{{ f.key }}</div>
+                  @if (!hasFile(f.key)) { <div class="evidence-missing"><i class="ti ti-file-off"></i> ไม่ได้แนบไฟล์</div> }
                 </div>
                 <div class="evidence-actions">
                   <button class="btn-evidence-view"
-                          [disabled]="fileViewing()[f.key]"
+                          [disabled]="fileViewing()[f.key] || !hasFile(f.key)"
                           (click)="viewFile(req.t3Id, f.key); $event.stopPropagation()">
                     @if (fileViewing()[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
                   </button>
                   <button class="btn-evidence-download"
-                          [disabled]="fileLoading()[f.key]"
+                          [disabled]="fileLoading()[f.key] || !hasFile(f.key)"
                           (click)="downloadFile(req.t3Id, f.key); $event.stopPropagation()">
                     @if (fileLoading()[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
                   </button>

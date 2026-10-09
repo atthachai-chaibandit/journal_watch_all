@@ -115,6 +115,9 @@ export class PreT3Status implements OnInit {
     this.loadData(true);
   }
 
+  // F24: โหลดรายการล้มเหลว ≠ ไม่มีรายการ — เดิม error ทุกแบบแสดงเป็น "ยังไม่มีคำร้อง"
+  loadError = signal('');
+
   private loadData(isRefresh = false): void {
     if (isRefresh) {
       this.isRefreshing.set(true);
@@ -124,15 +127,19 @@ export class PreT3Status implements OnInit {
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
 
+    let failure: unknown = null;
     forkJoin({
       myList:  this.http.get<GetMyPreT3Res>(`${this.constants.API_ENDPOINT}/pre-t3/my`, { headers })
-                        .pipe(catchError(() => of(null))),
+                        .pipe(catchError(err => { failure = err; return of(null); })),
       profile: this.http.get<GetProfileRes>(`${this.constants.API_ENDPOINT}/user/profile`, { headers })
                         .pipe(catchError(() => of(null))),
     }).subscribe(({ myList, profile }) => {
       const prof = profile?.success ? profile.data : null;
       if (myList?.success) {
         this.buildData(myList.data, prof);
+        this.loadError.set('');
+      } else {
+        this.loadError.set(failMsg(failure ? apiFailure(failure) : myList, 'โหลดรายการคำร้องไม่สำเร็จ กรุณาลองใหม่'));
       }
       this.isLoading.set(false);
       this.isRefreshing.set(false);

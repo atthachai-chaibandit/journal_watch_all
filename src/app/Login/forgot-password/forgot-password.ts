@@ -1,9 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Constants } from '../../comfig/constants';
+import { AuthService } from '../../auth.service';
+import { PASSWORD_PATTERN, passwordProblem } from '../../password-policy';
 
 // ลืมรหัสผ่าน (Admin / SuperAdmin) — 2 ขั้นในหน้าเดียว
 //   1) กรอก username → POST /auth/forgot-password → ได้ resetOtpToken (เก็บใน memory เท่านั้น)
@@ -15,12 +17,12 @@ import { Constants } from '../../comfig/constants';
   templateUrl: './forgot-password.html',
   styleUrls: ['../login_admin/login.scss', './forgot-password.scss'],
 })
-export class ForgotPassword {
+export class ForgotPassword implements OnDestroy {
   private http      = inject(HttpClient);
   private router    = inject(Router);
   private constants = inject(Constants);
+  private auth      = inject(AuthService);
 
-  readonly MIN_PASSWORD = 8;
 
   step     = signal<1 | 2 | 'done'>(1);
   loading  = signal(false);
@@ -37,10 +39,11 @@ export class ForgotPassword {
   private resetOtpToken = '';
   private cooldownTimer?: ReturnType<typeof setInterval>;
 
-  get passwordTooShort(): boolean { return !!this.newPassword && this.newPassword.length < this.MIN_PASSWORD; }
+  // X48: เดิมเช็คแค่ความยาว ผู้ใช้กรอกผ่านฟอร์มแล้วโดน backend ปฏิเสธ — ใช้กฎเดียวกับ backend
+  get passwordError(): string { return passwordProblem(this.newPassword); }
   get passwordMismatch(): boolean { return !!this.confirmPassword && this.newPassword !== this.confirmPassword; }
   get canReset(): boolean {
-    return /^\d{6}$/.test(this.otpCode) && this.newPassword.length >= this.MIN_PASSWORD
+    return /^\d{6}$/.test(this.otpCode) && PASSWORD_PATTERN.test(this.newPassword)
         && this.newPassword === this.confirmPassword && !this.loading();
   }
 
@@ -63,6 +66,8 @@ export class ForgotPassword {
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
+        // B15: ขอ OTP ซ้ำภายใน 60 วิ → 429 OTP_COOLDOWN พร้อม retryAfter (วินาที)
+        if (err?.error?.code === 'OTP_COOLDOWN') this.startCooldown(Number(err.error.retryAfter) || 60);
         this.errorMsg.set(this.describe(err, 'ไม่สามารถส่งรหัส OTP ได้ในขณะนี้'));
       },
     });
@@ -89,7 +94,7 @@ export class ForgotPassword {
         this.loading.set(false);
         this.resetOtpToken = '';
         // reset สำเร็จ = ทุก session ของบัญชีนี้ถูกออกจากระบบ → ล้างของในเครื่องแล้วพาไปหน้า login
-        ['auth_token', 'auth_refresh_token', 'user'].forEach(k => localStorage.removeItem(k));
+        this.auth.logout();
         this.step.set('done');
         setTimeout(() => this.router.navigate(['/login-admin']), 2500);
       },
@@ -129,6 +134,11 @@ export class ForgotPassword {
     const msg = err?.error?.message || fallback;
     const wait = Number(err?.headers?.get?.('Retry-After'));
     return err.status === 429 && wait > 0 ? `${msg} (ลองใหม่ได้ในอีก ${Math.ceil(wait / 60)} นาที)` : msg;
+  }
+
+  // X48: ออกจากหน้าแล้วหยุดนับถอยหลัง (เดิม setInterval ทำงานค้างต่อ)
+  ngOnDestroy(): void {
+    clearInterval(this.cooldownTimer);
   }
 
   private startCooldown(seconds: number): void {

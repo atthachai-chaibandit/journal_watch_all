@@ -183,3 +183,72 @@ code, pre, .mono { font-family: 'IBM Plex Mono', monospace; }
     .tl-item:has(.tl-waiting) { display: none !important; }
   }
 }
+
+/* F24: สถานะ "โหลดข้อมูลไม่สำเร็จ" ในหน้ารายการ (ใช้ร่วมกันหลายหน้า — .empty-state ของแต่ละหน้าคุม layout) */
+.empty-state--error {
+  .empty-icon { color: #C0392B; }
+  .empty-text { color: #C0392B; font-weight: 600; text-align: center; padding: 0 16px; }
+}
+
+.btn-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1.5px solid #1C2744;
+  border-radius: 10px;
+  background: #fff;
+  color: #1C2744;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+
+  &:hover { background: #1C2744; color: #fff; }
+}
+
+/* X32: ไฟล์หลักฐาน T3 ที่ไม่ได้แนบ / เปิดไฟล์ไม่สำเร็จ (หน้าอาจารย์และ staff) */
+.evidence-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #9CA3AF;
+
+  i { font-size: 13px; }
+}
+
+.file-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(192, 57, 43, 0.07);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  color: #C0392B;
+  font-size: 13px;
+  font-weight: 600;
+
+  i { font-size: 16px; flex-shrink: 0; }
+}
+
+/* X35: รายการแถวที่ผิดตอน import CSV (หน้าจัดการผู้ใช้ / วารสารต้องห้าม) */
+.import-errors {
+  margin: 8px 0 0;
+  padding: 10px 12px 10px 28px;
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: 10px;
+  background: rgba(192, 57, 43, 0.05);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: #962D2D;
+  font-size: 12.5px;
+  line-height: 1.6;
+
+  li + li { margin-top: 2px; }
+}

@@ -86,9 +86,10 @@
               <div class="loading-spinner"></div>
               <span>กำลังดำเนินการ...</span>
             </div>
-          } @else {
-            <div id="google-btn-register"></div>
           }
+          <!-- F19: ซ่อนด้วย [hidden] ไม่ใช้ @if — ปุ่ม Google ถูก render ครั้งเดียวตอน ngOnInit
+               ถ้าทำลาย div ทิ้งตอน loading จะได้ div ใหม่ที่ว่างเปล่า ปุ่มหายจนกว่าจะ reload -->
+          <div id="google-btn-register" [hidden]="loading()"></div>
         </div>
 
         <div class="login-note">

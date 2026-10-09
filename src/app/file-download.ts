@@ -1,9 +1,10 @@
-/** นามสกุลไฟล์จาก MIME type ของ blob (ไฟล์หลักฐาน T3 รับแค่ PDF/JPG/PNG) */
+/** นามสกุลไฟล์จาก MIME type ของ blob — ไฟล์หลักฐาน T3 รับ PDF/JPG/PNG/WEBP (B2) */
 const EXT_BY_MIME: Record<string, string> = {
   'application/pdf': 'pdf',
   'image/jpeg':      'jpg',
   'image/jpg':       'jpg',
   'image/png':       'png',
+  'image/webp':      'webp',   // X46: เดิมไม่มี → ดาวน์โหลดไฟล์ WEBP ได้ชื่อไม่มีนามสกุล
 };
 
 /**

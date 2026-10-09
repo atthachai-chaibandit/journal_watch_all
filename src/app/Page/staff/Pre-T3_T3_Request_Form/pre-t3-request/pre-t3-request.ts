@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef, NgZone, ApplicationRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -9,7 +9,7 @@ import { Constants } from '../../../../comfig/constants';
 import { GetPreT3RequestStaffRes, Datum } from '../../../../model/res/get_Pre-T3_request_staff_res';
 import { PreT3DetailsRes, Data as PreT3ApiDetail } from '../../../../model/res/Pre-T3_details_res';
 import { StaffActionReq } from '../../../../model/req/staff_action_req';
-import { StaffActionRejectReq } from '../../../../model/req/staff_action_reject_req';
+import { apiFailure, failMsg } from '../../../../server-status.service';
 
 interface PreT3Card {
   initials:      string;
@@ -24,7 +24,7 @@ interface PreT3Card {
   database:      string;
   quartile:      string;
   journalStatus: 'active' | 'discontinued' | 'unwanted';
-  status:        'pending' | 'meeting' | 'approved' | 'rejected' | 'auto-rejected';
+  status:        'pending' | 'approved' | 'rejected' | 'auto-rejected';
   dateLabel:     string;
   advisorTime?:  string;
   daysAgo?:      number;
@@ -63,7 +63,7 @@ interface PreT3Detail {
   advisorSignDate: string;
   advisorRemark:   string;
   timeline:        TimelineStep[];
-  cardStatus:      'pending' | 'meeting' | 'approved' | 'rejected' | 'auto-rejected';
+  cardStatus:      'pending' | 'approved' | 'rejected' | 'auto-rejected';
   statusText:      string;
   submittedMeta:   string;
 }
@@ -86,7 +86,6 @@ export class PreT3Request implements OnInit {
   private constants = inject(Constants);
   private cdr       = inject(ChangeDetectorRef);
   private ngZone    = inject(NgZone);
-  private appRef    = inject(ApplicationRef);
   private router    = inject(Router);
 
   // ── list state ────────────────────────────────────
@@ -99,11 +98,6 @@ export class PreT3Request implements OnInit {
   isDetailLoading   = false;
   activeCard: PreT3Card | null = null;
 
-  // ── record-meeting modal (from detail panel) ──────
-  showMeetingModal  = false;
-  meetingDecision: 'approved' | 'rejected' | null = null;
-  meetingRemark     = '';
-
   // ── inline review (inside modal-panel) ────────────
   inlineDecision: 'approved' | 'rejected' | null = 'approved';
   inlineMeetingNo      = '';
@@ -113,13 +107,6 @@ export class PreT3Request implements OnInit {
   isSubmittingDecision  = false;
   showInlineConfirm     = false;
   pendingAction: 'approved' | 'rejected' | null = null;
-
-  // ── send-to-meeting modal (from card button) ──────
-  showSendMeetingModal = false;
-  sendMeetingCard: PreT3Card | null = null;
-  sendMeetingDate = '';
-  sendMeetingNo   = '';
-  isSending       = false;
 
   // ── toast notification ────────────────────────────
   toastMessage = '';
@@ -136,12 +123,6 @@ export class PreT3Request implements OnInit {
       this.cdr.detectChanges();
     }, 3000);
   }
-
-  // ── instant-reject modal (from card button) ───────
-  showRejectModal   = false;
-  rejectCard: PreT3Card | null = null;
-  rejectReason      = '';
-  isRejecting       = false;
 
   private datumMap  = new Map<string, Datum>();
 
@@ -171,14 +152,19 @@ export class PreT3Request implements OnInit {
     }, 0);
   }
 
+  // N3: โหลดไม่สำเร็จ ≠ ไม่มีรายการ
+  loadError = '';
+
   loadCards(): void {
     this.isLoading = true;
+    let failure: unknown = null;
     const headers  = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get<GetPreT3RequestStaffRes>(`${this.constants.API_ENDPOINT}/pre-t3/pending`, { headers })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => { failure = err; return of(null); }))
       .subscribe(res => {
         this.isLoading = false;
+        this.loadError = res?.success ? '' : failMsg(failure ? apiFailure(failure) : res, 'โหลดรายการไม่สำเร็จ กรุณาลองใหม่');
         if (res?.success) {
           this.cards = res.data.map((d, i) => this.mapDatum(d, i));
         }
@@ -203,7 +189,6 @@ export class PreT3Request implements OnInit {
     if (status === 'pending') {
       if (overall.includes('approv'))      status = 'approved';
       else if (overall.includes('reject')) status = 'rejected';
-      else if (facCom?.meeting_date)       status = 'meeting';
     }
 
     let journalStatus: PreT3Card['journalStatus'] = 'active';
@@ -219,8 +204,6 @@ export class PreT3Request implements OnInit {
       dateLabel = facCom?.approved_at ? `อนุมัติ ${fmt(facCom.approved_at as any)}` : 'อนุมัติแล้ว';
     } else if (status === 'rejected') {
       dateLabel = facCom?.approved_at ? `ไม่อนุมัติ ${fmt(facCom.approved_at as any)}` : 'ไม่อนุมัติ';
-    } else if (status === 'meeting') {
-      dateLabel = facCom?.meeting_date ? `ประชุม ${fmt(facCom.meeting_date as any)}` : 'ส่งที่ประชุมแล้ว';
     } else if (status === 'auto-rejected') {
       dateLabel = `ปฏิเสธ ${fmt(createdAt)}`;
     } else {
@@ -242,10 +225,12 @@ export class PreT3Request implements OnInit {
       initials,
       avatarColor:   AVATAR_COLORS[index % AVATAR_COLORS.length],
       name:          d.student_name,
-      degree:        '',
-      degreeType:    'master',
+      // X43: เดิม hardcode '' ทั้งที่ backend ส่งมา
+      degree:        d.student_snapshot?.degree_level === 'Doctoral' ? 'ป.เอก'
+                   : d.student_snapshot?.degree_level === 'Master'   ? 'ป.โท' : '',
+      degreeType:    d.student_snapshot?.degree_level === 'Doctoral' ? 'phd' : 'master',
       studentId,
-      title:         '',
+      title:         d.article_info?.title_th || d.article_info?.title_en || '',
       journal:       snap.journal_name,
       issn:          snap.issn || '-',
       database:      snap.indexed_database,
@@ -263,7 +248,6 @@ export class PreT3Request implements OnInit {
   // ── Detail panel ──────────────────────────────────
   openDetail(card: PreT3Card): void {
     this.activeCard           = card;
-    this.showMeetingModal     = false;
     this.inlineDecision        = 'approved';
     this.inlineMeetingNo       = '';
     this.inlineMeetingDate     = '';
@@ -272,14 +256,15 @@ export class PreT3Request implements OnInit {
     this.showInlineConfirm     = false;
     this.pendingAction         = null;
 
+    // N16: ล็อคการเลื่อนหน้าข้างหลังระหว่างเปิดรายละเอียด (หน้าอื่นทำอยู่แล้ว หน้านี้ขาด)
+    document.body.style.overflow = 'hidden';
+
     // แสดง fallback ทันทีจาก datumMap (ไม่ต้องรอ API)
     this.selectedDetail  = this.buildDetailFallback(card);
     this.isDetailLoading = true;
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     const url     = `${this.constants.API_ENDPOINT}/pre-t3/${card.pre_t3_id}`;
-    const t0      = performance.now();
-    console.log('[openDetail] GET', url);
     this.http
       .get<PreT3DetailsRes>(url, { headers })
       .pipe(catchError(err => {
@@ -287,8 +272,6 @@ export class PreT3Request implements OnInit {
         return of(null);
       }))
       .subscribe(res => {
-        const ms = (performance.now() - t0).toFixed(0);
-        console.log(`[openDetail] Response in ${ms}ms — success:`, res?.success);
         this.isDetailLoading = false;
         if (res?.success) {
           this.selectedDetail = this.buildDetailFromApi(res.data, card);
@@ -298,24 +281,18 @@ export class PreT3Request implements OnInit {
   }
 
   closeDetail(): void {
+    document.body.style.overflow = '';
     this.selectedDetail   = null;
     this.activeCard       = null;
-    this.showMeetingModal = false;
   }
 
   submitInlineDecision(action: 'approved' | 'rejected'): void {
-    console.log('[submitInlineDecision] called', action, {
-      meetingNo: this.inlineMeetingNo,
-      meetingDate: this.inlineMeetingDate,
-      rejectReason: this.inlineRejectReason,
-    });
-    if (action === 'approved' && (!this.inlineMeetingNo || !this.inlineMeetingDate)) {
-      console.warn('[submitInlineDecision] blocked — missing meeting info');
+    // F28: ตัดช่องว่างก่อนเช็ค — เดิมเว้นวรรคล้วนผ่านได้ แล้ว backend เก็บเลขที่ประชุมเป็นช่องว่าง
+    if (action === 'approved' && (!this.inlineMeetingNo.trim() || !this.inlineMeetingDate)) {
       return;
     }
     if (action === 'rejected') {
       if (!this.inlineRejectReason.trim()) {
-        console.warn('[submitInlineDecision] blocked — missing reject reason');
         this.showRejectReasonError = true;
         return;
       }
@@ -323,7 +300,6 @@ export class PreT3Request implements OnInit {
     }
     this.pendingAction     = action;
     this.showInlineConfirm = true;
-    console.log('[submitInlineDecision] showInlineConfirm =', this.showInlineConfirm, 'selectedDetail =', !!this.selectedDetail);
     this.cdr.detectChanges();
   }
 
@@ -344,8 +320,8 @@ export class PreT3Request implements OnInit {
       'Content-Type': 'application/json',
     });
     const body: any = action === 'approved'
-      ? { action: 'approve', meeting_no: this.inlineMeetingNo, meeting_date: this.inlineMeetingDate }
-      : { action: 'reject', remark: this.inlineRejectReason };
+      ? { action: 'approve', meeting_no: this.inlineMeetingNo.trim(), meeting_date: this.inlineMeetingDate }
+      : { action: 'reject', remark: this.inlineRejectReason.trim() };
 
     let errorMsg = '';
     this.http
@@ -369,114 +345,6 @@ export class PreT3Request implements OnInit {
         } else {
           this.showToast(`${errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่'}`, 'error');
         }
-      });
-  }
-
-  // ── Record-meeting modal (from detail panel) ──────
-  openMeetingModal(): void {
-    this.meetingDecision  = null;
-    this.meetingRemark    = '';
-    this.showMeetingModal = true;
-  }
-  closeMeetingModal(): void { this.showMeetingModal = false; }
-  saveMeeting(): void       { this.closeMeetingModal(); }
-
-  // ── Send-to-meeting modal ─────────────────────────
-  openSendMeetingModal(card: PreT3Card, event: Event): void {
-    event.stopPropagation();
-    this.sendMeetingCard = card;
-    this.sendMeetingDate = '';
-    this.sendMeetingNo   = '';
-    this.showSendMeetingModal = true;
-  }
-
-  closeSendMeetingModal(): void { this.showSendMeetingModal = false; }
-
-  confirmSendMeeting(): void {
-    // backend บังคับทั้ง meeting_no และ meeting_date ตอน approve (ไม่งั้นได้ 400 MEETING_REQUIRED)
-    if (!this.sendMeetingDate || !this.sendMeetingNo.trim() || this.isSending) return;
-    this.isSending = true;
-    const headers  = new HttpHeaders({
-      Authorization:  `Bearer ${this.auth.token}`,
-      'Content-Type': 'application/json',
-    });
-    const card = this.sendMeetingCard!;
-    const body = {
-      action:       'approve',
-      meeting_no:   this.sendMeetingNo.trim(),
-      meeting_date: this.sendMeetingDate, // ส่งเป็น string "YYYY-MM-DD" ตรงๆ
-    };
-    const url = `${this.constants.API_ENDPOINT}/pre-t3/${card.pre_t3_id}/faculty-review`;
-    console.log('[confirmSendMeeting] PATCH', url);
-    console.log('[confirmSendMeeting] Body:', body);
-    let errorMsg = '';
-    this.http
-      .patch(url, body, { headers })
-      .pipe(catchError(err => {
-        console.error('[confirmSendMeeting] Error:', err?.status, err?.error);
-        errorMsg = err?.error?.message ?? '';
-        return of(null);
-      }))
-      .subscribe(res => {
-        console.log('[confirmSendMeeting] Response:', res);
-        this.isSending = false;
-        if (res) {
-          this.cards = this.cards.map(c =>
-            c.pre_t3_id === card.pre_t3_id ? { ...c, status: 'approved' as const } : c
-          );
-          this.closeSendMeetingModal();
-          this.showToast(`อนุมัติสำเร็จ — ${card.requestId} · ${card.name}`);
-        } else {
-          this.showToast(`${errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่'}`, 'error');
-        }
-        this.appRef.tick();
-      });
-  }
-
-  // ── Instant-reject modal ──────────────────────────
-  openRejectModal(card: PreT3Card, event: Event): void {
-    event.stopPropagation();
-    this.rejectCard   = card;
-    this.rejectReason = '';
-    this.showRejectModal = true;
-  }
-
-  closeRejectModal(): void { this.showRejectModal = false; }
-
-  confirmReject(): void {
-    if (!this.rejectReason.trim() || this.isRejecting) return;
-    this.isRejecting = true;
-    const headers    = new HttpHeaders({
-      Authorization:  `Bearer ${this.auth.token}`,
-      'Content-Type': 'application/json',
-    });
-    const card = this.rejectCard!;
-    const body: StaffActionRejectReq = { action: 'reject', remark: this.rejectReason.trim() };
-    const url  = `${this.constants.API_ENDPOINT}/pre-t3/${card.pre_t3_id}/faculty-review`;
-    console.log('[confirmReject] URL  :', url);
-    console.log('[confirmReject] Body :', body);
-    let errorMsg = '';
-    this.http
-      .patch(url, body, { headers })
-      .pipe(catchError(err => {
-        console.error('[confirmReject] HTTP status :', err?.status);
-        console.error('[confirmReject] Error body  :', err?.error);
-        errorMsg = err?.error?.message ?? '';
-        return of(null);
-      }))
-      .subscribe(res => {
-        console.log('[confirmReject] Response:', res);
-        this.isRejecting = false;
-        if (res) {
-          this.cards = this.cards.map(c =>
-            c.pre_t3_id === card.pre_t3_id ? { ...c, status: 'rejected' as const } : c
-          );
-          this.closeRejectModal();
-          this.showToast(`ไม่อนุมัติสำเร็จ — ${card.requestId} · ${card.name}`, 'error');
-        } else {
-          this.showToast(`${errorMsg || 'เกิดข้อผิดพลาด กรุณาลองใหม่'}`, 'error');
-        }
-        this.appRef.tick();
       });
   }
 
@@ -584,7 +452,6 @@ export class PreT3Request implements OnInit {
   private statusText(s: string): string {
     return ({
       pending:         '○ รอดำเนินการ',
-      meeting:         '● ส่งที่ประชุมแล้ว',
       approved:        'อนุมัติแล้ว',
       rejected:        'ไม่อนุมัติ',
       'auto-rejected': 'ระบบปฏิเสธ',
@@ -644,11 +511,6 @@ export class PreT3Request implements OnInit {
     if (status === 'pending') {
       return [submitted, advisorSigned,
         { label: 'มติที่ประชุม', date: '-', status: 'pending' },
-      ];
-    }
-    if (status === 'meeting') {
-      return [submitted, advisorSigned,
-        { label: 'มติที่ประชุม', date: 'รอผล', status: 'active' },
       ];
     }
     if (status === 'approved') {

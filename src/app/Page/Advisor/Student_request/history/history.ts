@@ -11,6 +11,9 @@ import { GetDeteilsT3Res, Data as T3Detail } from '../../../../model/res/get_det
 import { PreT3DetailsRes, Data as PreT3Detail } from '../../../../model/res/Pre-T3_details_res';
 import { downloadBlob } from '../../../../file-download';
 import { fetchAllPages } from '../../../../paged-fetch';
+import { apiFailure, failMsg } from '../../../../server-status.service';
+import { PRE_T3_CHECKLIST_TITLES as CHECKLIST_TITLES } from '../../../../pre-t3-checklist';
+import { normalizePubStatus, pubTypeLabel, innovationTypeLabel } from '../../../../t3-labels';
 
 type TypeFilter    = 'all' | 'pre-t3' | 't3';
 type StatusFilter  = 'all' | 'approved' | 'rejected';
@@ -41,17 +44,6 @@ interface HistoryCard {
 
 interface ChecklistItem { id: number; title: string; status: 'pass' | 'fail'; }
 
-const CHECKLIST_TITLES: Record<string, string> = {
-  item1: 'มาตรฐานวารสารนานาชาติที่มีคุณภาพตามเกณฑ์',
-  item2: 'วารสารมีโปรไฟล์หน้าเว็บที่อ้างอิงในฐานข้อมูล MSU',
-  item3: 'กำหนดออกเผยแพร่อย่างสม่ำเสมอ (Continuous Publication)',
-  item4: 'กำหนดการกลั่นกรอง (Systematic review) ของวารสาร',
-  item5: 'มีคณะกรรมการวิชาการวารสารระดับนานาชาติ (International Editorial Board)',
-  item6: 'มีระบบ Peer Review ที่ชัดเจน',
-  item7: 'ปฏิบัติตามจรรยาบรรณมาตรฐานสากล',
-  item8: 'ไม่ใช่ Hijacked Journal',
-  item9: 'อ้างอิงฐานข้อมูลของ Scopus / TCI จะใช้ได้',
-};
 
 const EVIDENCE_FILES: { key: string; label: string; icon: string }[] = [
   { key: 'acceptance_letter',  label: 'หนังสือตอบรับ',     icon: 'ti ti-file-check' },
@@ -70,6 +62,7 @@ const EVIDENCE_FILES: { key: string; label: string; icon: string }[] = [
   styleUrl: './history.scss',
 })
 export class History implements OnInit {
+  readonly innovationLabel = innovationTypeLabel;
   private http      = inject(HttpClient);
   private auth      = inject(AuthService);
   private constants = inject(Constants);
@@ -145,13 +138,17 @@ export class History implements OnInit {
     }, 0);
   }
 
+  // F24: โหลดรายการล้มเหลว ≠ ไม่มีรายการ — เดิม error ทุกแบบแสดงเป็น "ยังไม่มีคำร้อง"
+  loadError = signal('');
+
   loadHistory(): void {
     this.isLoading.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
+    let failure: unknown = null;
     const t3$    = fetchAllPages<T3HistoryAdvisor>(this.http, `${this.constants.API_ENDPOINT}/t3/history`, headers)
-                       .pipe(catchError(() => of(null)));
+                       .pipe(catchError(err => { failure = err; return of(null); }));
     const preT3$ = fetchAllPages<PreT3HistoryAdvisor>(this.http, `${this.constants.API_ENDPOINT}/pre-t3/history`, headers)
-                       .pipe(catchError(() => of(null)));
+                       .pipe(catchError(err => { failure = err; return of(null); }));
 
     forkJoin([t3$, preT3$]).subscribe(([t3Res, preT3Res]) => {
       const t3Cards    = (t3Res?.success    ? t3Res.data.items    : []).map(d => this.mapT3(d));
@@ -162,6 +159,9 @@ export class History implements OnInit {
 
       this.allCards.set(merged);
       this.isLoading.set(false);
+      // ฝั่งไหนโหลดไม่ได้ก็แจ้ง (ยังแสดงรายการของอีกฝั่งที่โหลดได้)
+      this.loadError.set(t3Res?.success && preT3Res?.success ? '' :
+        failMsg(failure ? apiFailure(failure) : null, 'โหลดประวัติบางส่วนไม่สำเร็จ กรุณาลองใหม่'));
     });
   }
 
@@ -183,8 +183,8 @@ export class History implements OnInit {
       issn:          d.issn || d.journal_snapshot.issn,
       database:      d.publication_details.specified_database,
       quartile:      '',
-      pubType:       d.publication_details.type,
-      pubStatus:     d.publication_details.status,
+      pubType:       pubTypeLabel(d.publication_details.type),
+      pubStatus:     normalizePubStatus(d.publication_details.status),
       isDiscontinued: false,
       submittedDate: this.formatDate(d.created_at),
       advisorStatus,
@@ -276,17 +276,33 @@ export class History implements OnInit {
     window.print();
   }
 
-  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void): void {
+  // X32: T3 เก่าบางใบสร้างไว้โดยไม่มีไฟล์ (ก่อน backend บังคับแนบ) — ปิดปุ่มของไฟล์ที่ไม่มี
+  fileError = signal('');
+
+  hasFile(key: string): boolean {
+    const files = this.detailDataT3()?.journal_evidence_files as Record<string, string | null> | null | undefined;
+    return !files || !!files[`${key}_path`];   // ยังโหลดรายละเอียดไม่เสร็จ = ยังไม่รู้ ให้กดได้
+  }
+
+  private fetchFile(t3Id: number, fileKey: string, state: WritableSignal<Record<string, boolean>>, onBlob: (blob: Blob) => void, onFail?: () => void): void {
     if (state()[fileKey]) return;
+    this.fileError.set('');
     state.update(m => ({ ...m, [fileKey]: true }));
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .get(`${this.constants.API_ENDPOINT}/upload/t3/${t3Id}/files/${fileKey}`,
            { headers, responseType: 'blob' })
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError(err => {
+        // X32: เดิมล้มแล้วเงียบ (กดแล้วไม่มีอะไรเกิดขึ้น)
+        this.fileError.set(err?.status === 404
+          ? 'ไม่พบไฟล์นี้ในระบบ — ผู้ยื่นอาจไม่ได้แนบไฟล์นี้ไว้'
+          : 'เปิดไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        return of(null);
+      }))
       .subscribe(blob => {
         state.update(m => ({ ...m, [fileKey]: false }));
         if (blob) onBlob(blob);
+        else onFail?.();
       });
   }
 
@@ -297,11 +313,14 @@ export class History implements OnInit {
   }
 
   viewFile(t3Id: number, fileKey: string): void {
+    if (this.fileViewing()[fileKey]) return;
+    // F23: เปิดแท็บเปล่าก่อนแบบ sync (ยังอยู่ใน click event) — ถ้าเปิดหลังโหลดไฟล์เสร็จ เบราว์เซอร์จะบล็อกเป็น popup
+    const tab = window.open('', '_blank');
     this.fetchFile(t3Id, fileKey, this.fileViewing, blob => {
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    });
+      if (tab) tab.location.href = url; else window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }, () => tab?.close());
   }
 
   private formatDate(date: Date | string | null): string {

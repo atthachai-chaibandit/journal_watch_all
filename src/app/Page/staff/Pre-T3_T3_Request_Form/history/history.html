@@ -34,7 +34,11 @@
     </div>
     <div class="stat-pill stat-pill--rejected">
       <span class="stat-num">{{ countRejected }}</span>
-      <span class="stat-label">ไม่อนุมัติ / ยกเลิก</span>
+      <span class="stat-label">ไม่อนุมัติ</span>
+    </div>
+    <div class="stat-pill stat-pill--cancelled">
+      <span class="stat-num">{{ countCancelled }}</span>
+      <span class="stat-label">ยกเลิกโดยนิสิต</span>
     </div>
   </div>
 
@@ -43,6 +47,7 @@
     <button class="filter-btn" [class.active]="activeFilter() === 'all'"      (click)="setFilter('all')">ทั้งหมด</button>
     <button class="filter-btn" [class.active]="activeFilter() === 'approved'" (click)="setFilter('approved')"><i class="ti ti-circle-check"></i> อนุมัติแล้ว</button>
     <button class="filter-btn" [class.active]="activeFilter() === 'rejected'" (click)="setFilter('rejected')"><i class="ti ti-circle-x"></i> ไม่อนุมัติ</button>
+    <button class="filter-btn" [class.active]="activeFilter() === 'cancelled'" (click)="setFilter('cancelled')"><i class="ti ti-ban"></i> ยกเลิก</button>
     <span class="filter-divider"></span>
     <button class="filter-btn filter-btn--type" [class.active]="typeFilter() === 'PreT3'" (click)="setTypeFilter(typeFilter() === 'PreT3' ? 'all' : 'PreT3')"><i class="ti ti-clipboard-text"></i> Pre-T3</button>
     <button class="filter-btn filter-btn--type" [class.active]="typeFilter() === 'T3'"   (click)="setTypeFilter(typeFilter() === 'T3' ? 'all' : 'T3')"><i class="ti ti-chart-bar"></i> T3</button>
@@ -54,6 +59,12 @@
     @if (isLoading()) {
       <div class="empty-state">
         <div class="loading-spinner"></div>
+      </div>
+    } @else if (loadError() && filtered().length === 0) {
+      <div class="empty-state empty-state--error">
+        <div class="empty-icon"><i class="ti ti-cloud-off"></i></div>
+        <div class="empty-text">{{ loadError() }}</div>
+        <button type="button" class="btn-retry" (click)="loadHistory()"><i class="ti ti-refresh"></i> ลองใหม่</button>
       </div>
     } @else if (filtered().length === 0) {
       <div class="empty-state">
@@ -183,7 +194,7 @@
             <div class="mh-cell"><span class="mh-lbl">ระดับการศึกษา</span><span class="mh-val">{{ d.degreeLevel }}</span></div>
             <div class="mh-cell"><span class="mh-lbl">อีเมล</span><span class="mh-val mono">{{ d.email }}</span></div>
             @if (d.journalUrl) {
-              <div class="mh-cell"><span class="mh-lbl">URL วารสาร</span><a class="mh-val journal-link" [href]="d.journalUrl" target="_blank">เปิดลิงก์ ↗</a></div>
+              <div class="mh-cell"><span class="mh-lbl">URL วารสาร</span>@if (isHttpUrl(d.journalUrl)) { <a class="mh-val journal-link" [href]="d.journalUrl" target="_blank" rel="noopener noreferrer">เปิดลิงก์ ↗</a> } @else { <span class="mh-val">{{ d.journalUrl }}</span> }</div>
             }
           </div>
         }
@@ -379,6 +390,7 @@
               <span class="section-num">5</span>
               <span class="section-title">เอกสารหลักฐานประกอบ</span>
             </div>
+            @if (fileError()) { <div class="file-error"><i class="ti ti-alert-triangle"></i> {{ fileError() }}</div> }
             <div class="evidence-grid">
               @for (f of evidenceFiles; track f.key) {
                 <div class="evidence-card">
@@ -386,13 +398,14 @@
                   <div class="evidence-info">
                     <div class="evidence-name">{{ f.label }}</div>
                     <div class="evidence-key">{{ f.key }}</div>
+                  @if (!hasFile(f.key)) { <div class="evidence-missing"><i class="ti ti-file-off"></i> ไม่ได้แนบไฟล์</div> }
                   </div>
                   <div class="evidence-actions">
-                    <button class="btn-evidence-view" [disabled]="fileViewing()[f.key]"
+                    <button class="btn-evidence-view" [disabled]="fileViewing()[f.key] || !hasFile(f.key)"
                             (click)="viewFile(d.t3Id, f.key); $event.stopPropagation()">
                       @if (fileViewing()[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-eye"></i> ดูไฟล์ }
                     </button>
-                    <button class="btn-evidence-download" [disabled]="fileLoading()[f.key]"
+                    <button class="btn-evidence-download" [disabled]="fileLoading()[f.key] || !hasFile(f.key)"
                             (click)="downloadFile(d.t3Id, f.key); $event.stopPropagation()">
                       @if (fileLoading()[f.key]) { <span class="spinner-sm"></span> } @else { <i class="ti ti-download"></i> ดาวน์โหลด }
                     </button>

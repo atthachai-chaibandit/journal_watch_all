@@ -38,6 +38,12 @@
         <div class="loading-spinner"></div>
         <div class="empty-text">กำลังโหลดข้อมูล...</div>
       </div>
+    } @else if (loadError()) {
+      <div class="empty-state empty-state--error">
+        <div class="empty-icon"><i class="ti ti-cloud-off"></i></div>
+        <div class="empty-text">{{ loadError() }}</div>
+        <button type="button" class="btn-retry" (click)="refresh()"><i class="ti ti-refresh"></i> ลองใหม่</button>
+      </div>
     } @else if (cards().length === 0) {
       <div class="empty-state">
         <div class="empty-icon"><i class="ti ti-inbox"></i></div>

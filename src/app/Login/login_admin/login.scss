@@ -456,9 +456,13 @@ form {
 }
 
 .forgot-link {
+  // เดิม display:block กินความกว้างทั้งแถว → คลิกที่ว่างทางซ้ายของข้อความก็ไปหน้าลืมรหัสผ่าน
+  // ให้กว้างเท่าข้อความ ชิดขวา และเผื่อ padding ให้กดง่ายบนมือถือ
   display: block;
-  text-align: right;
-  margin-top: 6px;
+  width: fit-content;
+  margin-left: auto;
+  padding: 4px 2px;
+  margin-top: 2px;
   font-size: 12.5px;
   font-weight: 600;
   color: #1C2744;

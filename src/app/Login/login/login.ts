@@ -69,6 +69,9 @@ export class Login implements OnInit {
     } catch { return {}; }
   }
 
+  /** บัญชียังรออนุมัติ / ถูกระงับ — แสดงเป็นกล่องสถานะค้างไว้ (เดิมเป็น snackbar error สีแดง 4 วิ) */
+  accountNotice = signal<'pending' | 'suspended' | null>(null);
+
   private handleGoogleCallback(response: any) { // ฟังก์ชันนี้ทำให้ระบบ รับผลการยืนยันตัวตนจาก Google แล้วพานิสิตเข้าสู่ระบบได้ครบวงจร 
     this.loading.set(true);
     const claims = this.decodeJwt(response.credential);
@@ -83,6 +86,13 @@ export class Login implements OnInit {
         this.router.navigateByUrl(this.authService.homeUrl);
       },
       error: (err) => {
+        const code = err?.error?.code;
+        if (code === 'ACCOUNT_PENDING' || code === 'ACCOUNT_SUSPENDED') {
+          this.loading.set(false);
+          this.accountNotice.set(code === 'ACCOUNT_PENDING' ? 'pending' : 'suspended');
+          return;
+        }
+        this.accountNotice.set(null);
         this.serverStatus.explain(err, 'เข้าสู่ระบบไม่สำเร็จ').subscribe(msg => {
           this.loading.set(false);
           this.showSnack(msg, 'error');

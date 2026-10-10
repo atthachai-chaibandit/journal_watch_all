@@ -279,6 +279,7 @@ $muted:  #64748b;
   &--all      { background: #94a3b8; }
   &--active   { background: $green; }
   &--suspended { background: $red; }
+  &--pending   { background: #C07800; }
 }
 
 .mu-dd-check {
@@ -1166,3 +1167,34 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 3fr;
 
   input { width: 15px; height: 15px; margin: 0; accent-color: $navy; cursor: pointer; }
 }
+
+// ปุ่มดาวน์โหลดไฟล์ CSV ตัวอย่าง (feedback backend ข้อ 5)
+.mu-csv-template-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border: 1px solid #c7d3f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a3a8a;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover { background: #e8eefc; }
+}
+
+// ตัวเลข staff รออนุมัติบนแท็บ (feedback backend ข้อ 1.2)
+.mu-tab-badge {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: #C07800;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+

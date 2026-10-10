@@ -295,7 +295,10 @@
         <div class="csv-hint">
           <div class="csv-hint__title">รูปแบบ CSV ที่รองรับ</div>
           <code class="csv-hint__code">journal_name, issn, publisher, note, recorded_date</code>
-          <div class="csv-hint__note">• ต้องมีแถวหัวตาราง (header row)<br>• recorded_date ต้องมีทุกแถว รูปแบบ YYYY-MM-DD<br>• บันทึกไฟล์เป็น UTF-8</div>
+          <div class="csv-hint__note">• ต้องมีแถวหัวตาราง (header row)<br>• recorded_date ต้องมีทุกแถว รูปแบบ YYYY-MM-DD (ค.ศ.)<br>• บันทึกไฟล์เป็น UTF-8<br>• ไฟล์ไม่เกิน 2 MB และไม่เกิน 2,000 แถว · ถ้ามีแถวใดผิด จะไม่นำเข้าทั้งไฟล์</div>
+          <button type="button" class="csv-template-btn" (click)="downloadCsvTemplate()">
+            <i class="ti ti-download"></i> ดาวน์โหลดไฟล์ตัวอย่าง (.csv)
+          </button>
         </div>
 
         <div class="form-group">

@@ -116,7 +116,7 @@
               </td>
               <td class="col-date">
                 <div class="date-main">{{ formatDate(j.recorded_date) }}</div>
-                <div class="date-by">โดย: {{ addedBy(j) }}</div>
+                @if (isStaff) { <div class="date-by">โดย: {{ addedBy(j) }}</div> }
               </td>
               <td [class]="isStaff ? 'col-action-staff' : 'col-action'">
                 <div class="row-actions">
@@ -175,7 +175,9 @@
           <tr><td class="dt-label">Publisher</td><td class="dt-value">{{ j.publisher || '—' }}</td></tr>
           <tr><td class="dt-label">หมายเหตุ</td><td class="dt-value">{{ j.note || '—' }}</td></tr>
           <tr><td class="dt-label">วันที่บันทึก</td><td class="dt-value">{{ formatDate(j.recorded_date) }}</td></tr>
+          @if (isStaff) {
           <tr><td class="dt-label">บันทึกโดย</td><td class="dt-value">{{ addedBy(j) }}</td></tr>
+          }
           <tr>
             <td class="dt-label">หลักฐาน</td>
             <td class="dt-value">
@@ -192,7 +194,7 @@
         </table>
       </div>
       <div class="modal-footer">
-        <span class="modal-footer-note">บันทึกเมื่อ: {{ formatDate(j.recorded_date) }} · โดย: {{ addedBy(j) }}</span>
+        <span class="modal-footer-note">บันทึกเมื่อ: {{ formatDate(j.recorded_date) }}@if (isStaff) { · โดย: {{ addedBy(j) }} }</span>
         <button class="btn-close" (click)="closeDetail()">ปิด</button>
       </div>
     </div>
@@ -295,7 +297,10 @@
         <div class="csv-hint">
           <div class="csv-hint__title">รูปแบบ CSV ที่รองรับ</div>
           <code class="csv-hint__code">journal_name, issn, publisher, note, recorded_date</code>
-          <div class="csv-hint__note">• ต้องมีแถวหัวตาราง (header row)<br>• recorded_date ต้องมีทุกแถว รูปแบบ YYYY-MM-DD<br>• บันทึกไฟล์เป็น UTF-8</div>
+          <div class="csv-hint__note">• ต้องมีแถวหัวตาราง (header row)<br>• recorded_date ต้องมีทุกแถว รูปแบบ YYYY-MM-DD (ค.ศ.)<br>• บันทึกไฟล์เป็น UTF-8<br>• ไฟล์ไม่เกิน 2 MB และไม่เกิน 2,000 แถว · ถ้ามีแถวใดผิด จะไม่นำเข้าทั้งไฟล์</div>
+          <button type="button" class="csv-template-btn" (click)="downloadCsvTemplate()">
+            <i class="ti ti-download"></i> ดาวน์โหลดไฟล์ตัวอย่าง (.csv)
+          </button>
         </div>
 
         <div class="form-group">

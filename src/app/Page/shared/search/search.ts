@@ -468,8 +468,9 @@ export class Search implements OnInit, OnDestroy {
       hIndex: data.scopus_h_index,
       citesPerDoc2y: extra.scopus_cites_per_doc ?? null,
       totalDocs: extra.scopus_total_docs ?? null,
-      subjectAreaMain: data.main_area,
-      subjectAreaSub: data.major_area,
+      // main_area / major_area เป็นฟิลด์ของ TCI จึงว่างเสมอสำหรับ Scopus — Scopus ส่งมาใน subject_areas (array)
+      subjectAreaMain: extra.subject_areas?.[0]?.area ?? null,
+      subjectAreaSub: extra.subject_areas?.[1]?.area ?? null,
       country: extra.country ?? null,
       openAccess: extra.open_access ?? extra.openAccess ?? null,
       openAccessType: extra.open_access_type ?? extra.openAccessType ?? null,

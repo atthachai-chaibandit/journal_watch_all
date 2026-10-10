@@ -116,12 +116,12 @@
             <span class="intro-db-name">Scopus</span>
             <span class="intro-db-badge intro-db-badge--scopus">นานาชาติ</span>
           </div>
-          <div class="intro-db-desc">ตรวจสอบ Quartile, SJR Score, CiteScore, H-Index และสถานะ Active / Discontinued</div>
+          <div class="intro-db-desc">ตรวจสอบ Quartile, SJR Score, CiteScore, SNIP และสถานะ Active / Discontinued</div>
           <div class="intro-db-tags">
             <span>Q1 – Q4</span>
             <span>SJR Score</span>
             <span>CiteScore</span>
-            <span>H-Index</span>
+            <span>SNIP</span>
           </div>
         </div>
 
@@ -569,19 +569,9 @@
               <div class="metric-sub">ใน Subject Area</div>
             </div>
             <div class="metric-item">
-              <div class="metric-label">H-Index</div>
-              <div class="metric-value">{{ r.hIndex ?? '—' }}</div>
-              <div class="metric-sub">Hirsch Index</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-label">Cite/Doc (2y)</div>
-              <div class="metric-value">{{ r.citesPerDoc2y ?? '—' }}</div>
-              <div class="metric-sub">Citations per Document</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-label">Total Docs</div>
+              <div class="metric-label">บทความในช่วง CiteScore</div>
               <div class="metric-value">{{ r.totalDocs ?? '—' }}</div>
-              <div class="metric-sub">บทความที่ตีพิมพ์</div>
+              <div class="metric-sub">ประมาณ 4 ปีล่าสุด</div>
             </div>
           </div>
         </div>
@@ -604,7 +594,7 @@
             </div>
             <div class="base-field">
               <div class="base-label">COUNTRY</div>
-              <div class="base-value">{{ r.country || '—' }}</div>
+              <div class="base-value">{{ r.country || 'ไม่มีข้อมูลจาก Scopus' }}</div>
             </div>
             <!-- Row 2 -->
             <div class="base-field">

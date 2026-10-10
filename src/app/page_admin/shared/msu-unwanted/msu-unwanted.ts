@@ -9,6 +9,7 @@ import { Constants } from '../../../comfig/constants';
 import { MSUUnwantedRes, Journal } from '../../../model/res/MSU_Unwanted_res';
 import { ImportMsuUnwantedRes } from '../../../model/res/import_msu_Unwanted_res';
 import { apiFailure, failMsg } from '../../../server-status.service';
+import { downloadBlob } from '../../../file-download';
 
 interface ActionResult { ok: boolean; msg: string; errors?: string[]; }
 
@@ -104,7 +105,7 @@ export class MsuUnwanted implements OnInit {
             }
             this.journals.set(res.data.journals);
             this.totalItems.set(res.data.pagination.total);
-            this.totalPagesCount.set(res.data.pagination.totalPages);
+            this.totalPagesCount.set(Math.max(1, res.data.pagination.totalPages));
           } else {
             this.errorMessage.set('ไม่สามารถโหลดข้อมูลได้');
           }
@@ -224,6 +225,20 @@ export class MsuUnwanted implements OnInit {
     this.importResult.set(null);
     this.csvModal.set(true);
     document.body.style.overflow = 'hidden';
+  }
+
+  /**
+   * ดาวน์โหลดไฟล์ CSV ตัวอย่าง (feedback backend ข้อ 4) — สร้างในเบราว์เซอร์ ไม่ต้องมีไฟล์/endpoint ฝั่ง backend
+   * ใส่ BOM ให้ Excel เปิดภาษาไทยได้ (backend อ่านไฟล์ที่มี BOM ได้) · recorded_date เป็น ค.ศ. YYYY-MM-DD
+   */
+  downloadCsvTemplate(): void {
+    const rows = [
+      ['journal_name', 'issn', 'publisher', 'note', 'recorded_date'],
+      ['ตัวอย่างวารสาร A (ลบแถวตัวอย่างออกก่อนนำเข้า)', '1234-5678', 'ตัวอย่างสำนักพิมพ์', 'หมายเหตุ (ไม่บังคับ)', '2026-01-31'],
+      ['ตัวอย่างวารสาร B ที่ไม่มี ISSN', '', '', '', '2026-01-31'],
+    ];
+    const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'msu-unwanted-journals-template.csv');
   }
 
   closeCsvModal(): void {

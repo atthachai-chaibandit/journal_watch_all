@@ -17,6 +17,7 @@ import { GetAdminListRes, Admin } from '../../../model_admin/res/get_admin_list_
 import { apiFailure, failMsg } from '../../../server-status.service';
 import { AppSelect } from '../../../Components/app-select/app-select';
 import { passwordProblem } from '../../../password-policy';
+import { downloadBlob } from '../../../file-download';
 
 type TabType = 'student' | 'advisor' | 'staff' | 'admin';
 type UserTab = Exclude<TabType, 'admin'>;
@@ -58,6 +59,7 @@ export class ManageUsers implements OnInit {
     const sf = this.statusFilter();
     if (sf === 'Active')    return 'Active';
     if (sf === 'Suspended') return 'ถูกล็อค';
+    if (sf === 'Pending')   return 'รออนุมัติ';
     return 'สถานะทั้งหมด';
   });
 
@@ -92,6 +94,8 @@ export class ManageUsers implements OnInit {
 
   // จำนวนทั้งหมดของแต่ละ role (ตัวเลขบนแท็บ) — ไม่ขึ้นกับตัวกรองสถานะ/คำค้น
   roleCounts = signal<Record<UserTab, number>>({ student: 0, advisor: 0, staff: 0 });
+  /** feedback backend ข้อ 1.2: staff ที่สมัครเข้ามารออนุมัติ — แสดงบนแท็บ ไม่งั้นคำขอค้างถ้า admin ไม่เปิดดูเอง */
+  pendingStaffCount = signal(0);
 
   // ── Admin tab ─────────────────────────────────────────────────────
   allAdmins        = signal<Admin[]>([]);
@@ -154,6 +158,16 @@ export class ManageUsers implements OnInit {
     fn?.();
   }
 
+  /**
+   * feedback backend ข้อ 6: เช็ครูปแบบอีเมลก่อนส่ง — เดิมใส่แค่รหัสนิสิต (ไม่มี @โดเมน) ก็บันทึกได้
+   * แล้วล็อกอินด้วย Google ไม่ได้ (backend ตรวจแล้วตอบ 400 INVALID_EMAIL แต่ให้ผู้ใช้เห็นทันทีที่หน้าเว็บ)
+   */
+  mailError(v: string | null | undefined): string {
+    const m = (v ?? '').trim();
+    if (!m) return '';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m) ? '' : 'ต้องเป็นอีเมลเต็ม เช่น name@msu.ac.th (ใส่แค่รหัสนิสิตไม่ได้)';
+  }
+
   ngOnInit(): void {
     window.scrollTo({ top: 0 });
     this.loadData();
@@ -196,10 +210,12 @@ export class ManageUsers implements OnInit {
   // ยิง limit=1 ต่อ role พร้อมกัน เอาแค่ pagination.total มาเป็นตัวเลขบนแท็บ
   loadRoleCounts(): void {
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
-    const count = (role: Role) => this.http
+    const count = (role: Role, status?: string) => this.http
       .get<GetManageUsersRes>(`${this.constants.API_ENDPOINT}/manage/users`, {
         headers,
-        params: new HttpParams().set('role', role).set('page', '1').set('limit', '1'),
+        params: status
+          ? new HttpParams().set('role', role).set('status', status).set('page', '1').set('limit', '1')
+          : new HttpParams().set('role', role).set('page', '1').set('limit', '1'),
       })
       .pipe(catchError(() => of(null)));
 
@@ -207,11 +223,15 @@ export class ManageUsers implements OnInit {
       student: count(TAB_ROLE.student),
       advisor: count(TAB_ROLE.advisor),
       staff:   count(TAB_ROLE.staff),
-    }).subscribe(r => this.roleCounts.set({
-      student: r.student?.data.pagination.total ?? 0,
-      advisor: r.advisor?.data.pagination.total ?? 0,
-      staff:   r.staff?.data.pagination.total   ?? 0,
-    }));
+      pending: count(TAB_ROLE.staff, 'Pending'),
+    }).subscribe(r => {
+      this.roleCounts.set({
+        student: r.student?.data.pagination.total ?? 0,
+        advisor: r.advisor?.data.pagination.total ?? 0,
+        staff:   r.staff?.data.pagination.total   ?? 0,
+      });
+      this.pendingStaffCount.set(r.pending?.data.pagination.total ?? 0);
+    });
   }
 
   // ── รายชื่ออาจารย์เต็ม (ไม่แบ่งหน้า) — ใช้กับ datalist ใน modal กำหนดอาจารย์ (backend ให้ limit ได้ถึง 1000)
@@ -437,6 +457,20 @@ export class ManageUsers implements OnInit {
     document.body.style.overflow = 'hidden';
   }
 
+  /**
+   * ดาวน์โหลดไฟล์ CSV ตัวอย่างสำหรับนำเข้าผู้ใช้ (feedback backend ข้อ 5) — สร้างในเบราว์เซอร์
+   * ใส่ BOM ให้ Excel เปิดภาษาไทยได้ · แถวตัวอย่างเป็นข้อมูลสมมุติ ต้องแก้หรือลบก่อนนำเข้า
+   */
+  downloadCsvTemplate(): void {
+    const rows = [
+      ['role', 'first_name', 'last_name', 'msu_mail', 'prefix', 'phone', 'degree_level', 'curriculum_year', 'study_plan_code', 'advisor_major_mail', 'advisor_co1_mail'],
+      ['Supervisor', 'ตัวอย่าง', 'อาจารย์', 'example.supervisor@msu.ac.th', 'ผศ.ดร.', '0800000000', '', '', '', '', ''],
+      ['Student', 'ตัวอย่าง', 'นิสิต', 'example.student@msu.ac.th', 'นาย', '0900000000', 'Master', '2566', 'Master_A1', '', ''],
+    ];
+    const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'users-import-template.csv');
+  }
+
   closeImportModal(): void {
     this.importModal.set(false);
     document.body.style.overflow = '';
@@ -549,6 +583,7 @@ export class ManageUsers implements OnInit {
           }
           this.suspendResult.set({ ok: true, msg });
           this.loadData();
+          if (isPending) this.loadRoleCounts();
         } else {
           this.suspendResult.set({ ok: false, msg: `${failMsg(res)}` });
         }

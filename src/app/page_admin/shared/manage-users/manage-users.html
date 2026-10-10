@@ -19,6 +19,9 @@
     </button>
     <button class="mu-tab" [class.mu-tab--active]="activeTab() === 'staff'" (click)="setTab('staff')">
       <i class="ti ti-user"></i> Staff
+      @if (pendingStaffCount() > 0) {
+        <span class="mu-tab-badge" title="เจ้าหน้าที่ที่สมัครเข้ามา รอการอนุมัติ">{{ pendingStaffCount() }} รออนุมัติ</span>
+      }
     </button>
     @if (canSeeAdminTab) {
       <button class="mu-tab mu-tab--admin" [class.mu-tab--active]="activeTab() === 'admin'" (click)="setTab('admin')">
@@ -46,6 +49,8 @@
           <span class="mu-dd-dot mu-dd-dot--active"></span>
         } @else if (statusFilter() === 'Suspended') {
           <span class="mu-dd-dot mu-dd-dot--suspended"></span>
+        } @else if (statusFilter() === 'Pending') {
+          <span class="mu-dd-dot mu-dd-dot--pending"></span>
         } @else {
           <span class="mu-dd-dot mu-dd-dot--all"></span>
         }
@@ -71,6 +76,11 @@
                   (click)="selectStatus('Suspended')">
             <span class="mu-dd-dot mu-dd-dot--suspended"></span> ถูกล็อค
             @if (statusFilter() === 'Suspended') { <span class="mu-dd-check"><i class="ti ti-check"></i></span> }
+          </button>
+          <button class="mu-dropdown__opt" [class.mu-dropdown__opt--active]="statusFilter() === 'Pending'"
+                  (click)="selectStatus('Pending')">
+            <span class="mu-dd-dot mu-dd-dot--pending"></span> รออนุมัติ
+            @if (statusFilter() === 'Pending') { <span class="mu-dd-check"><i class="ti ti-check"></i></span> }
           </button>
         </div>
       }
@@ -490,6 +500,7 @@
           <div class="mu-edit-field">
             <label class="mu-edit-label">อีเมล MSU</label>
             <input class="mu-edit-input" type="email" [(ngModel)]="editForm.msu_mail" />
+            @if (mailError(editForm.msu_mail)) { <span class="mu-field-error">{{ mailError(editForm.msu_mail) }}</span> }
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">เบอร์โทรศัพท์</label>
@@ -527,7 +538,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeEditModal()" [disabled]="isEditSaving()">ยกเลิก</button>
         <button class="mu-btn-save" (click)="submitEdit()"
-                [disabled]="isEditSaving() || !!editSaveResult()?.ok || !editForm.first_name.trim() || !editForm.last_name.trim()">
+                [disabled]="isEditSaving() || !!editSaveResult()?.ok || !editForm.first_name.trim() || !editForm.last_name.trim() || !!mailError(editForm.msu_mail)">
           @if (isEditSaving()) { <span class="mu-btn-spinner"></span> กำลังบันทึก... }
           @else                { <i class="ti ti-device-floppy"></i> บันทึกข้อมูล }
         </button>
@@ -586,6 +597,7 @@
             <label class="mu-edit-label">อีเมล MSU <span class="mu-req">*</span></label>
             <input class="mu-edit-input" type="email" placeholder="xxxxxxxx@msu.ac.th"
                    [(ngModel)]="addStudentForm.msu_mail" />
+            @if (mailError(addStudentForm.msu_mail)) { <span class="mu-field-error">{{ mailError(addStudentForm.msu_mail) }}</span> }
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">เบอร์โทรศัพท์</label>
@@ -623,7 +635,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeAddStudentModal()" [disabled]="isAddSaving()">ยกเลิก</button>
         <button class="mu-btn-save" (click)="submitAddStudent()"
-                [disabled]="isAddSaving() || !!addSaveResult()?.ok || !addStudentForm.first_name.trim() || !addStudentForm.last_name.trim() || !addStudentForm.msu_mail.trim()">
+                [disabled]="isAddSaving() || !!addSaveResult()?.ok || !addStudentForm.first_name.trim() || !addStudentForm.last_name.trim() || !addStudentForm.msu_mail.trim() || !!mailError(addStudentForm.msu_mail)">
           @if (isAddSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
           @else                { <i class="ti ti-user-plus"></i> เพิ่มนิสิต }
         </button>
@@ -677,7 +689,17 @@
             <code>prefix</code><code>phone</code><code>degree_level</code><code>curriculum_year</code>
             <code>study_plan_code</code><code>advisor_major_mail</code><code>advisor_co1_mail</code>
           </div>
-          <div class="mu-csv-hint__note">บันทึกไฟล์ในรูปแบบ UTF-8 เพื่อรองรับภาษาไทย</div>
+          <div class="mu-csv-hint__note">
+            • บันทึกไฟล์ในรูปแบบ UTF-8 เพื่อรองรับภาษาไทย<br>
+            • role ใช้ได้เฉพาะ Student หรือ Supervisor · degree_level: Master / Doctoral · curriculum_year: 2560 / 2566<br>
+            • msu_mail ต้องเป็นอีเมลเต็ม เช่น name&#64;msu.ac.th<br>
+            • advisor_major_mail และ advisor_co1_mail ต้องเป็นอาจารย์ที่มีในระบบแล้ว (นำเข้าอาจารย์ก่อน แล้วค่อยนำเข้านิสิต)<br>
+            • ไฟล์ไม่เกิน 2 MB และไม่เกิน 2,000 แถว · ถ้ามีแถวใดผิด จะไม่นำเข้าทั้งไฟล์<br>
+            • แถวในไฟล์ตัวอย่างเป็นข้อมูลสมมุติ ต้องแก้หรือลบก่อนนำเข้า
+          </div>
+          <button type="button" class="mu-csv-template-btn" (click)="downloadCsvTemplate()">
+            <i class="ti ti-download"></i> ดาวน์โหลดไฟล์ตัวอย่าง (.csv)
+          </button>
         </div>
 
         @if (importResult(); as r) {
@@ -751,6 +773,7 @@
             <label class="mu-edit-label">อีเมล MSU <span class="mu-req">*</span></label>
             <input class="mu-edit-input" type="email" placeholder="xxxxxxxx@msu.ac.th"
                    [(ngModel)]="addAdvisorForm.msu_mail" />
+            @if (mailError(addAdvisorForm.msu_mail)) { <span class="mu-field-error">{{ mailError(addAdvisorForm.msu_mail) }}</span> }
           </div>
           <div class="mu-edit-field">
             <label class="mu-edit-label">เบอร์โทรศัพท์</label>
@@ -776,7 +799,7 @@
       <div class="mu-edit-modal__footer">
         <button class="mu-btn-cancel" (click)="closeAddAdvisorModal()" [disabled]="isAdvisorSaving()">ยกเลิก</button>
         <button class="mu-btn-save mu-btn-save--advisor" (click)="submitAddAdvisor()"
-                [disabled]="isAdvisorSaving() || !!advisorSaveResult()?.ok || !addAdvisorForm.first_name.trim() || !addAdvisorForm.last_name.trim() || !addAdvisorForm.msu_mail.trim()">
+                [disabled]="isAdvisorSaving() || !!advisorSaveResult()?.ok || !addAdvisorForm.first_name.trim() || !addAdvisorForm.last_name.trim() || !addAdvisorForm.msu_mail.trim() || !!mailError(addAdvisorForm.msu_mail)">
           @if (isAdvisorSaving()) { <span class="mu-btn-spinner"></span> กำลังเพิ่ม... }
           @else                   { <i class="ti ti-user-plus"></i> เพิ่มอาจารย์ }
         </button>

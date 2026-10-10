@@ -7,6 +7,7 @@ import { HttpClient } from '@angular/common/http';
 import { Constants } from '../../comfig/constants';
 import { GOOGLE_CLIENT_ID } from '../../auth-config';
 import { loadGoogleIdentity } from '../../google-gsi';
+import { AuthService } from '../../auth.service';
 
 declare const google: any;
 
@@ -29,6 +30,8 @@ export class RegisterStaff implements OnInit {
   loading        = signal(false);
   errorCode      = signal<string | null>(null);
   errorMessage   = signal<string | null>(null);
+  /** สมัครสำเร็จ → แสดงหน้าสรุปค้างไว้ (เดิมเป็น snackbar 4 วิ แล้วเด้งไปหน้า login ผู้ใช้อ่านไม่ทัน) */
+  registered     = signal<{ name: string; email: string } | null>(null);
 
   ngOnInit() {
     this.loadGoogleScript().then(() => {
@@ -69,10 +72,11 @@ export class RegisterStaff implements OnInit {
         idToken: response.credential,
       })
       .subscribe({
-        next: (res) => {
+        next: () => {
           this.loading.set(false);
-          this.showSnack('ลงทะเบียนสำเร็จ กรุณารอการอนุมัติจากผู้ดูแลระบบ', 'success');
-          setTimeout(() => this.router.navigate(['/login']), 2000);
+          // ชื่อ/อีเมลจาก token ของ Google (แค่ใช้แสดงผล) — ให้ผู้สมัครเห็นว่าสมัครด้วยบัญชีไหน
+          const c = AuthService.decodeJwt(response.credential) ?? {};
+          this.registered.set({ name: String(c['name'] ?? ''), email: String(c['email'] ?? '') });
         },
         error: (err) => {
           this.loading.set(false);

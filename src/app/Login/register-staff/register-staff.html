@@ -51,6 +51,22 @@
       <!-- RIGHT -->
       <div class="card-right">
 
+        @if (registered(); as r) {
+          <div class="right-title">ลงทะเบียนเรียบร้อย</div>
+          <div class="status-panel status-panel--pending">
+            <div class="status-panel__icon"><i class="ti ti-hourglass"></i></div>
+            <div class="status-panel__body">
+              <div class="status-panel__title">รอผู้ดูแลระบบอนุมัติ</div>
+              <div class="status-panel__text">
+                สมัครด้วยบัญชี <strong>{{ r.email || 'Google ของคุณ' }}</strong>@if (r.name) { ({{ r.name }}) }<br>
+                เมื่อได้รับอนุมัติ ระบบจะส่งอีเมลแจ้งไปที่อีเมลนี้ แล้วจึงเข้าสู่ระบบได้
+              </div>
+              <div class="status-panel__hint">ถ้ารอนานเกิน 3 วันทำการ ติดต่อบัณฑิตวิทยาลัย <a href="mailto:graduate@msu.ac.th">graduate&#64;msu.ac.th</a></div>
+            </div>
+          </div>
+          <a class="status-panel__back" routerLink="/login"><i class="ti ti-arrow-left"></i> กลับหน้าเข้าสู่ระบบ</a>
+        } @else {
+
         <div class="right-title">ลงทะเบียนเจ้าหน้าที่</div>
 
         <div class="info-box">
@@ -96,6 +112,7 @@
           <span class="note-dot"></span>
           ใช้ได้เฉพาะบัญชี @msu.ac.th ของเจ้าหน้าที่เท่านั้น
         </div>
+        }
 
       </div>
     </div>

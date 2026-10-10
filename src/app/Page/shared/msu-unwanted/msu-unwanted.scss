@@ -1291,3 +1291,22 @@ $orange: #D4580A;
   font-weight: 500;
   color: $red;
 }
+
+/* ปุ่มดาวน์โหลดไฟล์ CSV ตัวอย่าง (feedback backend ข้อ 4) */
+.csv-template-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 1px solid #c7d3f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a3a8a;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover { background: #e8eefc; }
+}

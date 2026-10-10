@@ -12,6 +12,7 @@ import type { PostAddAdvisorReq }          from '../../../model/req/post_add_adv
 import type { PatchStudentAddAdvisorReq } from '../../../model/req/patch_student-add_advisor_req';
 import { apiFailure, failMsg } from '../../../server-status.service';
 import { AppSelect } from '../../../Components/app-select/app-select';
+import { downloadBlob } from '../../../file-download';
 
 type TabType = 'student' | 'advisor';
 
@@ -135,6 +136,16 @@ export class ManageUsers implements OnInit {
     this.modalCloseTimer = undefined;
     this.pendingModalClose = undefined;
     fn?.();
+  }
+
+  /**
+   * feedback backend ข้อ 6: เช็ครูปแบบอีเมลก่อนส่ง — เดิมใส่แค่รหัสนิสิต (ไม่มี @โดเมน) ก็บันทึกได้
+   * แล้วล็อกอินด้วย Google ไม่ได้ (backend ตรวจแล้วตอบ 400 INVALID_EMAIL แต่ให้ผู้ใช้เห็นทันทีที่หน้าเว็บ)
+   */
+  mailError(v: string | null | undefined): string {
+    const m = (v ?? '').trim();
+    if (!m) return '';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m) ? '' : 'ต้องเป็นอีเมลเต็ม เช่น name@msu.ac.th (ใส่แค่รหัสนิสิตไม่ได้)';
   }
 
   ngOnInit(): void { this.loadData(); }
@@ -344,6 +355,20 @@ export class ManageUsers implements OnInit {
     this.importResult.set(null);
     this.importModal.set(true);
     document.body.style.overflow = 'hidden';
+  }
+
+  /**
+   * ดาวน์โหลดไฟล์ CSV ตัวอย่างสำหรับนำเข้าผู้ใช้ (feedback backend ข้อ 5) — สร้างในเบราว์เซอร์
+   * ใส่ BOM ให้ Excel เปิดภาษาไทยได้ · แถวตัวอย่างเป็นข้อมูลสมมุติ ต้องแก้หรือลบก่อนนำเข้า
+   */
+  downloadCsvTemplate(): void {
+    const rows = [
+      ['role', 'first_name', 'last_name', 'msu_mail', 'prefix', 'phone', 'degree_level', 'curriculum_year', 'study_plan_code', 'advisor_major_mail', 'advisor_co1_mail'],
+      ['Supervisor', 'ตัวอย่าง', 'อาจารย์', 'example.supervisor@msu.ac.th', 'ผศ.ดร.', '0800000000', '', '', '', '', ''],
+      ['Student', 'ตัวอย่าง', 'นิสิต', 'example.student@msu.ac.th', 'นาย', '0900000000', 'Master', '2566', 'Master_A1', '', ''],
+    ];
+    const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'users-import-template.csv');
   }
 
   closeImportModal(): void {

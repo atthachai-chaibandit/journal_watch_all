@@ -45,6 +45,9 @@
             <div class="student-row">
               <span class="student-name">{{ req.studentName }}</span>
               <span class="student-id">{{ req.studentId }}</span>
+              @if (req.isCoAdvisor) {
+                <span class="co-advisor-tag"><i class="ti ti-user-star"></i> คุณเป็นอาจารย์ที่ปรึกษาร่วม · ดูอย่างเดียว</span>
+              }
             </div>
             <div class="article-title-row">
               <span class="article-label">ชื่อบทความ:</span>
@@ -342,6 +345,11 @@
                 <i class="ti ti-circle-check"></i> ลงนามอนุมัติ T3
               </button>
             </div>
+          </div>
+        } @else if (req.status === 'pending' && req.isCoAdvisor) {
+          <div class="co-advisor-note">
+            <i class="ti ti-info-circle"></i>
+            <span>คุณเป็นอาจารย์ที่ปรึกษาร่วมของนิสิตคนนี้ การอนุมัติเป็นสิทธิ์ของอาจารย์ที่ปรึกษาหลัก เมื่ออาจารย์หลักตัดสินแล้ว คำร้องจะย้ายไปที่ "ประวัติทั้งหมด"</span>
           </div>
         } @else {
           <div class="result-section" [class.result-approved]="req.status === 'approved'" [class.result-rejected]="req.status === 'rejected'">

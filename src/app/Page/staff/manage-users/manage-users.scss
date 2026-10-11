@@ -1130,3 +1130,10 @@ $table-cols: 2fr 2fr 0.85fr 0.95fr 3fr;
   color: $red;
 }
 
+
+// สาขาวิชาใต้ป้ายระดับการศึกษาในตารางนิสิต — ชื่อสาขายาว ให้ตัดบรรทัดได้
+.mu-row-dept {
+  display: block;
+  margin-top: 4px;
+  white-space: normal;
+}

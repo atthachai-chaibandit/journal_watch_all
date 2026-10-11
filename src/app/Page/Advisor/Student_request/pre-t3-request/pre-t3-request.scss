@@ -564,3 +564,18 @@ $white:  #FFFFFF;
 
   i { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
 }
+
+// อาจารย์ที่ปรึกษาร่วม — เห็นคำร้องได้แต่ไม่มีสิทธิ์ลงนาม (can_review เป็นของอาจารย์หลักเท่านั้น)
+.co-advisor-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px;
+  background: rgba(28, 39, 68, 0.06); color: #475569;
+  font-size: 11px; white-space: nowrap;
+  i { font-size: 12px; }
+}
+.co-advisor-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 12px 14px; border-radius: 10px;
+  background: #eef3ff; color: #1a3a8a; font-size: 13px;
+  i { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+}

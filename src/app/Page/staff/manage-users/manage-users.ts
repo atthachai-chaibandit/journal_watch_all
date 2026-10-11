@@ -13,6 +13,7 @@ import type { PatchStudentAddAdvisorReq } from '../../../model/req/patch_student
 import { apiFailure, failMsg } from '../../../server-status.service';
 import { AppSelect } from '../../../Components/app-select/app-select';
 import { downloadBlob } from '../../../file-download';
+import { departmentOptions, departmentFits } from '../../../departments';
 
 type TabType = 'student' | 'advisor';
 
@@ -200,7 +201,7 @@ export class ManageUsers implements OnInit {
   addStudentForm: PostAddStudentReq = {
     role: 'Student', prefix: '', first_name: '', last_name: '',
     msu_mail: '', phone: '', degree_level: '', curriculum_year: '',
-    study_plan_code: '', advisor_major_mail: '', advisor_co1_mail: '',
+    study_plan_code: '', department: '', advisor_major_mail: '', advisor_co1_mail: '',
   };
 
   openAddStudentModal(): void {
@@ -208,7 +209,7 @@ export class ManageUsers implements OnInit {
     this.addStudentForm = {
       role: 'Student', prefix: '', first_name: '', last_name: '',
       msu_mail: '', phone: '', degree_level: '', curriculum_year: '',
-      study_plan_code: '', advisor_major_mail: '', advisor_co1_mail: '',
+      study_plan_code: '', department: '', advisor_major_mail: '', advisor_co1_mail: '',
     };
     this.addSaveResult.set(null);
     this.addStudentModal.set(true);
@@ -363,9 +364,9 @@ export class ManageUsers implements OnInit {
    */
   downloadCsvTemplate(): void {
     const rows = [
-      ['role', 'first_name', 'last_name', 'msu_mail', 'prefix', 'phone', 'degree_level', 'curriculum_year', 'study_plan_code', 'advisor_major_mail', 'advisor_co1_mail'],
-      ['Supervisor', 'ตัวอย่าง', 'อาจารย์', 'example.supervisor@msu.ac.th', 'ผศ.ดร.', '0800000000', '', '', '', '', ''],
-      ['Student', 'ตัวอย่าง', 'นิสิต', 'example.student@msu.ac.th', 'นาย', '0900000000', 'Master', '2566', 'Master_A1', '', ''],
+      ['role', 'first_name', 'last_name', 'msu_mail', 'prefix', 'phone', 'degree_level', 'curriculum_year', 'study_plan_code', 'advisor_major_mail', 'advisor_co1_mail', 'department'],
+      ['Supervisor', 'ตัวอย่าง', 'อาจารย์', 'example.supervisor@msu.ac.th', 'ผศ.ดร.', '0800000000', '', '', '', '', '', ''],
+      ['Student', 'ตัวอย่าง', 'นิสิต', 'example.student@msu.ac.th', 'นาย', '0900000000', 'Master', '2566', 'Master_A1', '', '', 'เทคโนโลยีสารสนเทศ'],
     ];
     const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\r\n');
     downloadBlob(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), 'users-import-template.csv');
@@ -471,7 +472,7 @@ export class ManageUsers implements OnInit {
   editModal      = signal<User | null>(null);
   editForm: PatchManageUsersReq = {
     prefix: '', first_name: '', last_name: '', msu_mail: '',
-    phone: '', degree_level: '', curriculum_year: '', study_plan_code: '',
+    phone: '', degree_level: '', curriculum_year: '', study_plan_code: '', department: '',
   };
   isEditSaving   = signal(false);
   editSaveResult = signal<{ ok: boolean; msg: string } | null>(null);
@@ -484,6 +485,14 @@ export class ManageUsers implements OnInit {
     { value: 'Master',   label: 'ป.โท (Master)' },
     { value: 'Doctoral', label: 'ป.เอก (Doctoral)' },
   ];
+
+  // สาขาวิชา — ปริญญาเอกมีแค่ 3 สาขาแรก · เปลี่ยนระดับแล้วสาขาเดิมใช้ไม่ได้ → เคลียร์ (backend ตอบ 400 ถ้าส่งคู่ที่ไม่ถูก)
+  readonly departmentOptions = departmentOptions;
+
+  onDegreeChange(form: { degree_level: string; department?: string }, degree: string): void {
+    form.degree_level = degree;
+    if (!departmentFits(form.department, degree)) form.department = '';
+  }
 
   readonly studyPlanOptions = [
     { group: 'Master',   values: ['Master_A1','Master_A2','Master_B','Master_P1A1','Master_P1A2','Master_P2B'] },
@@ -501,6 +510,7 @@ export class ManageUsers implements OnInit {
       degree_level:    u.degree_level    ?? '',
       curriculum_year: u.curriculum_year ?? '',
       study_plan_code: u.study_plan_code ?? '',
+      department:      u.department      ?? '',
     };
     this.editSaveResult.set(null);
     this.editModal.set(u);
@@ -519,7 +529,8 @@ export class ManageUsers implements OnInit {
     this.editSaveResult.set(null);
 
     // Staff เปลี่ยน msu_mail ไม่ได้ (backend ตอบ 403) — ไม่ส่ง field นี้ไป ให้ backend คงค่าเดิม
-    const { msu_mail: _mail, ...body } = this.editForm;
+    const { msu_mail: _mail, department, ...rest } = this.editForm;
+    const body = u.role === Role.Student ? { ...rest, department } : rest;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .patch<{ success: boolean; message?: string }>(
@@ -544,6 +555,7 @@ export class ManageUsers implements OnInit {
                   degree_level:    (this.editForm.degree_level   || null) as DegreeLevel | null,
                   curriculum_year: this.editForm.curriculum_year || null,
                   study_plan_code: this.editForm.study_plan_code || null,
+                  department:      u.role === Role.Student ? (this.editForm.department || null) : x.department,
                 }
               : x
           ));

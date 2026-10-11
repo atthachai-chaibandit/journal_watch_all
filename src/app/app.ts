@@ -36,7 +36,7 @@ export class App {
     try {
       // ต้องมี token อยู่ด้วยเสมอ ไม่ใช่เช็คแค่ค่า user ที่อาจเป็นข้อมูลค้างจาก
       // session ก่อนหน้าที่ logout/token หมดอายุไปแล้วแต่ลืมล้าง user ทิ้ง
-      if (!localStorage.getItem('auth_token')) return false;
+      if (!this.authService.isLoggedIn) return false;
       const role = (readStoredAdmin() ?? {})?.role;
       return role === 'Admin' || role === 'SuperAdmin';
     } catch { return false; }

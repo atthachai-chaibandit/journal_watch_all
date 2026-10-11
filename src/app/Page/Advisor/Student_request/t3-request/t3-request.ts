@@ -48,6 +48,7 @@ interface T3Item {
   daysAgo:       number;
   status:        StatusType;
   canReview:     boolean;   // X16: เฉพาะอาจารย์หลักที่ยังไม่ได้ตัดสิน
+  isCoAdvisor:   boolean;   // อาจารย์ร่วม (Co_1/Co_2) — เห็นในคิวแต่ดูอย่างเดียว
   approvedDate?: string;
   advisorRemark: string | null;
 }
@@ -149,6 +150,7 @@ export class T3Request implements OnInit {
       daysAgo,
       status,
       canReview:     d.can_review === true,
+      isCoAdvisor:   d.my_role === 'Co_1' || d.my_role === 'Co_2',
       approvedDate:  approvedAt,
       advisorRemark: d.advisor_approval?.remark ?? null,
     };

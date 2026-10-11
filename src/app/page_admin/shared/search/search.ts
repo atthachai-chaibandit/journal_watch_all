@@ -50,7 +50,6 @@ interface JournalResult {
   citeScore: number;
   snip: number;
   percentile: number;
-  hIndex: number | null;
   citesPerDoc2y: number | null;
   totalDocs: number | null;
   subjectAreaMain: string | null;
@@ -465,7 +464,6 @@ export class Search implements OnInit, OnDestroy {
       citeScore: data.scopus_citescore,
       snip: data.scopus_snip,
       percentile: data.scopus_best_percentile,
-      hIndex: data.scopus_h_index,
       citesPerDoc2y: extra.scopus_cites_per_doc ?? null,
       totalDocs: extra.scopus_total_docs ?? null,
       // main_area / major_area เป็นฟิลด์ของ TCI จึงว่างเสมอสำหรับ Scopus — Scopus ส่งมาใน subject_areas (array)

@@ -43,6 +43,7 @@ interface PreT3Item {
   requestId:     string;
   status:        StatusType;
   canReview:     boolean;   // X16: เฉพาะอาจารย์หลักที่ยังไม่ได้ตัดสิน
+  isCoAdvisor:   boolean;   // อาจารย์ร่วม (Co_1/Co_2) — เห็นในคิวแต่ดูอย่างเดียว
   approvedDate?: string;
   advisorRemark: string | null;
   checklist:     ChecklistItem[];
@@ -150,6 +151,7 @@ export class PreT3Request implements OnInit {
       requestId:     `PRE-T3-${d.pre_t3_id}`,
       status,
       canReview:     d.can_review === true,
+      isCoAdvisor:   d.my_role === 'Co_1' || d.my_role === 'Co_2',
       approvedDate:  approvedAt,
       advisorRemark: advisorApproval?.remark ?? null,
       checklist,

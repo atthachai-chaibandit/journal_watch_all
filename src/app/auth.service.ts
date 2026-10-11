@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, firstValueFrom, map, of, throwError, timeout } from 'rxjs';
 import { LoginRes, User } from './model/res/login_res';
@@ -21,20 +21,53 @@ export class AuthService {
   private http      = inject(HttpClient);
   private constants = inject(Constants);
 
-  private _isLoggedIn = signal(!!localStorage.getItem('auth_token'));
+  /**
+   * feedback backend ข้อ 3 (F33): access token ไม่เขียนลง localStorage — สคริปต์ใดๆ ในหน้าอ่าน localStorage ได้
+   * ถ้ามี XSS ครั้งเดียว token (รวมของ Admin) ถูกขโมยไปใช้แทนเจ้าของบัญชีได้ → เก็บในหน่วยความจำของแอปเท่านั้น
+   * รีโหลด/เปิดแท็บใหม่ token หาย → restoreSession() ขอใหม่จาก refresh cookie (httpOnly, JS อ่านไม่ได้)
+   *
+   * ยกเว้นตอน dev (ng serve): บน localhost cookie ไม่ถูกส่งข้ามเว็บ refresh ไม่ได้ ถ้าไม่เก็บไว้
+   * จะหลุดทุกครั้งที่รีโหลด/แก้โค้ด → dev เก็บใน localStorage เหมือนเดิม ส่วน production build ไม่เก็บ
+   */
+  private static readonly PERSIST_TOKEN = isDevMode();
+  private static readonly TOKEN_KEY = 'auth_token';
+  private memToken = AuthService.PERSIST_TOKEN ? localStorage.getItem(AuthService.TOKEN_KEY) : null;
+
+  // login อยู่ = มีโปรไฟล์ที่เก็บไว้ (ไม่ลับ) — production ตอนเปิดแอปยังไม่มี token ในหน่วยความจำ
+  // restoreSession() จะขอ token จาก cookie ให้ ถ้าขอไม่ได้ค่อย logout
+  private _isLoggedIn = signal(!!(localStorage.getItem('auth_user') || readStoredAdmin()));
   private _user = signal<User | null>(this.loadUser());
 
+  /** แจ้งแท็บอื่นเมื่อ login/logout — token ไม่อยู่ใน localStorage แล้ว จึงใช้ event 'storage' ของ token ไม่ได้ */
+  private channel: BroadcastChannel | null = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('jw-auth') : null;
+
   constructor() {
-    // X40: login/logout/เปลี่ยนบัญชีในอีกแท็บ → แท็บนี้ยังถือสถานะเดิมแต่ส่ง token ใหม่ (คนละคน/คนละ role)
-    // localStorage ใช้ร่วมกันทุกแท็บ — โหลดหน้าใหม่ให้ guard/sidebar ตัดสินจากค่าปัจจุบัน
-    // (แค่ token เปลี่ยนจากการ refresh ของอีกแท็บ ไม่ต้องทำอะไร เพราะอ่าน token จาก localStorage สดทุกครั้ง)
+    // production: token ที่อาจค้างจากเวอร์ชันก่อน (เคยเก็บใน localStorage) ลบทิ้ง
+    if (!AuthService.PERSIST_TOKEN) localStorage.removeItem(AuthService.TOKEN_KEY);
+
+    // X40: logout / เปลี่ยนบัญชีในอีกแท็บ → แท็บนี้โหลดหน้าใหม่ ให้ guard/sidebar ตัดสินจากค่าปัจจุบัน
+    this.channel?.addEventListener('message', e => {
+      if (e.data?.type === 'logout' || e.data?.type === 'login') location.reload();
+    });
+    // โปรไฟล์ใน localStorage ยังใช้ร่วมกันทุกแท็บ — กันกรณีเบราว์เซอร์ไม่มี BroadcastChannel / แก้ค่าเอง
     window.addEventListener('storage', e => {
       if (e.key === null) { location.reload(); return; }                       // localStorage.clear()
-      if (e.key === 'auth_token' && !e.newValue) { location.reload(); return; } // logout ในอีกแท็บ
       if ((e.key === 'auth_user' || e.key === 'user') && AuthService.identity(e.oldValue) !== AuthService.identity(e.newValue)) {
         location.reload();                                                       // คนละบัญชี / role เปลี่ยน
       }
     });
+  }
+
+  /** เก็บ/ล้าง access token — production อยู่ในหน่วยความจำเท่านั้น */
+  private setToken(token: string | null): void {
+    this.memToken = token;
+    if (!AuthService.PERSIST_TOKEN) return;
+    if (token) localStorage.setItem(AuthService.TOKEN_KEY, token);
+    else localStorage.removeItem(AuthService.TOKEN_KEY);
+  }
+
+  private broadcast(type: 'login' | 'logout'): void {
+    try { this.channel?.postMessage({ type }); } catch { /* ignore */ }
   }
 
   /** userId + role จาก JSON ของโปรไฟล์ที่เก็บไว้ ใช้เทียบว่าเป็นคนเดิม role เดิมไหม */
@@ -77,7 +110,7 @@ export class AuthService {
 
   get isLoggedIn(): boolean     { return this._isLoggedIn(); }
   get user(): User | null       { return this._user(); }
-  get token(): string | null    { return localStorage.getItem('auth_token'); }
+  get token(): string | null    { return this.memToken; }
   get userPicture(): string     { return localStorage.getItem('auth_picture') ?? ''; }
 
   /** role ที่หน้าเว็บฝั่งนิสิต/อาจารย์/เจ้าหน้าที่รองรับ — role อื่น (เช่น Program_Chair) ไม่มีหน้าให้ใช้ */
@@ -109,20 +142,22 @@ export class AuthService {
   setAdminSession(accessToken: string, user: unknown): void {
     localStorage.removeItem('auth_refresh_token');
     localStorage.removeItem('otp_token');
-    localStorage.setItem('auth_token', accessToken);
+    this.setToken(accessToken);
     localStorage.setItem('user', JSON.stringify(user));
     this._isLoggedIn.set(true);
+    this.broadcast('login');
   }
 
   setLoggedIn(res: LoginRes, picture: string = ''): void {
     // X28: refresh token อยู่ใน httpOnly cookie ที่ backend ตั้งให้ (JS อ่านไม่ได้ และ body ไม่มีค่านี้)
     // ลบ key เก่าที่เคยเก็บ "undefined" ไว้ทิ้งด้วย
     localStorage.removeItem('auth_refresh_token');
-    localStorage.setItem('auth_token',   res.data.accessToken);
+    this.setToken(res.data.accessToken);
     localStorage.setItem('auth_user',    JSON.stringify(res.data.user));
     localStorage.setItem('auth_picture', picture);
     this._isLoggedIn.set(true);
     this._user.set(res.data.user);
+    this.broadcast('login');
   }
 
   /**
@@ -135,7 +170,9 @@ export class AuthService {
    */
   async restoreSession(): Promise<void> {
     if (AuthService.isJwtExpired(localStorage.getItem('otp_token'))) localStorage.removeItem('otp_token');
-    if (!AuthService.isJwtExpired(this.token)) return;
+    if (!this._isLoggedIn()) return;                                   // ไม่เคย login — ไม่มีอะไรให้กู้
+    if (this.token && !AuthService.isJwtExpired(this.token)) return;   // dev: token ที่เก็บไว้ยังใช้ได้
+    // production เปิดแอป/รีโหลด = ไม่มี token ในหน่วยความจำเสมอ → ขอใหม่จาก refresh cookie
     try {
       const token = await firstValueFrom(this.refreshAccessToken().pipe(timeout(8000)));
       if (!token) this.logout();
@@ -167,7 +204,8 @@ export class AuthService {
         { headers: { Authorization: `Bearer ${token}` } },
       ).subscribe({ error: () => {} });
     }
-    localStorage.removeItem('auth_token');
+    this.setToken(null);
+    localStorage.removeItem(AuthService.TOKEN_KEY);   // ล้างของเก่าที่อาจค้างจากเวอร์ชันก่อน
     localStorage.removeItem('auth_refresh_token');
     localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_picture');
@@ -178,6 +216,7 @@ export class AuthService {
     localStorage.removeItem('user');
     this._isLoggedIn.set(false);
     this._user.set(null);
+    this.broadcast('logout');
   }
 
   /**
@@ -196,7 +235,7 @@ export class AuthService {
       .pipe(
         map(res => {
           const token = res.data.accessToken;
-          localStorage.setItem('auth_token', token);
+          this.setToken(token);
           this.syncRoleFromToken(token);
           return token;
         }),

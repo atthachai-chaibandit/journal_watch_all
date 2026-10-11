@@ -11,8 +11,8 @@ export const guestGuard: CanActivateFn = () => {
   // ฝั่ง admin เก็บโปรไฟล์ไว้ใน key 'user' แยกจากฝั่งนิสิต/อาจารย์/เจ้าหน้าที่ (auth_user)
   try {
     const admin = readStoredAdmin();
-    if (localStorage.getItem('auth_token') && admin?.role === 'SuperAdmin') return router.parseUrl('/super-admin/dashboard');
-    if (localStorage.getItem('auth_token') && admin?.role === 'Admin')      return router.parseUrl('/admin/dashboard');
+    if (authService.isLoggedIn && admin?.role === 'SuperAdmin') return router.parseUrl('/super-admin/dashboard');
+    if (authService.isLoggedIn && admin?.role === 'Admin')      return router.parseUrl('/admin/dashboard');
   } catch {}
 
   // ต้องมีทั้ง token และ user — ระหว่างขั้น OTP ของ admin จะมีแค่ otpToken ใน auth_token

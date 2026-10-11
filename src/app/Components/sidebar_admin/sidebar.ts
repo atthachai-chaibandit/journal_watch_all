@@ -64,7 +64,7 @@ export class Sidebar implements OnInit {
   }
 
   private fetchMe() {
-    const token = localStorage.getItem('auth_token') ?? '';
+    const token = this.authService.token ?? '';
     this.http.get<GetAdminRes>(`${this.constants.API_ENDPOINT}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     }).subscribe({

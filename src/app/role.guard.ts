@@ -29,7 +29,7 @@ export const superAdminGuard: CanActivateFn = () => {
   let role: string | undefined;
   try { role = JSON.parse(localStorage.getItem('user') ?? 'null')?.role; } catch { /* ค่าเสีย = ไม่ได้ login */ }
 
-  if (!localStorage.getItem('auth_token') || !role) return router.parseUrl('/login-admin');
+  if (!inject(AuthService).isLoggedIn || !role) return router.parseUrl('/login-admin');   // F33
   if (role === 'SuperAdmin') return true;
   if (role === 'Admin')      return router.parseUrl('/admin/dashboard');
   return router.parseUrl('/login-admin');

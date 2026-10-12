@@ -40,9 +40,15 @@ body { margin: 0; font-family: 'Sarabun', Roboto, "Helvetica Neue", sans-serif; 
 code, pre, .mono { font-family: 'IBM Plex Mono', monospace; }
 
 @media print {
-  /* Hide chrome + footer (prevents extra blank page) */
+  /* Hide chrome + footer (prevents extra blank page)
+     sidebar มี 4 ตัวตาม role (นิสิต/อาจารย์/staff/admin) — เดิมซ่อนแค่ app-sidebar ของนิสิต
+     staff/อาจารย์/admin กดพิมพ์ผลค้นหาแล้ว sidebar ติดไปในกระดาษ */
   app-header,
+  app-header-admin,
   app-sidebar,
+  app-sidebar-advisor,
+  app-sidebar-staff,
+  app-sidebar-admin,
   app-footer { display: none !important; }
 
   /* Break flex layout → prevent blank pages */
@@ -76,7 +82,7 @@ code, pre, .mono { font-family: 'IBM Plex Mono', monospace; }
     .main-content { padding: 0 !important; margin: 0 !important; }
 
     /* ซ่อน page-level content */
-    .status-page, .history-page, .t3-history-page, .page { display: none !important; }
+    .status-page, .history-page, .t3-history-page, .send-t3-page, .page { display: none !important; }
 
     /* modal backdrop: static, transparent */
     .modal-backdrop {
@@ -290,3 +296,12 @@ code, pre, .mono { font-family: 'IBM Plex Mono', monospace; }
   }
 }
 
+
+/* ═══ หน้าสถานะ Pre-T3 / T3: อาจารย์อนุมัติแล้ว ยกเลิกเองไม่ได้ → แนะนำให้ติดต่อเจ้าหน้าที่ ═══ */
+.contact-staff-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  margin: 0 24px 12px; padding: 12px 14px; border-radius: 10px;
+  background: #eef3ff; color: #1a3a8a; font-size: 13px; line-height: 1.6;
+  > i { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+  a { color: #1a3a8a; font-weight: 600; text-decoration: underline; white-space: nowrap; cursor: pointer; }
+}

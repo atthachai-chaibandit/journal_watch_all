@@ -326,33 +326,30 @@ export class StatusT3 implements OnInit {
   private buildSteps(d: T3Detail): Step[] {
     const adv  = d.advisor_approval.status;
     const fac  = d.faculty_com_approval.status;
-    const ov   = d.overall_status;
     const date = this.formatDateShort(d.created_at);
     const advisorDate = d.advisor_approval.approved_at
       ? this.formatDateShort(d.advisor_approval.approved_at) : '-';
     const facultyDate = d.faculty_com_approval.approved_at
       ? this.formatDateShort(d.faculty_com_approval.approved_at) : '-';
 
+    // 3 ขั้น: ยื่น → อาจารย์ที่ปรึกษา → เจ้าหน้าที่ — ผลของเจ้าหน้าที่คือผลที่ประชุม และคำร้องอนุมัติสำเร็จทันที
+    // เดิมมีขั้นที่ 4 "อนุมัติสำเร็จ" แยก ซึ่งซ้ำกับขั้นเจ้าหน้าที่ (วันเดียวกัน สถานะเดียวกัน) จึงเอาออก
     const s1: Step = { icon: 'ti ti-check', label: 'ยื่น T3 สำเร็จ', sub: '● เสร็จแล้ว', date, status: 'done' };
 
     const s2: Step = adv === 'Approved' ? { icon: 'ti ti-check',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: advisorDate, status: 'done'    }
-                   : adv === 'Rejected' ? { icon: 'ti ti-x',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ',      date: '-',         status: 'active'  }
+                   : adv === 'Rejected' ? { icon: 'ti ti-x',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ',      date: advisorDate, status: 'active'  }
                    :                     { icon: 'ti ti-hourglass',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● กำลังดำเนินการ', date: '-',         status: 'active'  };
 
     // รอผลจากที่ประชุม — ต้องเช็คว่าขั้นก่อนหน้า (อาจารย์) อนุมัติแล้วหรือยัง ไม่ใช่แค่
     // เช็คสถานะของขั้นนี้เอง ไม่งั้นแม้อาจารย์จะอนุมัติแล้วก็ยังค้างแสดงเป็น "pending/
     // รอขั้นก่อนหน้า" (วงกลมเทา) ทั้งที่จริงๆ คำร้องเดินมาถึงขั้นนี้แล้ว ควรเป็น
     // "active/กำลังดำเนินการ" (วงกลมเหลือง) แทน
-    const s3: Step = fac === 'Approved' ? { icon: 'ti ti-check',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: facultyDate, status: 'done'    }
-                   : fac === 'Rejected' ? { icon: 'ti ti-x',  label: 'รอผลจากที่ประชุม', sub: '● ไม่อนุมัติ',      date: '-',         status: 'active'  }
-                   : adv === 'Approved' ? { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '● กำลังดำเนินการ', date: '-', status: 'active'  }
-                   :                     { icon: 'ti ti-building-bank',  label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-',         status: 'pending' };
+    const s3: Step = fac === 'Approved' ? { icon: 'ti ti-check',  label: 'เจ้าหน้าที่พิจารณา', sub: '● เสร็จแล้ว',       date: facultyDate, status: 'done'    }
+                   : fac === 'Rejected' ? { icon: 'ti ti-x',  label: 'เจ้าหน้าที่พิจารณา', sub: '● ไม่อนุมัติ',      date: facultyDate, status: 'active'  }
+                   : adv === 'Approved' ? { icon: 'ti ti-hourglass', label: 'เจ้าหน้าที่พิจารณา', sub: '● กำลังดำเนินการ', date: '-', status: 'active'  }
+                   :                     { icon: 'ti ti-building-bank',  label: 'เจ้าหน้าที่พิจารณา', sub: '○ รอขั้นก่อนหน้า',  date: '-',         status: 'pending' };
 
-    const s4: Step = ov === 'Approved'
-      ? { icon: 'ti ti-school', label: 'อนุมัติสำเร็จ', sub: '● เสร็จแล้ว',       date: '-', status: 'done'    }
-      : { icon: 'ti ti-school', label: 'อนุมัติสำเร็จ', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };
-
-    return [s1, s2, s3, s4];
+    return [s1, s2, s3];
   }
 
   private buildTimeline(d: T3Detail): TimelineItem[] {
@@ -368,9 +365,9 @@ export class StatusT3 implements OnInit {
 
     // อาจารย์ที่ปรึกษา — ถึงคิวนี้เสมอตั้งแต่ยื่นคำร้องเสร็จ
     if (adv === 'Approved') {
-      items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.advisor_approval.approved_at) });
+      items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined });
     } else if (adv === 'Rejected') {
-      items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined, time: this.formatDateFull(d.advisor_approval.approved_at) });
+      items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined, time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined });
     } else {
       items.push({ icon: 'ti ti-chalkboard', actor: 'อาจารย์ที่ปรึกษา', badge: 'อาจารย์', badgeType: 'advisor', message: 'กำลังพิจารณาคำร้อง T3' });
     }
@@ -380,9 +377,9 @@ export class StatusT3 implements OnInit {
     if (adv !== 'Approved') {
       items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'รออยู่', badgeType: 'waiting', message: 'รอขั้นก่อนหน้า' });
     } else if (fac === 'Approved') {
-      items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
+      items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor', message: 'อนุมัติคำร้อง T3 แล้ว', time: d.faculty_com_approval.approved_at ? this.formatDateFull(d.faculty_com_approval.approved_at) : undefined });
     } else if (fac === 'Rejected') {
-      items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', time: this.formatDateFull(d.faculty_com_approval.approved_at) });
+      items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor', message: 'ไม่อนุมัติคำร้อง T3', detail: (d.faculty_com_approval.remark as unknown as string | null) ?? undefined, time: d.faculty_com_approval.approved_at ? this.formatDateFull(d.faculty_com_approval.approved_at) : undefined });
     } else {
       items.push({ icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'กำลังพิจารณา', badgeType: 'advisor', message: 'กำลังรอที่ประชุมพิจารณา' });
     }

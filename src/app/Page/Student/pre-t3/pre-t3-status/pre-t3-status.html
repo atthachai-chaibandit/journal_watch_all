@@ -103,6 +103,7 @@
             }
           </div>
           <button class="btn-cancel-card" [disabled]="card.advisorStatus === 'Approved'"
+                  [title]="card.advisorStatus === 'Approved' && card.facultyStatus === 'Pending' && card.overallStatus !== 'Cancelled' ? 'อาจารย์อนุมัติแล้ว — หากต้องการยกเลิก กรุณาติดต่อเจ้าหน้าที่บัณฑิตวิทยาลัย' : ''"
                   (click)="cancelRequest(card.id, $event)">
             @if (card.advisorStatus === 'Approved') {
               <i class="ti ti-lock"></i> ไม่สามารถยกเลิกได้
@@ -245,6 +246,15 @@
         </div>
 
       </div><!-- /modal-body -->
+
+      <!-- อาจารย์อนุมัติแล้ว รอเจ้าหน้าที่ — นิสิตยกเลิกเองไม่ได้ บอกช่องทางให้ติดต่อเจ้าหน้าที่ (คำร้องที่จบแล้วไม่ต้องแสดง) -->
+      @if (d.advisorStatus === 'Approved' && d.cardStatus === 'pending') {
+        <div class="contact-staff-note">
+          <i class="ti ti-info-circle"></i>
+          <span>คำร้องนี้ผ่านการพิจารณาของอาจารย์ที่ปรึกษาแล้ว จึงไม่สามารถยกเลิกเองได้ หากต้องการยกเลิกคำร้อง
+            กรุณาติดต่อเจ้าหน้าที่บัณฑิตวิทยาลัย <a routerLink="/contact" (click)="closeDetail()">ดูช่องทางติดต่อ <i class="ti ti-arrow-right"></i></a></span>
+        </div>
+      }
 
       <!-- ══ MODAL FOOTER ══ -->
       <div class="modal-footer">

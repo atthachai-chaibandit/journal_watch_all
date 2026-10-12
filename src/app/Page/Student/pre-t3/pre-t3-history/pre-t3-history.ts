@@ -313,7 +313,12 @@ export class PreT3History implements OnInit {
     const createdDate = this.formatDateShort(d.created_at);
     const advisorDate = d.advisor_approval.approved_at
       ? this.formatDateShort(d.advisor_approval.approved_at) : '-';
+    // วันที่เจ้าหน้าที่บันทึกผล (ผลเดียวกับที่ประชุม)
+    const facultyDate = d.faculty_com_approval.approved_at
+      ? this.formatDateShort(d.faculty_com_approval.approved_at) : '-';
 
+    // 3 ขั้น: ยื่น → อาจารย์ที่ปรึกษา → เจ้าหน้าที่ — ผลของเจ้าหน้าที่คือผลที่ประชุม และคำร้องอนุมัติสำเร็จทันที
+    // เดิมมีขั้นที่ 4 "อนุมัติสำเร็จ" แยก ซึ่งซ้ำกับขั้นเจ้าหน้าที่ (วันเดียวกัน สถานะเดียวกัน) จึงเอาออก
     const s1: Step = { icon: 'ti ti-check', label: 'ยื่นคำร้องสำเร็จ', sub: '● เสร็จแล้ว', date: createdDate, status: 'done' };
 
     // F25: "เสร็จแล้ว" เฉพาะขั้นที่อนุมัติจริง — เดิมทุกอย่างที่ไม่ใช่ Rejected ถือว่าผ่าน
@@ -324,15 +329,12 @@ export class PreT3History implements OnInit {
     else                         s2 = { icon: '2',           label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '○ ไม่ถึงขั้นตอนนี้', date: '-',         status: 'pending' };
 
     let s3: Step;
-    if (fac === 'Rejected')      s3 = { icon: 'ti ti-x',     label: 'รอผลจากที่ประชุม', sub: '● ไม่อนุมัติ',        date: '-', status: 'active' };
-    else if (fac === 'Approved') s3 = { icon: 'ti ti-check', label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',        date: '-', status: 'done' };
-    else                         s3 = { icon: '3',           label: 'รอผลจากที่ประชุม', sub: '○ ไม่ถึงขั้นตอนนี้', date: '-', status: 'pending' };
+    if (fac === 'Rejected')      s3 = { icon: 'ti ti-x',     label: 'เจ้าหน้าที่พิจารณา', sub: '● ไม่อนุมัติ',        date: facultyDate, status: 'active' };
+    else if (fac === 'Approved') s3 = { icon: 'ti ti-check', label: 'เจ้าหน้าที่พิจารณา', sub: '● เสร็จแล้ว',        date: facultyDate, status: 'done' };
+    else if (over === 'Cancelled') s3 = { icon: 'ti ti-ban', label: 'เจ้าหน้าที่พิจารณา', sub: '○ ยกเลิกคำร้องแล้ว', date: '-', status: 'pending' };
+    else                         s3 = { icon: '3',           label: 'เจ้าหน้าที่พิจารณา', sub: '○ ไม่ถึงขั้นตอนนี้', date: '-', status: 'pending' };
 
-    const s4: Step = over === 'Approved'    ? { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '● เสร็จแล้ว',        date: '-', status: 'done'    }
-                   : over === 'Cancelled'  ? { icon: 'ti ti-ban', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '○ ยกเลิกคำร้องแล้ว', date: '-', status: 'pending' }
-                   :                        { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '○ ไม่ผ่านการอนุมัติ', date: '-', status: 'pending' };
-
-    return [s1, s2, s3, s4];
+    return [s1, s2, s3];
   }
 
   private buildTimeline(d: Datum, advisorName: string): TimelineItem[] {
@@ -357,6 +359,7 @@ export class PreT3History implements OnInit {
         icon: 'ti ti-chalkboard', actor: advisorName, badge: 'อาจารย์', badgeType: 'advisor',
         message: 'ไม่อนุมัติคำร้อง Pre-T3',
         detail: (d.advisor_approval.remark as any) ?? undefined,
+        time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined,
       });
     }
 
@@ -365,12 +368,14 @@ export class PreT3History implements OnInit {
         items.push({
           icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor',
           message: 'อนุมัติคำร้อง Pre-T3 แล้ว',
+          time: d.faculty_com_approval.approved_at ? this.formatDateFull(d.faculty_com_approval.approved_at) : undefined,
         });
       } else if (fac === 'Rejected') {
         items.push({
           icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'ไม่อนุมัติ', badgeType: 'advisor',
           message: 'ไม่อนุมัติคำร้อง',
           detail: (d.faculty_com_approval.remark as any) ?? undefined,
+          time: d.faculty_com_approval.approved_at ? this.formatDateFull(d.faculty_com_approval.approved_at) : undefined,
         });
       }
     }
@@ -379,6 +384,8 @@ export class PreT3History implements OnInit {
       items.push({
         icon: 'ti ti-ban', actor: 'นิสิต', badge: 'ยกเลิก', badgeType: 'waiting',
         message: 'ยกเลิกคำร้อง Pre-T3 ด้วยตนเอง',
+        // API ไม่มี cancelled_at — คำร้องที่ยกเลิกแล้วไม่ถูกแก้อีก updated_at จึงเป็นเวลาที่ยกเลิก
+        time: d.updated_at ? this.formatDateFull(d.updated_at) : undefined,
       });
     }
 

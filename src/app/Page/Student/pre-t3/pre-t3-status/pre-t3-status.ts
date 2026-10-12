@@ -307,36 +307,36 @@ export class PreT3Status implements OnInit {
   private buildSteps(d: Datum): Step[] {
     const adv  = d.advisor_approval.status;
     const fac  = d.faculty_com_approval.status;
-    const over = d.overall_status;
 
     const createdDate  = this.formatDateShort(d.created_at);
     const advisorDate  = d.advisor_approval.approved_at
       ? this.formatDateShort(d.advisor_approval.approved_at) : '-';
+    // วันที่เจ้าหน้าที่บันทึกผล (ผลเดียวกับที่ประชุม)
+    const facultyDate = d.faculty_com_approval.approved_at
+      ? this.formatDateShort(d.faculty_com_approval.approved_at) : '-';
 
-    // Step 1 — always done
+    // 3 ขั้น: ยื่น → อาจารย์ที่ปรึกษา → เจ้าหน้าที่ — ผลของเจ้าหน้าที่คือผลที่ประชุม และคำร้องอนุมัติสำเร็จทันที
+    // เดิมมีขั้นที่ 4 "อนุมัติสำเร็จ" แยก ซึ่งซ้ำกับขั้นเจ้าหน้าที่ (วันเดียวกัน สถานะเดียวกัน) จึงเอาออก
     const s1: Step = { icon: 'ti ti-check', label: 'ยื่นคำร้องสำเร็จ', sub: '● เสร็จแล้ว', date: createdDate, status: 'done' };
 
     // Step 2 — advisor
     let s2: Step;
     if (adv === 'Approved')       s2 = { icon: 'ti ti-check',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● เสร็จแล้ว',       date: advisorDate, status: 'done'   };
-    else if (adv === 'Rejected')  s2 = { icon: 'ti ti-x',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ',      date: '-',         status: 'active' };
+    else if (adv === 'Rejected')  s2 = { icon: 'ti ti-x',  label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● ไม่อนุมัติ',      date: advisorDate, status: 'active' };
     else                          s2 = { icon: 'ti ti-hourglass', label: 'อาจารย์ที่ปรึกษาพิจารณา', sub: '● กำลังดำเนินการ', date: '-',          status: 'active' };
 
-    // Step 3 — meeting
+    // Step 3 — เจ้าหน้าที่ (ผลที่ประชุม)
     let s4: Step;
     if (fac === 'Approved')
-      s4 = { icon: 'ti ti-check',  label: 'รอผลจากที่ประชุม', sub: '● เสร็จแล้ว',       date: '-', status: 'done'   };
+      s4 = { icon: 'ti ti-check',  label: 'เจ้าหน้าที่พิจารณา', sub: '● เสร็จแล้ว',       date: facultyDate, status: 'done'   };
+    else if (fac === 'Rejected')
+      s4 = { icon: 'ti ti-x', label: 'เจ้าหน้าที่พิจารณา', sub: '● ไม่อนุมัติ', date: facultyDate, status: 'active' };
     else if (adv === 'Approved')
-      s4 = { icon: 'ti ti-hourglass', label: 'รอผลจากที่ประชุม', sub: '● กำลังดำเนินการ', date: '-', status: 'active' };
+      s4 = { icon: 'ti ti-hourglass', label: 'เจ้าหน้าที่พิจารณา', sub: '● กำลังดำเนินการ', date: '-', status: 'active' };
     else
-      s4 = { icon: 'ti ti-building-bank', label: 'รอผลจากที่ประชุม', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };
+      s4 = { icon: 'ti ti-building-bank', label: 'เจ้าหน้าที่พิจารณา', sub: '○ รอขั้นก่อนหน้า',  date: '-', status: 'pending' };
 
-    // Step 5 — final
-    const s5: Step = over === 'Approved'
-      ? { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '● เสร็จแล้ว',      date: '-', status: 'done'    }
-      : { icon: 'ti ti-school', label: 'อนุมัติสำเร็จพร้อมยื่น T3', sub: '○ รอขั้นก่อนหน้า', date: '-', status: 'pending' };
-
-    return [s1, s2, s4, s5];
+    return [s1, s2, s4];
   }
 
   // ── Timeline ──────────────────────────────────────────────────
@@ -365,6 +365,7 @@ export class PreT3Status implements OnInit {
         icon: 'ti ti-chalkboard', actor: advisorName, badge: 'อาจารย์', badgeType: 'advisor',
         message: 'ไม่อนุมัติคำร้อง Pre-T3',
         detail: (d.advisor_approval.remark as unknown as string | null) ?? undefined,
+        time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined,
       });
     } else {
       items.push({
@@ -374,12 +375,20 @@ export class PreT3Status implements OnInit {
     }
 
     // 3. Meeting
-    if (meet) {
+    // ผลตัดสินแล้ว (อนุมัติ/ไม่อนุมัติ) — แสดงเวลาที่บันทึกผล · เดิมไม่มี time และกรณีไม่อนุมัติขึ้น "กำลังพิจารณา" ผิด
+    // เช็คจาก status ก่อน meeting_no — ผลออกแล้วแต่ไม่มีเลขที่ประชุม เดิมตกไป "รอขั้นก่อนหน้า"
+    if (fac === 'Approved' || fac === 'Rejected') {
       items.push({
         icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย',
-        badge: fac === 'Approved' ? 'อนุมัติ' : 'กำลังพิจารณา',
-        badgeType: fac === 'Approved' ? 'advisor' : 'waiting',
-        message: fac === 'Approved' ? 'อนุมัติคำร้อง Pre-T3 แล้ว' : 'กำลังพิจารณาในที่ประชุม',
+        badge: fac === 'Approved' ? 'อนุมัติ' : 'ไม่อนุมัติ', badgeType: 'advisor',
+        message: fac === 'Approved' ? 'อนุมัติคำร้อง Pre-T3 แล้ว' : 'ไม่อนุมัติคำร้อง Pre-T3',
+        detail: fac === 'Rejected' ? ((d.faculty_com_approval.remark as unknown as string | null) ?? undefined) : undefined,
+        time: d.faculty_com_approval.approved_at ? this.formatDateFull(d.faculty_com_approval.approved_at) : undefined,
+      });
+    } else if (meet) {
+      items.push({
+        icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'กำลังพิจารณา', badgeType: 'waiting',
+        message: 'กำลังพิจารณาในที่ประชุม',
       });
     } else {
       items.push({
@@ -388,13 +397,6 @@ export class PreT3Status implements OnInit {
         detail: 'รอดำเนินการ\nขั้นตอนนี้ยังไม่ดำเนินการ — รอขั้นก่อนหน้าก่อน',
       });
     }
-
-    // 5. Final approval
-    items.push({
-      icon: 'ti ti-school', actor: 'อนุมัติสำเร็จ', badge: 'รออยู่', badgeType: 'waiting',
-      message: 'รอขั้นก่อนหน้า',
-      detail: 'รอดำเนินการ\nขั้นตอนนี้ยังไม่ดำเนินการ — รอขั้นก่อนหน้าก่อน',
-    });
 
     return items;
   }

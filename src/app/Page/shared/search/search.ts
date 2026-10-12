@@ -82,6 +82,9 @@ interface JournalResult {
 export class Search implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.scrollTo({ top: 0 });
+    // นิสิต: ตั้งระดับการศึกษาตามโปรไฟล์ (degreeLevel จากตอน login) ให้เลย — ยังเปลี่ยนเองได้ทีหลัง
+    // role อื่น (staff/อาจารย์) ใช้ค่าเริ่มต้นเดิม
+    if (this.isStudent && this.auth.user?.degreeLevel === 'Master') this.degree = 'master';
   }
   private http      = inject(HttpClient);
   private auth      = inject(AuthService);

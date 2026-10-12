@@ -332,7 +332,7 @@
       <div class="section-divider"></div>
 
       <div class="pub-status-cards">
-        <div class="pub-card" [class.pub-card--selected]="pubStatus === 'accepted'" (click)="pubStatus = 'accepted'">
+        <div class="pub-card" [class.pub-card--selected]="pubStatus === 'accepted'" (click)="setPubStatus('accepted')">
           <div class="pub-card-radio">
             <div class="pub-radio" [class.pub-radio--active]="pubStatus === 'accepted'"></div>
           </div>
@@ -340,10 +340,10 @@
             <div class="pub-card-title">
               ได้รับการตอบรับ (Accepted)
             </div>
-            <div class="pub-card-desc">วารสารตอบรับแล้ว ต้องแนบ Letter of Acceptance + Full Paper</div>
+            <div class="pub-card-desc">วารสารตอบรับแล้ว ต้องแนบหนังสือตอบรับ (Letter of Acceptance) + Full Paper</div>
           </div>
         </div>
-        <div class="pub-card" [class.pub-card--selected]="pubStatus === 'published'" (click)="pubStatus = 'published'">
+        <div class="pub-card" [class.pub-card--selected]="pubStatus === 'published'" (click)="setPubStatus('published')">
           <div class="pub-card-radio">
             <div class="pub-radio" [class.pub-radio--active]="pubStatus === 'published'"></div>
           </div>
@@ -351,25 +351,27 @@
             <div class="pub-card-title">
               ตีพิมพ์แล้ว (Published)
             </div>
-            <div class="pub-card-desc">ตีพิมพ์เผยแพร่แล้ว - แนบประกาศสาร สำเนา + Full Paper + ต้อง DOI จริง</div>
+            <div class="pub-card-desc">ตีพิมพ์เผยแพร่แล้ว ต้องแนบ Full Paper + หน้าปกวารสาร + สารบัญวารสาร</div>
           </div>
         </div>
       </div>
 
-      <div class="field-row" style="margin-top:16px">
-        <div class="field-group">
-          <label class="field-label">Volume <span class="badge-optional">อ้าง</span></label>
-          <input class="field-input" [(ngModel)]="volume" placeholder="เช่น 12" />
+      @if (pubStatus === 'published') {
+        <div class="field-row" style="margin-top:16px">
+          <div class="field-group">
+            <label class="field-label">Volume <span class="badge-optional">อ้าง</span></label>
+            <input class="field-input" [(ngModel)]="volume" placeholder="เช่น 12" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Issue <span class="badge-optional">อ้าง</span></label>
+            <input class="field-input" [(ngModel)]="issue" placeholder="เช่น 3" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">ปีที่ตีพิมพ์ (Publish Year) <span class="badge-optional">อ้าง</span></label>
+            <input class="field-input" [(ngModel)]="publishYear" placeholder="เช่น 2025" maxlength="4" />
+          </div>
         </div>
-        <div class="field-group">
-          <label class="field-label">Issue <span class="badge-optional">อ้าง</span></label>
-          <input class="field-input" [(ngModel)]="issue" placeholder="เช่น 3" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">ปีที่ตีพิมพ์ (Publish Year) <span class="badge-optional">อ้าง</span></label>
-          <input class="field-input" [(ngModel)]="publishYear" placeholder="เช่น 2025" maxlength="4" />
-        </div>
-      </div>
+      }
     </div>
 
     <!-- ═══ SECTION 7: เอกสารประกอบ T3 ═══ -->
@@ -390,8 +392,9 @@
       <div class="section-divider"></div>
 
       <div class="upload-grid">
-        <div class="upload-card" id="file-acceptance_letter" [class.upload-card--error]="fieldWithError() === 'file-acceptance_letter'">
-          <div class="upload-required-tag">* จำเป็น</div>
+        <div class="upload-card" id="file-acceptance_letter" [class.upload-card--error]="fieldWithError() === 'file-acceptance_letter'"
+             [class.upload-card--optional]="!isRequiredFile('acceptance_letter')">
+          @if (isRequiredFile('acceptance_letter')) { <div class="upload-required-tag">* จำเป็น</div> }
           <div class="upload-icon"><i class="ti ti-file-check"></i></div>
           <div class="upload-name">acceptance_letter</div>
           <div class="upload-desc">หนังสือตอบรับ (PDF/JPG/PNG, max 10MB)</div>
@@ -429,19 +432,23 @@
       </div>
       <div class="section-divider"></div>
 
-      <div class="upload-grid upload-grid--4">
-        <div class="upload-card upload-card--optional">
-          <div class="upload-icon"><i class="ti ti-news"></i></div>
-          <div class="upload-name">journal_cover</div>
-          <div class="upload-desc">ปกวารสาร</div>
-          <label class="upload-btn upload-btn--secondary">
-            อัปโหลด
-            <input type="file" accept=".pdf,.jpg,.png" hidden (change)="onFileChange('journal_cover', $event)" />
-          </label>
-          @if (getFileName('journal_cover')) {
-            <div class="upload-filename">{{ getFileName('journal_cover') }}</div>
-          }
-        </div>
+      <div class="upload-grid" [class.upload-grid--4]="pubStatus === 'published'" [class.upload-grid--2]="pubStatus !== 'published'">
+        @if (pubStatus === 'published') {
+          <div class="upload-card" id="file-journal_cover" [class.upload-card--error]="fieldWithError() === 'file-journal_cover'"
+               [class.upload-card--optional]="!isRequiredFile('journal_cover')">
+            @if (isRequiredFile('journal_cover')) { <div class="upload-required-tag">* จำเป็น</div> }
+            <div class="upload-icon"><i class="ti ti-news"></i></div>
+            <div class="upload-name">journal_cover</div>
+            <div class="upload-desc">ปกวารสาร</div>
+            <label class="upload-btn" [class.upload-btn--secondary]="!isRequiredFile('journal_cover')">
+              อัปโหลด
+              <input type="file" accept=".pdf,.jpg,.png" hidden (change)="onFileChange('journal_cover', $event)" />
+            </label>
+            @if (getFileName('journal_cover')) {
+              <div class="upload-filename">{{ getFileName('journal_cover') }}</div>
+            }
+          </div>
+        }
 
         <div class="upload-card upload-card--optional">
           <div class="upload-icon"><i class="ti ti-database-search"></i></div>
@@ -469,18 +476,22 @@
           }
         </div>
 
-        <div class="upload-card upload-card--optional">
-          <div class="upload-icon"><i class="ti ti-list-details"></i></div>
-          <div class="upload-name">table_of_contents</div>
-          <div class="upload-desc">สารบัญวารสาร</div>
-          <label class="upload-btn upload-btn--secondary">
-            อัปโหลด
-            <input type="file" accept=".pdf,.jpg,.png" hidden (change)="onFileChange('table_of_contents', $event)" />
-          </label>
-          @if (getFileName('table_of_contents')) {
-            <div class="upload-filename">{{ getFileName('table_of_contents') }}</div>
-          }
-        </div>
+        @if (pubStatus === 'published') {
+          <div class="upload-card" id="file-table_of_contents" [class.upload-card--error]="fieldWithError() === 'file-table_of_contents'"
+               [class.upload-card--optional]="!isRequiredFile('table_of_contents')">
+            @if (isRequiredFile('table_of_contents')) { <div class="upload-required-tag">* จำเป็น</div> }
+            <div class="upload-icon"><i class="ti ti-list-details"></i></div>
+            <div class="upload-name">table_of_contents</div>
+            <div class="upload-desc">สารบัญวารสาร</div>
+            <label class="upload-btn" [class.upload-btn--secondary]="!isRequiredFile('table_of_contents')">
+              อัปโหลด
+              <input type="file" accept=".pdf,.jpg,.png" hidden (change)="onFileChange('table_of_contents', $event)" />
+            </label>
+            @if (getFileName('table_of_contents')) {
+              <div class="upload-filename">{{ getFileName('table_of_contents') }}</div>
+            }
+          </div>
+        }
       </div>
 
     </div>
@@ -638,27 +649,11 @@
             </div>
           </div>
 
-          <div class="ms-card">
-            <div class="ms-head"><i class="ti ti-paperclip"></i> เอกสารประกอบ</div>
-            <div class="attach-list">
-              @for (a of d.attachments; track a.name) {
-                <div class="attach-item">
-                  <span class="attach-icon">{{ a.icon }}</span>
-                  <div class="attach-body">
-                    <div class="attach-name">{{ a.name }}</div>
-                    <div class="attach-meta">{{ a.meta }} · {{ a.size }}</div>
-                  </div>
-                  <button class="btn-download"><i class="ti ti-download"></i> ดาวน์โหลด</button>
-                </div>
-              }
-            </div>
-          </div>
-
         </div><!-- /modal-body -->
 
         <!-- ══ MODAL FOOTER ══ -->
         <div class="modal-footer">
-          <button class="btn-mf btn-mf-print"><i class="ti ti-printer"></i> พิมพ์ใบคำร้อง</button>
+          <button class="btn-mf btn-mf-print" (click)="printDetail()"><i class="ti ti-printer"></i> พิมพ์ใบคำร้อง</button>
           <button class="btn-mf btn-mf-close" (click)="closePreT3Detail()">ปิด</button>
         </div>
 

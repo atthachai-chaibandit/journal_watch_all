@@ -358,6 +358,7 @@ export class PreT3Status implements OnInit {
       items.push({
         icon: 'ti ti-chalkboard', actor: advisorName, badge: 'อาจารย์', badgeType: 'advisor',
         message: 'อนุมัติคำร้อง Pre-T3 แล้ว',
+        detail: (d.advisor_approval.remark as unknown as string | null) || undefined,
         time: d.advisor_approval.approved_at ? this.formatDateFull(d.advisor_approval.approved_at) : undefined,
       });
     } else if (adv === 'Rejected') {
@@ -382,7 +383,7 @@ export class PreT3Status implements OnInit {
         icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย',
         badge: fac === 'Approved' ? 'อนุมัติ' : 'ไม่อนุมัติ', badgeType: 'advisor',
         message: fac === 'Approved' ? 'อนุมัติคำร้อง Pre-T3 แล้ว' : 'ไม่อนุมัติคำร้อง Pre-T3',
-        detail: fac === 'Rejected' ? ((d.faculty_com_approval.remark as unknown as string | null) ?? undefined) : undefined,
+        detail: (d.faculty_com_approval.remark as unknown as string | null) || undefined,
         time: d.faculty_com_approval.approved_at ? this.formatDateFull(d.faculty_com_approval.approved_at) : undefined,
       });
     } else if (meet) {

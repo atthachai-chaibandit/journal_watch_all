@@ -179,14 +179,16 @@
           <div class="field-row">
             <div class="field-group field-group--full">
               <label class="field-label">ชื่อบทความ (ภาษาอังกฤษ) <span class="badge-required">*</span> <span class="badge-optional">กรอกอย่างน้อย 1 ภาษา</span></label>
-              <input class="field-input" [ngModel]="titleEn()" (ngModelChange)="titleEn.set($event)" placeholder="Article title in English"/>
+              <input class="field-input" [class.field-input--error]="titleEnError()" [ngModel]="titleEn()" (ngModelChange)="titleEn.set($event)" placeholder="Article title in English"/>
+              @if (titleEnError()) { <span class="field-hint-error"><i class="ti ti-alert-triangle"></i> {{ titleEnError() }}</span> }
             </div>
           </div>
 
           <div class="field-row">
             <div class="field-group field-group--full">
               <label class="field-label">ชื่อบทความ (ภาษาไทย) <span class="badge-required">*</span> <span class="badge-optional">กรอกอย่างน้อย 1 ภาษา</span></label>
-              <input class="field-input" [ngModel]="titleTh()" (ngModelChange)="titleTh.set($event)" placeholder="ชื่อบทความภาษาไทย"/>
+              <input class="field-input" [class.field-input--error]="titleThError()" [ngModel]="titleTh()" (ngModelChange)="titleTh.set($event)" placeholder="ชื่อบทความภาษาไทย"/>
+              @if (titleThError()) { <span class="field-hint-error"><i class="ti ti-alert-triangle"></i> {{ titleThError() }}</span> }
               @if (!hasTitle()) { <span class="field-hint-warn">กรุณากรอกชื่อบทความอย่างน้อย 1 ภาษา (อังกฤษหรือไทย)</span> }
             </div>
           </div>
@@ -238,7 +240,7 @@
             </button>
           </div>
           @if (!canSubmit()) {
-            <div class="submit-hint">กรุณาตรวจสอบ Checklist ทั้ง 9 ข้อให้ครบก่อนยื่น</div>
+            <div class="submit-hint">{{ submitBlockReason() }}</div>
           }
         </div>
 

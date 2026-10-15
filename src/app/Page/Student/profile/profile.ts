@@ -9,6 +9,7 @@ import { Constants } from '../../../comfig/constants';
 import { GetProfileRes, Data as ProfileData, Advisor } from '../../../model/res/get_profile_res';
 import { EditProfileReq } from '../../../model/req/Edit_Profile_req';
 import { apiFailure, failMsg } from '../../../server-status.service';
+import { degreeLevelTh, studyPlanTh } from '../../../study-plan';
 
 @Component({
   selector: 'app-profile',
@@ -18,6 +19,10 @@ import { apiFailure, failMsg } from '../../../server-status.service';
   styleUrl: './profile.scss',
 })
 export class Profile implements OnInit {
+  // แสดงระดับการศึกษา/แผนการเรียนเป็นภาษาไทย (backend ส่งเป็นรหัส เช่น Master, Master_A1)
+  readonly degreeLevelTh = degreeLevelTh;
+  readonly studyPlanTh   = studyPlanTh;
+
   private auth      = inject(AuthService);
   private http      = inject(HttpClient);
   private constants = inject(Constants);

@@ -461,7 +461,7 @@
         <div class="pred-advice-box">
           <div class="pred-advice-title"><i class="ti ti-bulb"></i> ข้อสังเกตสำหรับผู้ดูแลระบบ</div>
           <p><i class="ti ti-hand-stop"></i> วารสารนี้ถูกระบุเป็น Predatory Journal — ไม่ผ่านเกณฑ์สำหรับทุกระดับการศึกษา</p>
-          <p><i class="ti ti-search"></i> แนะนำให้นิสิตค้นหาวารสารใหม่ใน Scopus (Q1–Q2) หรือ TCI กลุ่มที่ 1 แทน</p>
+          <p><i class="ti ti-search"></i> แนะนำให้นิสิตค้นหาวารสารใหม่ใน Scopus (ป.เอก Q1–Q2 · ป.โท Q1–Q3) หรือ TCI กลุ่ม 1–2 (เฉพาะ ป.โท) แทน</p>
           <p><i class="ti ti-school"></i> แจ้งอาจารย์ที่ปรึกษาและนิสิตเพื่อดำเนินการหาวารสารทดแทน</p>
           <p><i class="ti ti-phone"></i> บันทึกและรายงานต่อบัณฑิตวิทยาลัยหากพบการใช้วารสารดังกล่าว</p>
         </div>
@@ -697,6 +697,7 @@
               <div class="banner-title">
                 {{ tciPass ? 'พบในฐานข้อมูล TCI — วารสารผ่านเกณฑ์'
                    : t.inactive ? 'วารสาร TCI ไม่ Active — ไม่ผ่านเกณฑ์'
+                   : degree === 'doctoral' ? 'พบในฐานข้อมูล TCI — ป.เอก ใช้วารสาร TCI ไม่ได้'
                    : 'พบในฐานข้อมูล TCI — ไม่ผ่านเกณฑ์ระดับที่เลือก' }}
               </div>
               <div class="banner-desc">
@@ -704,7 +705,9 @@
                    ? 'วารสารนี้อยู่ใน TCI กลุ่มที่ ' + t.tier + ' มีสถานะ Active สามารถนำไปยื่น Pre-T3 / T3 ได้'
                    : t.inactive
                      ? 'วารสารนี้มีสถานะ Inactive ไม่สามารถนำไปยื่น Pre-T3 / T3 ได้'
-                     : 'วารสารนี้อยู่ใน TCI กลุ่มที่ ' + t.tier + ' ไม่ผ่านเกณฑ์ระดับที่เลือก กรุณาตรวจสอบเกณฑ์' }}
+                     : degree === 'doctoral'
+                       ? 'นิสิต ป.เอก ต้องยื่นด้วยวารสาร Scopus (Q1–Q2) เท่านั้น วารสาร TCI ใช้ได้เฉพาะ ป.โท'
+                       : 'วารสารนี้อยู่ใน TCI กลุ่มที่ ' + t.tier + ' ไม่ผ่านเกณฑ์ระดับที่เลือก กรุณาตรวจสอบเกณฑ์' }}
               </div>
             </div>
           </div>
@@ -820,12 +823,12 @@
               <div class="criteria-row">
                 <span class="criteria-label">TCI กลุ่ม</span>
                 <span class="criteria-value"
-                  [class.ok]="degree === 'doctoral' ? t.tier === 1 : t.tier <= 2"
-                  [class.bad]="degree === 'doctoral' ? t.tier !== 1 : t.tier > 2">
-                  <span class="crit-part">เกณฑ์ {{ degree === 'doctoral' ? 'กลุ่ม 1 เท่านั้น' : 'กลุ่ม 1–2' }}</span>
+                  [class.ok]="degree !== 'doctoral' && t.tier <= 2"
+                  [class.bad]="degree === 'doctoral' || t.tier > 2">
+                  <span class="crit-part">เกณฑ์ {{ degree === 'doctoral' ? 'ป.เอก ใช้ TCI ไม่ได้' : 'กลุ่ม 1–2' }}</span>
                   <span class="crit-sep">·</span>
                   <span class="crit-part">วารสารนี้ <strong>กลุ่ม {{ t.tier }}</strong></span>
-                  @if (degree === 'doctoral' ? t.tier === 1 : t.tier <= 2) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
+                  @if (degree !== 'doctoral' && t.tier <= 2) { <i class="ti ti-check"></i> } @else { <i class="ti ti-x"></i> }
                 </span>
               </div>
               <div class="criteria-row">
@@ -836,7 +839,11 @@
               </div>
               <div class="criteria-row">
                 <span class="criteria-label">เกณฑ์ที่รองรับ TCI</span>
-                <span class="criteria-value ok">ผ่าน <i class="ti ti-check"></i></span>
+                @if (degree === 'doctoral') {
+                  <span class="criteria-value bad">ป.เอก ต้องใช้ Scopus (Q1–Q2) เท่านั้น <i class="ti ti-x"></i></span>
+                } @else {
+                  <span class="criteria-value ok">ผ่าน <i class="ti ti-check"></i></span>
+                }
               </div>
               <div class="criteria-row">
                 <span class="criteria-label">ไม่ติด MSU Unwanted</span>

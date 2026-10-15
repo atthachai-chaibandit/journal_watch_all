@@ -215,13 +215,9 @@
                 }
               </div>
             </div>
-            <div class="detail-field">
-              <div class="detail-label">ผลการตรวจสอบชื่อ</div>
-              <div class="detail-value"><span class="badge-pass"><i class="ti ti-circle-check"></i> ผ่านเกณฑ์คุณชื่อ</span></div>
-            </div>
             <div class="detail-field detail-field--wide">
               <div class="detail-label">URL วารสาร</div>
-              <div class="detail-value">@if (isHttpUrl(req.journalUrl)) { <a [href]="req.journalUrl" target="_blank" rel="noopener noreferrer" class="url-link">{{ req.journalUrl }}</a> } @else { {{ req.journalUrl }} }</div>
+              <div class="detail-value">@if (isHttpUrl(req.journalUrl)) { <a [href]="req.journalUrl" target="_blank" rel="noopener noreferrer" class="url-link">{{ req.journalUrl }}</a> } @else { {{ req.journalUrl || '—' }} }</div>
             </div>
           </div>
         </div>

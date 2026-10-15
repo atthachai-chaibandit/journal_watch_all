@@ -167,9 +167,11 @@
       <div class="field-row">
         <div class="field-group field-group--full">
           <label class="field-label">ชื่อเรื่องภาษาไทย <span class="badge-required">*</span></label>
-          <input id="field-titleTh" class="field-input field-input--highlight" [class.field-input--error]="fieldWithError() === 'field-titleTh'" [(ngModel)]="titleTh" (ngModelChange)="fieldWithError.set('')" placeholder="ชื่อเรื่องภาษาไทย" />
+          <input id="field-titleTh" class="field-input field-input--highlight" [class.field-input--error]="fieldWithError() === 'field-titleTh' || !!titleThLangError" [(ngModel)]="titleTh" (ngModelChange)="fieldWithError.set('')" placeholder="ชื่อเรื่องภาษาไทย" />
           @if (fieldWithError() === 'field-titleTh') {
             <div class="field-error-msg">กรุณากรอก ชื่อเรื่องภาษาไทย</div>
+          } @else if (titleThLangError) {
+            <div class="field-error-msg"><i class="ti ti-alert-triangle"></i> {{ titleThLangError }}</div>
           }
         </div>
       </div>
@@ -177,9 +179,11 @@
       <div class="field-row">
         <div class="field-group field-group--full">
           <label class="field-label">ชื่อเรื่องภาษาอังกฤษ <span class="badge-required">*</span></label>
-          <input id="field-titleEn" class="field-input field-input--highlight" [class.field-input--error]="fieldWithError() === 'field-titleEn'" [(ngModel)]="titleEn" (ngModelChange)="fieldWithError.set('')" placeholder="Article title in English" />
+          <input id="field-titleEn" class="field-input field-input--highlight" [class.field-input--error]="fieldWithError() === 'field-titleEn' || !!titleEnLangError" [(ngModel)]="titleEn" (ngModelChange)="fieldWithError.set('')" placeholder="Article title in English" />
           @if (fieldWithError() === 'field-titleEn') {
             <div class="field-error-msg">กรุณากรอก ชื่อเรื่องภาษาอังกฤษ</div>
+          } @else if (titleEnLangError) {
+            <div class="field-error-msg"><i class="ti ti-alert-triangle"></i> {{ titleEnLangError }}</div>
           }
         </div>
       </div>
@@ -381,7 +385,6 @@
           <span class="section-head-icon"><i class="ti ti-paperclip"></i></span>
           <span class="section-head-title">เอกสารประกอบ T3</span>
         </div>
-        <span class="section-head-hint">POST /upload/t3/:id/files · max 10MB</span>
       </div>
 
       <!-- หลักฐานหลัก -->
@@ -518,7 +521,7 @@
       }
       <button class="btn-confirm"
               (click)="openConfirm()"
-              [disabled]="isSubmitting() || !selectedPreT3 || submitSuccess()">
+              [disabled]="isSubmitting() || !selectedPreT3 || submitSuccess() || !!titleThLangError || !!titleEnLangError">
         @if (isSubmitting()) {
           <span class="submit-spinner"></span> กำลังยื่น...
         } @else {

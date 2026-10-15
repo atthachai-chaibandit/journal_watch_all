@@ -494,7 +494,8 @@ export class Search implements OnInit, OnDestroy {
   private mapTciResult(data: TciData, isUnwanted: boolean, unwantedUnknown = false): TciJournalResult {
     const tier     = data.tci_tier ?? 99;
     const inactive = data.tci_inactive ?? false;
-    const passForDoctoral = tier === 1 && !inactive && !isUnwanted && !unwantedUnknown;
+    // ป.เอก ยื่นด้วยวารสาร TCI ไม่ได้ทุกกลุ่ม — ต้องเป็น Scopus (Q1–Q2) เท่านั้น · ป.โท ใช้ได้ทั้ง Scopus และ TCI กลุ่ม 1–2
+    const passForDoctoral = false;
     const passForMaster   = tier <= 2 && !inactive && !isUnwanted && !unwantedUnknown;
     const now = new Date();
     return {

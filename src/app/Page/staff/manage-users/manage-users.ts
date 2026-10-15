@@ -529,8 +529,10 @@ export class ManageUsers implements OnInit {
     this.editSaveResult.set(null);
 
     // Staff เปลี่ยน msu_mail ไม่ได้ (backend ตอบ 403) — ไม่ส่ง field นี้ไป ให้ backend คงค่าเดิม
-    const { msu_mail: _mail, department, ...rest } = this.editForm;
-    const body = u.role === Role.Student ? { ...rest, department } : rest;
+    const { msu_mail: _mail, ...rest } = this.editForm;
+    // ระดับการศึกษา/ปีหลักสูตร/รหัสหลักสูตร/สาขา เป็นของนิสิตเท่านั้น — แก้อาจารย์ไม่ส่ง
+    const { degree_level: _d, curriculum_year: _c, study_plan_code: _s, department: _dep, ...common } = rest;
+    const body = u.role === Role.Student ? rest : common;
     const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
     this.http
       .patch<{ success: boolean; message?: string }>(
@@ -569,10 +571,6 @@ export class ManageUsers implements OnInit {
   // ── Helpers ───────────────────────────────────────────────────────
   fullName(u: User): string {
     return `${u.prefix ? u.prefix + ' ' : ''}${u.first_name} ${u.last_name}`.trim();
-  }
-
-  initials(u: User): string {
-    return ((u.first_name?.[0] ?? '') + (u.last_name?.[0] ?? '')).toUpperCase();
   }
 
   studentId(u: User): string {

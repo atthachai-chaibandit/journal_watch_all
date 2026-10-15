@@ -5,6 +5,10 @@
     <div class="page-title-row">
       <span class="page-title-icon"><i class="ti ti-folder"></i></span>
       <h1 class="page-title">ประวัติทั้งหมด</h1>
+      <button class="btn-refresh" (click)="loadHistory()" [disabled]="isLoading()">
+        <span class="refresh-icon" [class.spinning]="isLoading()">↻</span>
+        <span>รีเฟรช</span>
+      </button>
     </div>
     <p class="page-subtitle">ประวัติคำร้อง Pre-T3 และ T3 ที่ดำเนินการแล้ว</p>
   </div>

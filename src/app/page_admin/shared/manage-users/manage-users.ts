@@ -47,7 +47,18 @@ export class ManageUsers implements OnInit {
     return this.auth.user?.role === 'SuperAdmin'
       || (readStoredAdmin() as any)?.role === 'SuperAdmin';
   }
-  get canSeeAdminTab(): boolean { return this.isSuperAdmin; }
+  /** Admin และ SuperAdmin จัดการบัญชี Admin ได้ทั้งคู่ (แต่ Admin แตะแถว SuperAdmin ไม่ได้ — ดู canManageAdminRow) */
+  get canManageAdmins(): boolean {
+    const role = this.auth.user?.role ?? (readStoredAdmin() as any)?.role;
+    return role === 'Admin' || role === 'SuperAdmin';
+  }
+  get canSeeAdminTab(): boolean { return this.canManageAdmins; }
+
+  /** Admin ห้ามแก้/ระงับ/ลบบัญชี SuperAdmin (backend ตอบ 403) — SuperAdmin จัดการได้ทุกแถว */
+  canManageAdminRow(a: Admin): boolean {
+    if (!this.canManageAdmins) return false;
+    return this.isSuperAdmin || a.role !== 'SuperAdmin';
+  }
 
   isLoading  = signal(true);
   allUsers   = signal<User[]>([]);
@@ -656,7 +667,8 @@ export class ManageUsers implements OnInit {
     this.http
       .patch<{ success: boolean; message?: string }>(
         `${this.constants.API_ENDPOINT}/manage/users/${u.user_id}`,
-        u.role === Role.Student ? this.editForm : { ...this.editForm, department: undefined },
+        // ระดับการศึกษา/ปีหลักสูตร/รหัสหลักสูตร/สาขา เป็นของนิสิตเท่านั้น — แก้อาจารย์ไม่ส่ง
+        u.role === Role.Student ? this.editForm : (({ degree_level, curriculum_year, study_plan_code, department, ...common }) => common)(this.editForm),
         { headers }
       )
       .pipe(catchError(err => of(apiFailure(err))))
@@ -687,7 +699,7 @@ export class ManageUsers implements OnInit {
       });
   }
 
-  // ── Add Admin Modal (SuperAdmin only) ────────────────────────────
+  // ── Add Admin Modal (Admin / SuperAdmin) ─────────────────────────
   addAdminModal    = signal(false);
   isAddAdminSaving = signal(false);
   addAdminResult   = signal<{ ok: boolean; msg: string } | null>(null);
@@ -744,7 +756,7 @@ export class ManageUsers implements OnInit {
       });
   }
 
-  // ── Edit Admin Modal (SuperAdmin only) ───────────────────────────
+  // ── Edit Admin Modal (Admin / SuperAdmin — Admin แก้แถว SuperAdmin ไม่ได้) ──
   editAdminModal    = signal<Admin | null>(null);
   isEditAdminSaving = signal(false);
   editAdminResult   = signal<{ ok: boolean; msg: string } | null>(null);
@@ -752,6 +764,7 @@ export class ManageUsers implements OnInit {
   editAdminForm: Required<Pick<PatchAdminReq, 'first_name' | 'last_name' | 'msu_mail'>> = { first_name: '', last_name: '', msu_mail: '' };
 
   openEditAdminModal(a: Admin): void {
+    if (!this.canManageAdminRow(a)) return;
     this.flushModalClose();
     this.editAdminForm = { first_name: a.first_name, last_name: a.last_name, msu_mail: a.msu_mail };
     this.editAdminPassword = '';
@@ -818,17 +831,17 @@ export class ManageUsers implements OnInit {
       });
   }
 
-  // ── Suspend / Activate Admin (SuperAdmin only) ───────────────────
+  // ── Suspend / Activate Admin (Admin / SuperAdmin) ────────────────
   suspendingAdminId = signal<number | null>(null);
 
-  // ── Delete Admin (SuperAdmin เท่านั้น) ─────────────────────────────
+  // ── Delete Admin (Admin / SuperAdmin — ลบ SuperAdmin ไม่ได้ทุกกรณี) ──
   deleteAdminTarget = signal<Admin | null>(null);
   isDeletingAdmin   = signal(false);
   deleteAdminError  = signal('');
 
   /** ห้ามลบ SuperAdmin และห้ามลบบัญชีตัวเอง */
   canDeleteAdmin(a: Admin): boolean {
-    if (!this.isSuperAdmin || a.role === 'SuperAdmin') return false;
+    if (!this.canManageAdmins || a.role === 'SuperAdmin') return false;
     const me = readStoredAdmin() as { userId?: number } | null;
     return me?.userId !== a.user_id;
   }
@@ -904,17 +917,9 @@ export class ManageUsers implements OnInit {
     return `${a.first_name} ${a.last_name}`.trim();
   }
 
-  adminInitials(a: Admin): string {
-    return ((a.first_name?.[0] ?? '') + (a.last_name?.[0] ?? '')).toUpperCase();
-  }
-
   // ── Helpers ───────────────────────────────────────────────────────
   fullName(u: User): string {
     return `${u.prefix ? u.prefix + ' ' : ''}${u.first_name} ${u.last_name}`.trim();
-  }
-
-  initials(u: User): string {
-    return ((u.first_name?.[0] ?? '') + (u.last_name?.[0] ?? '')).toUpperCase();
   }
 
   studentId(u: User): string {

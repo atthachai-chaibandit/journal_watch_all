@@ -12,6 +12,7 @@ import { GetProfileRes } from '../../../../model/res/get_profile_res';
 import { GetPreT3RequestRes, Datum as PreT3Datum } from '../../../../model/res/get_pre-t3_request_res';
 import { SendT3Req } from '../../../../model/req/send_T3_req';
 import { Datum as MyPreT3Datum } from '../../../../model/res/get_my_Pre-T3_res';
+import { englishTitleError, thaiTitleError } from '../../../../title-lang';
 
 interface PreT3Item {
   id:            string;
@@ -271,10 +272,12 @@ export class SendT3 implements OnInit {
       {
         icon: 'ti ti-chalkboard', actor: this._profileInfo.advisorName, badge: 'อาจารย์', badgeType: 'advisor',
         message: 'อนุมัติคำร้อง Pre-T3 แล้ว', time: at(d.advisor_approval.approved_at),
+        detail: (d.advisor_approval.remark as unknown as string | null) || undefined,
       },
       {
         icon: 'ti ti-building-bank', actor: 'ที่ประชุมบัณฑิตวิทยาลัย', badge: 'อนุมัติ', badgeType: 'advisor',
         message: 'อนุมัติคำร้อง Pre-T3 แล้ว', time: at(d.faculty_com_approval.approved_at),
+        detail: (d.faculty_com_approval.remark as unknown as string | null) || undefined,
       },
     ];
   }
@@ -291,6 +294,9 @@ export class SendT3 implements OnInit {
   // ── Section 3: paper_and_research_details ────────
   titleTh             = '';
   titleEn             = '';
+  // กรอกผิดช่องภาษา — กฎอยู่ที่ title-lang.ts (ใช้ร่วมกับฟอร์ม Pre-T3)
+  get titleThLangError(): string { return thaiTitleError(this.titleTh); }
+  get titleEnLangError(): string { return englishTitleError(this.titleEn); }
   correspondingAuthor = '';
   innovationType      = 'การนำไปใช้ประโยชน์เชิงพาณิชย์ (Commercial)';
   innovationDetail    = '';
@@ -453,6 +459,13 @@ export class SendT3 implements OnInit {
       this.submitError.set('');
       this.fieldWithError.set(missing.fieldId);
       this.scrollToField(missing.fieldId);
+      return;
+    }
+
+    const wrongLang = this.titleThLangError ? 'field-titleTh' : this.titleEnLangError ? 'field-titleEn' : '';
+    if (wrongLang) {
+      this.submitError.set('ชื่อเรื่องกรอกผิดภาษา กรุณาแก้ไขก่อนยื่น');
+      this.scrollToField(wrongLang);
       return;
     }
 

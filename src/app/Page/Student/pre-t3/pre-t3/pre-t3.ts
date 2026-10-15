@@ -10,6 +10,7 @@ import { GetProfileRes, Advisor } from '../../../../model/res/get_profile_res';
 import { SendPreT3Req } from '../../../../model/req/Send_Pre-T3_req';
 import { apiFailure, failMsg } from '../../../../server-status.service';
 import { PRE_T3_CHECKLIST_TITLES } from '../../../../pre-t3-checklist';
+import { englishTitleError, thaiTitleError } from '../../../../title-lang';
 
 interface ChecklistItem {
   id: number;
@@ -209,12 +210,24 @@ export class PreT3 implements OnInit {
   /** F4: ต้องมีชื่อบทความอย่างน้อย 1 ภาษา */
   hasTitle = computed(() => !!this.titleEn().trim() || !!this.titleTh().trim());
 
+  /** กรอกผิดช่องภาษา — กฎอยู่ที่ title-lang.ts (ใช้ร่วมกับฟอร์ม T3) */
+  titleEnError = computed(() => englishTitleError(this.titleEn()));
+  titleThError = computed(() => thaiTitleError(this.titleTh()));
+
+  /** เหตุผลที่ยังยื่นไม่ได้ — แสดงใต้ปุ่มยื่น (เดิมขึ้นเรื่อง Checklist ทุกกรณี) */
+  submitBlockReason = computed(() => {
+    if (this.titleEnError() || this.titleThError()) return 'ชื่อบทความกรอกผิดภาษา กรุณาแก้ไขก่อนยื่น';
+    if (!this.hasTitle())                            return 'กรุณากรอกชื่อบทความอย่างน้อย 1 ภาษา';
+    return 'กรุณาตรวจสอบ Checklist ทั้ง 9 ข้อให้ครบก่อนยื่น';
+  });
+
   canSubmit = computed(() =>
     this.checklist().every(c => c.status === 'pass') &&
     !!this.journalName().trim() &&   // X47: เดิมชื่อวารสารว่างก็กดยื่นได้ แล้วได้ 400 INVALID_JOURNAL
     !!this.issn() &&
     !!this.database() &&
     this.hasTitle() &&
+    !this.titleEnError() && !this.titleThError() &&
     !!this.studentId()
   );
 

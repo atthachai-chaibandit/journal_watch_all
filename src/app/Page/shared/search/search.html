@@ -680,11 +680,15 @@
             <button
               class="btn-pre-t3"
               (click)="goToPreT3Scopus()"
-              [disabled]="!passForCurrentDegree"
-              [class.disabled]="!passForCurrentDegree">
+              [disabled]="!canSubmitScopus"
+              [class.disabled]="!canSubmitScopus">
               ยื่น Pre-T3
             </button>
-            <span class="action-note">ระบบของเราไม่สามารถเปิดให้ยื่น T3 จนกว่า Pre-T3 จะได้รับการ approved</span>
+            @if (viewingOtherDegree) {
+              <span class="action-note">ผลด้านบนแสดงตามเกณฑ์ {{ degree === 'doctoral' ? 'ป.เอก' : 'ป.โท' }} — สิทธิ์ยื่นของคุณใช้เกณฑ์ {{ studentDegree === 'doctoral' ? 'ป.เอก' : 'ป.โท' }}</span>
+            } @else {
+              <span class="action-note">ระบบของเราไม่สามารถเปิดให้ยื่น T3 จนกว่า Pre-T3 จะได้รับการ approved</span>
+            }
           }
           <button class="btn-print" (click)="printResult()">พิมพ์/PDF</button>
         </div>
@@ -881,12 +885,13 @@
 
           <!-- Action Buttons -->
           <div class="result-actions">
-            @if (isStudent) {
+            <!-- ป.เอก ยื่นด้วยวารสาร TCI ไม่ได้ (backend ปฏิเสธ) → ไม่แสดงปุ่มเลย แม้เลือกดูเกณฑ์ ป.โท -->
+            @if (showTciSubmit) {
               <button
                 class="btn-pre-t3"
                 (click)="goToPreT3Tci()"
-                [disabled]="!tciPass"
-                [class.disabled]="!tciPass">
+                [disabled]="!canSubmitTci"
+                [class.disabled]="!canSubmitTci">
                 ยื่น Pre-T3
               </button>
               <span class="action-note">ระบบของเราไม่สามารถเปิดให้ยื่น T3 จนกว่า Pre-T3 จะได้รับการ approved</span>

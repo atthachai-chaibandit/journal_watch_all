@@ -544,6 +544,37 @@ export class Search implements OnInit, OnDestroy {
     return this.auth.user?.role?.toLowerCase() === 'student';
   }
 
+  /**
+   * ระดับการศึกษาจริงของนิสิต (จากโปรไฟล์) — dropdown ด้านบนใช้แค่ "ดูเกณฑ์" ส่วนสิทธิ์ยื่นต้องดูจากระดับจริง
+   * ไม่มีข้อมูลระดับในโปรไฟล์ → ใช้ค่าที่เลือกใน dropdown แทน (พฤติกรรมเดิม)
+   */
+  get studentDegree(): DegreeLevel {
+    const d = this.auth.user?.degreeLevel;
+    return d === 'Master' ? 'master' : d === 'Doctoral' ? 'doctoral' : this.degree;
+  }
+
+  /** กำลังดูเกณฑ์ของระดับอื่นที่ไม่ใช่ระดับของตัวเอง (เช่น นิสิต ป.เอก เลือกดูเกณฑ์ ป.โท) */
+  get viewingOtherDegree(): boolean {
+    return this.degree !== this.studentDegree;
+  }
+
+  /** ยื่น Pre-T3 ด้วยผล Scopus ได้ไหม — ตัดสินตามเกณฑ์ของระดับจริงของนิสิต */
+  get canSubmitScopus(): boolean {
+    const r = this.result();
+    if (!r) return false;
+    return this.studentDegree === 'doctoral' ? r.passForDoctoral : r.passForMaster;
+  }
+
+  /** ป.เอก ยื่นด้วยวารสาร TCI ไม่ได้เลย (backend ก็ปฏิเสธ) → ไม่แสดงปุ่ม · ป.โท ยื่นได้ถ้าผ่านเกณฑ์ */
+  get showTciSubmit(): boolean {
+    return this.isStudent && this.studentDegree === 'master';
+  }
+
+  get canSubmitTci(): boolean {
+    const t = this.tciResult();
+    return !!t && this.showTciSubmit && t.passForMaster;
+  }
+
   get hasConflict(): boolean {
     const r = this.result();
     const t = this.tciResult();
@@ -553,7 +584,7 @@ export class Search implements OnInit, OnDestroy {
 
   goToPreT3Scopus(): void {
     const r = this.result();
-    if (!r || !this.passForCurrentDegree) return;
+    if (!r || !this.canSubmitScopus) return;
     this.router.navigate(['/pre-t3'], { state: {
       journalName:   r.journal,
       journalNameTh: '',
@@ -570,7 +601,7 @@ export class Search implements OnInit, OnDestroy {
 
   goToPreT3Tci(): void {
     const t = this.tciResult();
-    if (!t) return;
+    if (!t || !this.canSubmitTci) return;
     this.router.navigate(['/pre-t3'], { state: {
       journalName:   t.journal,
       journalNameTh: t.journalTh ?? '',

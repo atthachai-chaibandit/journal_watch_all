@@ -325,15 +325,13 @@
 
             <div class="modal-actions">
               <button class="btn-cancel" (click)="closeDetail()">ยกเลิก</button>
-              <button class="btn-reject"
-                      [disabled]="isSubmitting() || decision() !== 'rejected' || !remark.trim()"
-                      (click)="submitDecision()">
-                <i class="ti ti-circle-x"></i> ไม่อนุมัติ
-              </button>
-              <button class="btn-approve"
+              <!-- ปุ่มยืนยันปุ่มเดียว — ตัวเลือกอนุมัติ/ไม่อนุมัติเลือกจากการ์ดด้านบน ปุ่มเปลี่ยนข้อความ/สีตาม -->
+              <button [class]="decision() === 'rejected' ? 'btn-reject' : 'btn-approve'"
                       [disabled]="isSubmitting() || !canSubmit"
                       (click)="submitDecision()">
-                @if (isSubmitting()) { <i class="ti ti-hourglass"></i> กำลังส่ง... } @else { <i class="ti ti-circle-check"></i> ลงนามอนุมัติ T3 }
+                @if (isSubmitting()) { <i class="ti ti-hourglass"></i> กำลังส่ง... }
+                @else if (decision() === 'rejected') { <i class="ti ti-circle-x"></i> ยืนยันไม่อนุมัติ }
+                @else { <i class="ti ti-circle-check"></i> ลงนามอนุมัติ T3 }
               </button>
             </div>
           </div>

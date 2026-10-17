@@ -559,7 +559,6 @@ $orange: #D4580A;
 }
 
 .date-main { font-size: 13px; font-weight: 600; color: $navy; }
-.date-by   { font-size: 11px; color: $muted; margin-top: 2px; }
 
 .row-actions {
   display: flex;
@@ -758,6 +757,12 @@ $orange: #D4580A;
   flex-shrink: 0;
   background: $bg;
   border-radius: 0;
+}
+
+.dt-value {
+  color: $navy;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .dt-red { color: $red !important; }

@@ -116,7 +116,6 @@
               </td>
               <td class="col-date">
                 <div class="date-main">{{ formatDate(j.recorded_date) }}</div>
-                <div class="date-by">โดย: {{ addedBy(j) }}</div>
               </td>
               <td [class]="canManage ? 'col-action-staff' : 'col-action'">
                 <div class="row-actions">
@@ -170,15 +169,14 @@
           <span>{{ j.note || 'วารสารนี้อยู่ในรายการ MSU Unwanted Journals' }}</span>
         </div>
         <table class="detail-table">
-          <tr><td class="dt-label">ชื่อวารสาร</td><td>{{ j.journal_name }}</td></tr>
-          <tr><td class="dt-label">ISSN</td><td>{{ j.issn || '—' }}</td></tr>
-          <tr><td class="dt-label">Publisher</td><td>{{ j.publisher || '—' }}</td></tr>
-          <tr><td class="dt-label">หมายเหตุ</td><td>{{ j.note || '—' }}</td></tr>
-          <tr><td class="dt-label">วันที่บันทึก</td><td>{{ formatDate(j.recorded_date) }}</td></tr>
-          <tr><td class="dt-label">บันทึกโดย</td><td>{{ addedBy(j) }}</td></tr>
+          <tr><td class="dt-label">ชื่อวารสาร</td><td class="dt-value">{{ j.journal_name }}</td></tr>
+          <tr><td class="dt-label">ISSN</td><td class="dt-value">{{ j.issn || '—' }}</td></tr>
+          <tr><td class="dt-label">Publisher</td><td class="dt-value">{{ j.publisher || '—' }}</td></tr>
+          <tr><td class="dt-label">หมายเหตุ</td><td class="dt-value">{{ j.note || '—' }}</td></tr>
+          <tr><td class="dt-label">วันที่บันทึก</td><td class="dt-value">{{ formatDate(j.recorded_date) }}</td></tr>
           <tr>
             <td class="dt-label">หลักฐาน</td>
-            <td>
+            <td class="dt-value">
               @if (j.evidence_file_path) {
                 <button type="button" class="btn-evidence" (click)="openEvidence(j)" [disabled]="isLoadingEvidence()">
                   @if (isLoadingEvidence()) { <span class="btn-spinner"></span> กำลังเปิด... }
@@ -188,11 +186,11 @@
               } @else { — }
             </td>
           </tr>
-          <tr><td class="dt-label">ผลสรุป</td><td class="dt-red"><i class="ti ti-ban"></i> ห้ามนำไปยื่น Pre-T3 / T3 ทุกกรณี</td></tr>
+          <tr><td class="dt-label">ผลสรุป</td><td class="dt-value dt-red"><i class="ti ti-ban"></i> ห้ามนำไปยื่น Pre-T3 / T3 ทุกกรณี</td></tr>
         </table>
       </div>
       <div class="modal-footer">
-        <span class="modal-footer-note">บันทึกเมื่อ: {{ formatDate(j.recorded_date) }} · โดย: {{ addedBy(j) }}</span>
+        <span class="modal-footer-note">บันทึกเมื่อ: {{ formatDate(j.recorded_date) }}</span>
         <button class="btn-close" (click)="closeDetail()">ปิด</button>
       </div>
     </div>

@@ -403,11 +403,6 @@ export class MsuUnwanted implements OnInit {
     });
   }
 
-  addedBy(j: Journal): string {
-    const name = `${j.first_name ?? ''} ${j.last_name ?? ''}`.trim();
-    return name || j.msu_mail || '—';
-  }
-
   private normalizeSearch(q: string): string {
     const digits = q.replace(/-/g, '');
     if (/^\d{8}$/.test(digits)) return `${digits.slice(0, 4)}-${digits.slice(4)}`;

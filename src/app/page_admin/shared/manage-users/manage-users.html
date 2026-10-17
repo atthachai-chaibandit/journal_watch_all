@@ -188,6 +188,11 @@
             <button class="mu-row-btn mu-row-btn--advisor" (click)="openAssignAdvisorModal(u)">
               <i class="ti ti-user-plus"></i> <span class="mu-row-btn__label">เพิ่มที่ปรึกษา</span>
             </button>
+            @if (canDeleteUser) {
+              <button class="mu-row-btn mu-row-btn--delete" (click)="openDeleteUser(u)">
+                <i class="ti ti-trash"></i> <span class="mu-row-btn__label">ลบ</span>
+              </button>
+            }
           </div>
         </div>
       }
@@ -249,6 +254,11 @@
                 <i class="ti ti-circle-check"></i> <span class="mu-row-btn__label">เปิดใช้งาน</span>
               }
             </button>
+            @if (canDeleteUser) {
+              <button class="mu-row-btn mu-row-btn--delete" (click)="openDeleteUser(u)">
+                <i class="ti ti-trash"></i> <span class="mu-row-btn__label">ลบ</span>
+              </button>
+            }
           </div>
         </div>
       }
@@ -318,6 +328,11 @@
                       [disabled]="suspendingId() !== null"
                       (click)="askRejectUser(u)">
                 <i class="ti ti-user-x"></i> <span class="mu-row-btn__label">ปฏิเสธ</span>
+              </button>
+            }
+            @if (canDeleteUser) {
+              <button class="mu-row-btn mu-row-btn--delete" (click)="openDeleteUser(u)">
+                <i class="ti ti-trash"></i> <span class="mu-row-btn__label">ลบ</span>
               </button>
             }
           </div>
@@ -1091,6 +1106,38 @@
         <button class="mu-btn-cancel" (click)="closeDeleteAdmin()" [disabled]="isDeletingAdmin()">ยกเลิก</button>
         <button class="mu-btn-save mu-btn-save--danger" (click)="confirmDeleteAdmin()" [disabled]="isDeletingAdmin()">
           @if (isDeletingAdmin()) { <span class="mu-btn-spinner"></span> กำลังลบ... }
+          @else { <i class="ti ti-trash"></i> ยืนยันลบ }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ════════════════════════════════════════════════════════════
+     DELETE USER CONFIRM (นิสิต / อาจารย์ / Staff — Admin / SuperAdmin)
+════════════════════════════════════════════════════════════ -->
+@if (deleteUserTarget(); as u) {
+  <div class="mu-modal-overlay">
+    <div class="mu-edit-modal mu-delete-modal" (click)="$event.stopPropagation()">
+      <div class="mu-edit-modal__accent mu-delete-modal__accent"></div>
+
+      <div class="mu-delete-modal__body">
+        <div class="mu-delete-modal__icon"><i class="ti ti-trash"></i></div>
+        <div class="mu-delete-modal__title">ลบบัญชีผู้ใช้?</div>
+        <div class="mu-delete-modal__name">{{ fullName(u) }} · {{ u.msu_mail }}</div>
+        <div class="mu-delete-modal__warn">
+          <i class="ti ti-alert-triangle"></i>
+          การลบไม่สามารถย้อนกลับได้ — ถ้าบัญชีนี้มีคำขอ Pre-T3 / T3 เป็นที่ปรึกษา หรือเคยอนุมัติรายการ ระบบจะไม่ให้ลบ ให้ใช้ "ระงับบัญชี" แทน
+        </div>
+        @if (deleteUserError()) {
+          <div class="mu-save-banner mu-save-banner--err"><i class="ti ti-alert-triangle"></i> {{ deleteUserError() }}</div>
+        }
+      </div>
+
+      <div class="mu-edit-modal__footer">
+        <button class="mu-btn-cancel" (click)="closeDeleteUser()" [disabled]="isDeletingUser()">ยกเลิก</button>
+        <button class="mu-btn-save mu-btn-save--danger" (click)="confirmDeleteUser()" [disabled]="isDeletingUser()">
+          @if (isDeletingUser()) { <span class="mu-btn-spinner"></span> กำลังลบ... }
           @else { <i class="ti ti-trash"></i> ยืนยันลบ }
         </button>
       </div>

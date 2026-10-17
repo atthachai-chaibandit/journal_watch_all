@@ -881,6 +881,53 @@ export class ManageUsers implements OnInit {
       });
   }
 
+  // ── Delete User (นิสิต / อาจารย์ / Staff — Admin, SuperAdmin เท่านั้น) ──
+  // DELETE /manage/users/:id · มีข้อมูลผูกอยู่ (Pre-T3/T3, เป็นที่ปรึกษา, เคยอนุมัติ ฯลฯ) → 409 USER_HAS_DATA พร้อมเหตุผล
+  deleteUserTarget = signal<User | null>(null);
+  isDeletingUser   = signal(false);
+  deleteUserError  = signal('');
+
+  get canDeleteUser(): boolean { return this.canManageAdmins; }
+
+  openDeleteUser(u: User): void {
+    if (!this.canDeleteUser) return;
+    this.deleteUserError.set('');
+    this.deleteUserTarget.set(u);
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeDeleteUser(): void {
+    if (this.isDeletingUser()) return;
+    this.deleteUserTarget.set(null);
+    document.body.style.overflow = '';
+  }
+
+  confirmDeleteUser(): void {
+    const u = this.deleteUserTarget();
+    if (!u || this.isDeletingUser()) return;
+    this.isDeletingUser.set(true);
+    this.deleteUserError.set('');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` });
+    this.http
+      .delete<{ success: boolean; message?: string }>(`${this.constants.API_ENDPOINT}/manage/users/${u.user_id}`, { headers })
+      .pipe(catchError(err => of(apiFailure(err))))
+      .subscribe(res => {
+        this.isDeletingUser.set(false);
+        if (res?.success) {
+          this.deleteUserTarget.set(null);
+          document.body.style.overflow = '';
+          // ลบแถวสุดท้ายของหน้า → ถอยกลับหน้าก่อน · โหลดใหม่เพื่อให้จำนวน/หน้าตรงกับ backend
+          if (this.allUsers().length <= 1 && this.currentPage() > 1) this.currentPage.update(p => p - 1);
+          this.loadData();
+          this.loadRoleCounts();
+          this.suspendResult.set({ ok: true, msg: `ลบบัญชี ${this.fullName(u)} เรียบร้อยแล้ว` });
+          setTimeout(() => this.suspendResult.set(null), 3000);
+        } else {
+          this.deleteUserError.set(failMsg(res, 'ลบบัญชีไม่สำเร็จ กรุณาลองใหม่'));
+        }
+      });
+  }
+
   suspendAdmin(a: Admin): void {
     if (this.suspendingAdminId() !== null) return;
     this.suspendingAdminId.set(a.user_id);
